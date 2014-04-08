@@ -1,3 +1,4 @@
+[![Build Status](https://travis-ci.org/godaddy/node-priam.png?branch=master)](https://travis-ci.org/godaddy/node-priam)
 priam
 =====
 
