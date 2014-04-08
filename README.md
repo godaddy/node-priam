@@ -6,8 +6,8 @@ A simple [Cassandra](http://cassandra.apache.org/) driver for [NodeJS](http://no
 [node-cassandra-cql](https://github.com/jorgebay/node-cassandra-cql) drivers with additional error/retry handling, external
 `.cql` file support, and connection option resolution from an external source, among other improvements.
 
-By default, the driver uses `[node-cassandra-cql](https://github.com/jorgebay/node-cassandra-cql)` over binary connection.
-If a Thrift connection is desired, simply specify the `[helenus](https://github.com/simplereach/helenus)` driver option
+By default, the driver uses [node-cassandra-cql](https://github.com/jorgebay/node-cassandra-cql) over binary connection.
+If a Thrift connection is desired, simply specify the [helenus](https://github.com/simplereach/helenus) driver option
 in config. [Priam](https://github.com/godaddy/priam) uses internal aliases to map
 [helenus](https://github.com/simplereach/helenus) and [node-cassandra-cql](https://github.com/jorgebay/node-cassandra-cql)
 options to facilitate easily switching between the two drivers.
