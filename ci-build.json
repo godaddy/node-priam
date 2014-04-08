@@ -1,0 +1,15 @@
+{
+	"coverage": {
+        "thresholds": {
+            "statements": [80,99],
+            "branches": [80,99],
+            "functions": [80,99],
+            "lines": [80,99]
+        },
+        "reports": [ "text", "text-summary", "cobertura" ],
+        "reportPath": "./results/coverage/"
+    },
+    "deployment":{
+        "include": [ "lib/**", "package.json", "index.js" ]
+    }
+}

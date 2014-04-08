@@ -1,0 +1,28 @@
+{
+    "name": "priam",
+    "version": "0.6.2",
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/godaddy/priam.git"
+    },
+    "dependencies": {
+        "helenus": "~0.6.8",
+        "node-cassandra-cql": "~0.4.3",
+        "lodash": "~2.2.1",
+        "async": "~0.2.10"
+    },
+    "devDependencies": {
+        "mocha": "~1.13.0",
+        "chai": "~1.8.1",
+        "sinon": "~1.7.3",
+        "istanbul": "~0.2.4",
+        "mocha-istanbul": "~0.2.0",
+        "jshint": "~2.3.0",
+        "express": "~3.5.1",
+        "winston": "~0.7.3"
+    },
+    "scripts": {
+        "pretest": "node node_modules/jshint/bin/jshint ./lib/.",
+        "test": "istanbul cover ./node_modules/mocha/bin/_mocha"
+    }
+}

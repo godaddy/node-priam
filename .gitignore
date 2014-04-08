@@ -1,0 +1,29 @@
+lib-cov
+*.seed
+*.log
+*.csv
+*.dat
+*.out
+*.pid
+*.gz
+
+pids
+logs
+results
+
+npm-debug.log
+
+# Webstorm Settings
+.idea/*
+!.idea/inspectionProfiles
+!.idea/jsLinters
+
+# Istanbul Output
+coverage/
+
+# NPM Dependencies
+node_modules/
+
+# Eclipse Settings
+.project
+/dist
