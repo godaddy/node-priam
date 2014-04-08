@@ -1,9 +1,9 @@
 "use strict";
 
-var express = require("express"),
+var http = require("http"),
     path = require("path"),
-    ConnectionResolver = require("./connectionResolver"),
-    MetricsClient = require("./metricsClient"),
+    ConnectionResolver = require("./lib/connectionResolver"),
+    MetricsClient = require("./lib/metricsClient"),
     winston = require("winston"),
     logger = new (winston.Logger)({
         transports: [
@@ -13,7 +13,7 @@ var express = require("express"),
     metrics = new MetricsClient({ logger: logger }),
     db = require("../index" /*"priam"*/)({
         config: {
-            driver: "helenus",
+            driver: "node-cassandra-cql", //"helenus"
             queryDirectory: path.join(__dirname, "cql"),
 
             // If using config-based connection, use these options
@@ -33,25 +33,26 @@ var express = require("express"),
         // If using resolver-based connection, use this option
         connectionResolver: new ConnectionResolver({ pollInterval: 3000 }) // this will override any matching config options
     }),
-    app = express(),
     port = 8080;
 
-app.get("/", function (req, res) {
+http.createServer(function (req, res) {
     var params = [
         "value1", // maps to 'param1' in 'helloWorld.cql'
         "value2"  // maps to 'param2' in 'helloWorld.cql'
     ];
     db.namedQuery("helloWorld", params, function (err, data) {
+        var statusCode = 200,
+            message = null;
         if (err) {
-            res.statusCode = 500;
-            res.send(err.stack);
+            statusCode = 500;
+            message = JSON.stringify({ message: err.name, info: err.info, stack: err.stack });
         }
         else {
-            res.send(data);
+            message = JSON.stringify(data);
         }
+        res.writeHead(statusCode, {"Content-Type": "text/plain"});
+        res.end(message);
     });
-});
+}).listen(port);
 
-app.listen(port, function () {
-    logger.info("Express server started on port %s", port);
-});
+logger.info("Node HTTP server listening at port %s", port);
