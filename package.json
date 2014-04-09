@@ -19,20 +19,20 @@
   },
   "dependencies": {
     "helenus": "~0.6.8",
-    "node-cassandra-cql": "~0.4.3",
-    "lodash": "~2.2.1",
-    "async": "~0.2.10"
+    "node-cassandra-cql": "~0.4.4",
+    "lodash": "~2.4.1",
+    "async": "~0.6.2"
   },
   "devDependencies": {
-    "mocha": "~1.13.0",
-    "chai": "~1.8.1",
-    "sinon": "~1.7.3",
-    "istanbul": "~0.2.4",
-    "mocha-istanbul": "~0.2.0",
-    "jshint": "~2.3.0",
-    "winston": "~0.7.3",
+    "mocha": "^1.18.2",
+    "chai": "^1.9.1",
+    "sinon": "^1.9.1",
+    "istanbul": "^0.2.4",
+    "mocha-istanbul": "^0.2.0",
+    "jshint": "^2.5.0",
+    "winston": "^0.7.3",
     "coveralls": "^2.10.0",
-    "mocha-lcov-reporter": "0.0.1"
+    "mocha-lcov-reporter": "~0.0.1"
   },
   "scripts": {
     "pretest": "node node_modules/jshint/bin/jshint ./lib/.",
