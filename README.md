@@ -1,5 +1,5 @@
 [![Build Status](https://travis-ci.org/godaddy/node-priam.png?branch=master)](https://travis-ci.org/godaddy/node-priam)
-[![Dependency Status](https://gemnasium.com/godaddy/node-priam.png?branch=master)](https://gemnasium.com/godaddy/node-priam)  
+[![Dependency Status](https://gemnasium.com/godaddy/node-priam.png?branch=master)](https://gemnasium.com/godaddy/node-priam)
 [![NPM](https://nodei.co/npm/priam.png?downloads=true&stars=true)](https://www.npmjs.org/package/priam)
 priam
 =====

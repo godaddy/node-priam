@@ -211,7 +211,7 @@ describe("lib/drivers/node-cassandra-cql.js", function () {
             var consistency = cql.types.consistencies.one;
             var pool = getPoolStub(instance.config, true, null, {});
             pool.on = sinon.stub();
-            pool.connect = sinon.stub().yieldsAsync(null, {});-
+            pool.connect = sinon.stub().yieldsAsync(null, {});
             sinon.stub(cql, "Client").returns(pool);
             instance.pools = {};
 
@@ -380,15 +380,15 @@ describe("lib/drivers/node-cassandra-cql.js", function () {
         });
 
         it("sets up a global error handler for the connection pool - logs warn as warn", function (done) {
-            testLogEvent("warn", "warn", done)
+            testLogEvent("warn", "warn", done);
         });
 
         it("sets up a global error handler for the connection pool - logs error as warn", function (done) {
-            testLogEvent("error", "warn", done)
+            testLogEvent("error", "warn", done);
         });
 
         it("sets up a global error handler for the connection pool - logs critical as critical", function (done) {
-            testLogEvent("critical", "critical", done)
+            testLogEvent("critical", "critical", done);
         });
 
         it("sets up an error handler for pool.connect", function (done) {

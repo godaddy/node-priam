@@ -1,6 +1,4 @@
-/**
- * Created by scommisso on 1/3/14.
- */
+"use strict";
 
 var sinon = require("sinon");
 

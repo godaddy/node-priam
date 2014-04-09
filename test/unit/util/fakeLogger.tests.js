@@ -52,7 +52,7 @@ describe("lib/util/fakeLogger.js", function(){
                 logger[level]("Test");
                 assert.ok(console.info.notCalled);
                 done();
-            })
+            });
 
             it ("calls callback if provided", function (done) {
                 logger[level]("Test", done);
