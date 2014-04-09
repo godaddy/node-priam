@@ -1,36 +1,41 @@
 {
-    "name": "priam",
-    "version": "0.6.3",
-    "description": "A simple Cassandra driver. It wraps the helenus and node-cassandra-cql drivers with additional error/retry handling, external .cql file support, and connection option resolution from an external source, among other improvements.",
-    "keywords": ["cassandra", "cql"],
-    "license": "MIT",
-    "homepage": "https://github.com/godaddy/node-priam",
-    "bugs": "http://github.com/godaddy/node-priam/issues",
-    "author": {
-        "name": "Stephen Commisso",
-        "email": "scommisso@godaddy.com"
-    },
-    "repository": {
-        "type": "git",
-        "url": "https://github.com/godaddy/node-priam.git"
-    },
-    "dependencies": {
-        "helenus": "~0.6.8",
-        "node-cassandra-cql": "~0.4.3",
-        "lodash": "~2.2.1",
-        "async": "~0.2.10"
-    },
-    "devDependencies": {
-        "mocha": "~1.13.0",
-        "chai": "~1.8.1",
-        "sinon": "~1.7.3",
-        "istanbul": "~0.2.4",
-        "mocha-istanbul": "~0.2.0",
-        "jshint": "~2.3.0",
-        "winston": "~0.7.3"
-    },
-    "scripts": {
-        "pretest": "node node_modules/jshint/bin/jshint ./lib/.",
-        "test": "istanbul cover ./node_modules/mocha/bin/_mocha"
-    }
+  "name": "priam",
+  "version": "0.6.3",
+  "description": "A simple Cassandra driver. It wraps the helenus and node-cassandra-cql drivers with additional error/retry handling, external .cql file support, and connection option resolution from an external source, among other improvements.",
+  "keywords": [
+    "cassandra",
+    "cql"
+  ],
+  "license": "MIT",
+  "homepage": "https://github.com/godaddy/node-priam",
+  "bugs": "http://github.com/godaddy/node-priam/issues",
+  "author": {
+    "name": "Stephen Commisso",
+    "email": "scommisso@godaddy.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/godaddy/node-priam.git"
+  },
+  "dependencies": {
+    "helenus": "~0.6.8",
+    "node-cassandra-cql": "~0.4.3",
+    "lodash": "~2.2.1",
+    "async": "~0.2.10"
+  },
+  "devDependencies": {
+    "mocha": "~1.13.0",
+    "chai": "~1.8.1",
+    "sinon": "~1.7.3",
+    "istanbul": "~0.2.4",
+    "mocha-istanbul": "~0.2.0",
+    "jshint": "~2.3.0",
+    "winston": "~0.7.3",
+    "coveralls": "^2.10.0",
+    "mocha-lcov-reporter": "0.0.1"
+  },
+  "scripts": {
+    "pretest": "node node_modules/jshint/bin/jshint ./lib/.",
+    "test": "istanbul cover ./node_modules/mocha/bin/_mocha --report lcovonly -- -R spec && cat ./coverage/lcov.info | ./node_modules/coveralls/bin/coveralls.js && rm -rf ./coverage"
+  }
 }
