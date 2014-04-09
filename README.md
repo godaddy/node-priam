@@ -12,15 +12,15 @@ A simple [Cassandra](http://cassandra.apache.org/) driver for [NodeJS](http://no
 
 By default, the driver uses [node-cassandra-cql](https://github.com/jorgebay/node-cassandra-cql) over binary connection.
 If a Thrift connection is desired, simply specify the [helenus](https://github.com/simplereach/helenus) driver option
-in config. [Priam](https://github.com/godaddy/priam) uses internal aliases to map
+in config. [Priam](https://github.com/godaddy/node-priam) uses internal aliases to map
 [helenus](https://github.com/simplereach/helenus) and [node-cassandra-cql](https://github.com/jorgebay/node-cassandra-cql)
 options to facilitate easily switching between the two drivers.
 
-[Priam](https://github.com/godaddy/priam) is designed to be used as a single instance in order to preserve the
-connection pools. As an example, in an [Express](#) application, [priam](https://github.com/godaddy/priam) should be
+[Priam](https://github.com/godaddy/node-priam) is designed to be used as a single instance in order to preserve the
+connection pools. As an example, in an [Express](#) application, [priam](https://github.com/godaddy/node-priam) should be
 initialized at server startup and attached to the `request` object so that your controllers can access it.
 
-[Priam](https://github.com/godaddy/priam) is actively developed and used by
+[Priam](https://github.com/godaddy/node-priam) is actively developed and used by
 [Go Daddy Website Builder](http://www.godaddy.com/hosting/website-builder.aspx?ci=87223) to provide a high-availability
 and high-performance hosting platform based on the [Cassandra](http://cassandra.apache.org/) database.
 
@@ -231,7 +231,7 @@ var db = require("priam")({
 
 The supplied connection resolver should have the following method: `#resolveConnection(config, callback)`.
 
-`config` will be the [priam](https://github.com/godaddy/priam) configuration that was supplied to the constructor, so
+`config` will be the [priam](https://github.com/godaddy/node-priam) configuration that was supplied to the constructor, so
 connection resolvers can access any custom configuration information specified when the driver was initialized.
 
 `callback(error, connectionInformation)` should be called with the results from the connection resolver. If `error` is
