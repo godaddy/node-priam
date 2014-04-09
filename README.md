@@ -93,7 +93,8 @@ Instead of the driver inferring the data type, it can be explicitly specified by
 [specially formatted object](https://github.com/jorgebay/node-cassandra-cql/wiki/Data-types#wiki-providing-hint).
 Similar to consistencies, data types are exposed via the `<instance>.dataType` object.
 *Other than type `uuid`, parameter hints will be ignored when using the [helenus](https://github.com/simplereach/helenus) driver.*
-There is also a `param` helper method for creating hinted parameters:
+
+There is also a `param(value [object], type [string])` helper method for creating hinted parameters, as shown below:
 
 #### Example ####
 ```javascript
@@ -263,5 +264,6 @@ var db = require("priam")({
 
 Release Notes
 -------------
+ - `0.6.4`: Added `#param()` helper method for hinted parameters.
  - `0.6.3`: Dependency updates, test Travis CI hooks.
  - `0.6.2`: Initial Public Release
