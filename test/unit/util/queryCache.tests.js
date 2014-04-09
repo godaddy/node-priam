@@ -20,7 +20,7 @@ describe("lib/util/queryCache.js", function () {
         it("throws error if options not provided", function (done) {
             // act
             expect(function () {
-                new QueryCache();
+                var qc = new QueryCache();
             }).to.throw(Error);
 
             done();
@@ -29,7 +29,7 @@ describe("lib/util/queryCache.js", function () {
         it("throws error if queryDirectory not provided", function (done) {
             // act
             expect(function () {
-                new QueryCache({});
+                var qc = new QueryCache({});
             }).to.throw(Error);
 
             done();
