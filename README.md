@@ -1,7 +1,6 @@
-[![NPM version](https://badge.fury.io/js/priam.svg?branch=master)](http://badge.fury.io/js/priam)
 [![Build Status](https://travis-ci.org/godaddy/node-priam.png?branch=master)](https://travis-ci.org/godaddy/node-priam)
-[![Coverage Status](https://coveralls.io/repos/godaddy/node-priam/badge.png?branch=master)](https://coveralls.io/r/godaddy/node-priam)
 [![Dependency Status](https://gemnasium.com/godaddy/node-priam.png?branch=master)](https://gemnasium.com/godaddy/node-priam)
+[![NPM](https://nodei.co/npm/space-ui.png?downloads=true)](https://nodei.co/npm/space-ui)
 priam
 =====
 
