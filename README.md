@@ -261,4 +261,5 @@ var db = require("priam")({
 
 Release Notes
 -------------
+ - `0.6.3`: Dependency updates, test Travis CI hooks.
  - `0.6.2`: Initial Public Release
