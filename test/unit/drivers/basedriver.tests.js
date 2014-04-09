@@ -2,7 +2,6 @@
 
 var sinon = require("sinon"),
     chai = require("chai"),
-    util = require("util"),
     assert = chai.assert,
     expect = chai.expect;
 
@@ -156,5 +155,34 @@ describe("lib/drivers/basedriver.js", function () {
 
         // act
         driver.createConnectionPool(null, done);
+    });
+
+    describe("BaseDriver#param()", function() {
+      var driver;
+
+      beforeEach(function() {
+        driver = new getDefaultInstance();
+        driver.dataType.timestamp = 1;
+      });
+
+      it('returns the value parameter if no type hint was provided', function() {
+        expect(driver.param('foo')).to.equal('foo');
+      });
+
+      it('returns a hinted value wrapper if a type hint was provided', function() {
+        var timestamp = new Date();
+        var param = driver.param(timestamp, driver.dataType.timestamp);
+
+        expect(param.value).to.equal(timestamp);
+        expect(param.hint).to.equal(driver.dataType.timestamp);
+      });
+
+      it('returns a hinted value wrapper if a type hint was provided as a string', function() {
+        var timestamp = new Date();
+        var param = driver.param(timestamp, 'timestamp');
+
+        expect(param.value).to.equal(timestamp);
+        expect(param.hint).to.equal(driver.dataType.timestamp);
+      });
     });
 });
