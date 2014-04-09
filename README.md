@@ -92,8 +92,8 @@ When using the [node-cassandra-cql](https://github.com/jorgebay/node-cassandra-c
 Instead of the driver inferring the data type, it can be explicitly specified by using a
 [specially formatted object](https://github.com/jorgebay/node-cassandra-cql/wiki/Data-types#wiki-providing-hint).
 Similar to consistencies, data types are exposed via the `<instance>.dataType` object.
-*Other than type `uuid`, parameter hints will be ignored when using the [helenus](https://github.com/simplereach/helenus)
-driver.*
+*Other than type `uuid`, parameter hints will be ignored when using the [helenus](https://github.com/simplereach/helenus) driver.*
+There is also a `param` helper method for creating hinted parameters:
 
 #### Example ####
 ```javascript
@@ -102,7 +102,7 @@ var db = require("priam")({
 });
 db.cql(
         'SELECT "myCol1", "myCol2" FROM "myColumnFamily" WHERE "keyCol1" = ? AND "keyCol2" = ?',
-        ["value_of_keyCol1", { value: "value_of_keyCol2", hint: db.dataType.ascii }],
+        ["value_of_keyCol1", db.param("value_of_keyCol2", "ascii")],
         { consistency: db.consistencyLevel.one, queryName: "myQuery", executeAsPrepared: true },
         function (err, data) {
                 if (err) {
