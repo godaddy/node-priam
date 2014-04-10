@@ -146,7 +146,7 @@ db.namedQuery(
 );
 ```
 
-#### Fluent Syntax ####
+### Fluent Syntax ###
 The driver provides a fluent syntax that can be used to construct queries.
 ```javascript
 db
@@ -200,7 +200,7 @@ db
     });
 ```
 
-#### Helper Functions ####
+### Helper Functions ###
 The driver also provides the following functions that wrap `#cql()`. They should be used in place of `#cql()` where
 possible, when not using named queries, as it will allow you to both use default consistency levels for different types
 of queries, and easily find references in your application to each query type.
