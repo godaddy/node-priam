@@ -1,5 +1,5 @@
 select  "column1",
         "column2"
-from    "myColumnFamily"
-where   "param1" = ?
-and		"param2" = ?
+from    "priam_test"
+where   "column1" = ?
+and		"column2" = ?

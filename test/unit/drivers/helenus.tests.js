@@ -961,7 +961,7 @@ describe("lib/drivers/helenus.js", function () {
         });
 
         function validateWrapperCall(method, consistencyLevel) {
-            describe("#" + method + "()", function () {
+            describe("HelenusDriver#" + method + "()", function () {
                 it("normalizes the parameter list if it is an array", function (done) {
                     // arrange
                     var dt = new Date();
@@ -1128,7 +1128,66 @@ describe("lib/drivers/helenus.js", function () {
         validateWrapperCall("delete", "LOCAL_QUORUM");
     });
 
-    describe("#namedQuery()", function () {
+    describe("HelenusDriver#beginQuery()", function () {
+
+        var instance;
+        beforeEach(function () {
+            instance = getDefaultInstance();
+            sinon.stub(instance, "execCql").yields(null, {});
+        });
+
+        afterEach(function () {
+            if (instance.execCql.restore) {
+                instance.execCql.restore();
+            }
+        });
+
+        function validateQueryCalls(asPromise) {
+            it("#execute() executes cq " +
+                (asPromise ? "with promise syntax" : "with callback syntax"),
+                function (done) {
+                    // arrange
+                    var cqlQuery = "SELECT * FROM users WHERE name = ?;";
+
+                    // act
+                    var query = instance
+                        .beginQuery()
+                        .query(cqlQuery)
+                        .param('name', 'text');
+
+                    if (asPromise) {
+                        query
+                            .execute()
+                            .then(function (data) {
+                                asserts(done);
+                            });
+                    }
+                    else {
+                        query.execute(function () {
+                            asserts(done);
+                        });
+                    }
+
+                    function asserts (done) {
+                        var call = instance.execCql.getCall(0);
+
+                        // assert
+                        assert.equal(call.args[0], cqlQuery, "cql should be passed through");
+                        assert.equal(call.args[1], query.context.params, "params should be passed through");
+                        assert.equal(call.args[2], query.context.options, "options should be passed through");
+
+                        done();
+                    }
+
+                });
+        }
+
+        validateQueryCalls(false);
+        validateQueryCalls(true);
+
+    });
+
+    describe("HelenusDriver#namedQuery()", function () {
 
         var instance = getNamedQueryInstance();
         beforeEach(function () {
