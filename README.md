@@ -103,7 +103,7 @@ var db = require("priam")({
 });
 db.cql(
         'SELECT "myCol1", "myCol2" FROM "myColumnFamily" WHERE "keyCol1" = ? AND "keyCol2" = ?',
-        ["value_of_keyCol1", db.param("value_of_keyCol2", "ascii")],
+        [db.param("value_of_keyCol1", "ascii"), db.param("value_of_keyCol2", "ascii")],
         { consistency: db.consistencyLevel.one, queryName: "myQuery", executeAsPrepared: true },
         function (err, data) {
                 if (err) {
@@ -144,6 +144,60 @@ db.namedQuery(
                 console.log("Returned data: " + data);
         }
 );
+```
+
+#### Fluent Syntax ####
+The driver provides a fluent syntax that can be used to construct queries.
+```javascript
+db
+    .beginQuery()
+    .query('SELECT "myCol1", "myCol2" FROM "myColumnFamily" WHERE "keyCol1" = ? AND "keyCol2" = ?')
+    .param("value_of_keyCol1", "ascii")
+    .param("value_of_keyCol2", "ascii")
+    .consistency("one")
+    .options({ queryName: "myColumnFamilySelect" })
+    .options({ executeAsPrepared: true })
+    .execute(function (err, data) {
+        if (err) {
+                console.log("ERROR: " + err);
+                return;
+        }
+        console.log("Returned data: " + data);
+    });
+```
+
+Similarly, fluent syntax can be used for named queries.
+```javascript
+db
+    .beginQuery()
+    .namedQuery("myColumnFamilySelect") /* name of .cql file with contents: 'SELECT "myCol1", "myCol2" FROM "myColumnFamily" WHERE "keyCol1" = ? AND "keyCol2" = ?' */
+    .param("value_of_keyCol1", "ascii")
+    .param("value_of_keyCol2", "ascii")
+    .consistency("one")
+    .execute(function (err, data) {
+        if (err) {
+                console.log("ERROR: " + err);
+                return;
+        }
+        console.log("Returned data: " + data);
+    });
+```
+
+The fluent syntax also supports promises, if a callback is not supplied to the `#execute()` function.
+```javascript
+db
+    .beginQuery()
+    .namedQuery("myColumnFamilySelect") /* name of .cql file with contents: 'SELECT "myCol1", "myCol2" FROM "myColumnFamily" WHERE "keyCol1" = ? AND "keyCol2" = ?' */
+    .param("value_of_keyCol1", "ascii")
+    .param("value_of_keyCol2", "ascii")
+    .consistency("one")
+    .execute()
+    .fail(function (err) {
+        console.log("ERROR: " + err);
+    })
+    .done(function (data) {
+        console.log("Returned data: " + data);
+    });
 ```
 
 #### Helper Functions ####
@@ -211,9 +265,9 @@ The `connectionResolver` option allows you to pass in a `connectionResolver` obj
 var resolver = new MyConnectionResolver();
 var db = require("priam")({
         config: {
-                /* ... other connection options ... */
-                connectionResolver: resolver
+                /* ... connection options ... */
         }
+        connectionResolver: resolver
 });
 ```
 
@@ -264,6 +318,7 @@ var db = require("priam")({
 
 Release Notes
 -------------
+ - `0.6.5`: Added fluent syntax. Updated example to include setup script.
  - `0.6.4`: Added `#param()` helper method for hinted parameters.
  - `0.6.3`: Dependency updates, test Travis CI hooks.
  - `0.6.2`: Initial Public Release
