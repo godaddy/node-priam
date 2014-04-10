@@ -130,7 +130,7 @@ describe("lib/util/query.js", function () {
 
             // assert
             assert.strictEqual(query.context.errors.length, 1, "errors is populated");
-            assert.equal(query.context.errors[0], qcError, "queryCache error is in errors list")
+            assert.equal(query.context.errors[0], qcError, "queryCache error is in errors list");
             done();
         });
 

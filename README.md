@@ -318,7 +318,7 @@ var db = require("priam")({
 
 Release Notes
 -------------
- - `0.6.5`: Added fluent syntax. Updated example to include setup script.
+ - `0.6.6`: Added fluent syntax. Updated example to include setup script.
  - `0.6.4`: Added `#param()` helper method for hinted parameters.
  - `0.6.3`: Dependency updates, test Travis CI hooks.
  - `0.6.2`: Initial Public Release
