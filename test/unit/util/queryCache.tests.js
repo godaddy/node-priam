@@ -61,7 +61,7 @@ describe("lib/util/queryCache.js", function () {
 
     });
 
-    describe("readQuery()", function () {
+    describe("#readQuery()", function () {
 
         it("returns query text represented by query name", function (done) {
             // arrange

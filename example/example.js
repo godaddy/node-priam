@@ -36,23 +36,33 @@ var http = require("http"),
     port = 8080;
 
 http.createServer(function (req, res) {
-    var params = [
-        "value1", // maps to 'param1' in 'helloWorld.cql'
-        "value2"  // maps to 'param2' in 'helloWorld.cql'
-    ];
-    db.namedQuery("helloWorld", params, function (err, data) {
-        var statusCode = 200,
-            message = null;
-        if (err) {
-            statusCode = 500;
-            message = JSON.stringify({ message: err.name, info: err.info, stack: err.stack });
-        }
-        else {
-            message = JSON.stringify(data);
-        }
-        res.writeHead(statusCode, {"Content-Type": "text/plain"});
-        res.end(message);
-    });
+    db.beginQuery()
+        .param("hello", "ascii") // maps to 'column1' placeholder in 'helloWorld.cql'
+        .param("world", "ascii") // maps to 'column2' placeholder in 'helloWorld.cql'
+        .namedQuery("helloWorld")
+        .execute(function (err, data) {
+            var statusCode = 200,
+                message = null;
+            if (err) {
+                statusCode = 500;
+                message = "If you're getting this error message, please ensure the following:\n\n" +
+                    " - The data in '/example/lib/credentials.json' is updated with your connection information.\n" +
+                    " - You have executed the '/example/cql/create_db.cql' in your keyspace.\n\n";
+                if (Array.isArray(err.inner)) {
+
+                }
+                else {
+                    message += JSON.stringify({ message: err.name, info: err.info, stack: err.stack });
+                }
+            }
+            else {
+                message = (Array.isArray(data) && data.length) ?
+                    (data[0].column1 + " " + data[0].column2 + "!") :
+                    "NO DATA FOUND! Please execute '/example/cql/create_db.cql' in your keyspace."
+            }
+            res.writeHead(statusCode, {"Content-Type": "text/plain"});
+            res.end(message);
+        });
 }).listen(port);
 
 logger.info("Node HTTP server listening at port %s", port);
