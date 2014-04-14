@@ -5,6 +5,7 @@ var http = require("http"),
     ConnectionResolver = require("./lib/connectionResolver"),
     MetricsClient = require("./lib/metricsClient"),
     winston = require("winston"),
+    _ = require("lodash"),
     logger = new (winston.Logger)({
         transports: [
             new (winston.transports.Console)({ level: 'debug' })
@@ -36,33 +37,64 @@ var http = require("http"),
     port = 8080;
 
 http.createServer(function (req, res) {
-    db.beginQuery()
-        .param("hello", "ascii") // maps to 'column1' placeholder in 'helloWorld.cql'
-        .param("world", "ascii") // maps to 'column2' placeholder in 'helloWorld.cql'
-        .namedQuery("helloWorld")
-        .execute(function (err, data) {
-            var statusCode = 200,
-                message = null;
-            if (err) {
-                statusCode = 500;
-                message = "If you're getting this error message, please ensure the following:\n\n" +
-                    " - The data in '/example/lib/credentials.json' is updated with your connection information.\n" +
-                    " - You have executed the '/example/cql/create_db.cql' in your keyspace.\n\n";
-                if (Array.isArray(err.inner)) {
 
-                }
-                else {
-                    message += JSON.stringify({ message: err.name, info: err.info, stack: err.stack });
-                }
+    function errorHandler (err) {
+        if (err) {
+            var statusCode = 500;
+            var message = "If you're getting this error message, please ensure the following:\n\n" +
+                " - The data in '/example/lib/credentials.json' is updated with your connection information.\n" +
+                " - You have executed the '/example/cql/create_db.cql' in your keyspace.\n\n";
+            if (Array.isArray(err.inner)) {
+                _.each(err.inner, function (innerErr) {
+                    message += "------------------------\n";
+                    message += JSON.stringify({ message: innerErr.name, info: innerErr.info, stack: innerErr.stack });
+                    message += "\n";
+                });
             }
             else {
-                message = (Array.isArray(data) && data.length) ?
-                    (data[0].column1 + " " + data[0].column2 + "!") :
-                    "NO DATA FOUND! Please execute '/example/cql/create_db.cql' in your keyspace."
+                message += "------------------------\n";
+                message += JSON.stringify({ message: err.name, info: err.info, stack: err.stack });
             }
             res.writeHead(statusCode, {"Content-Type": "text/plain"});
             res.end(message);
-        });
+        }
+    }
+
+    db.beginBatch()
+
+        // Batching inserts demo
+
+        .addQuery(db.beginQuery()
+            .param("hello from Priam - batch query 1", "ascii") // maps to 'column1' placeholder in 'addTimestamp.cql'
+            .param((new Date()).toISOString(), "ascii") // maps to 'column2' placeholder in 'addTimestamp.cql'
+            .namedQuery("addTimestamp")
+        )
+        .addQuery(db.beginQuery()
+            .param("hello from Priam - batch query 2", "ascii") // maps to 'column1' placeholder in 'addTimestamp.cql'
+            .param((new Date()).toISOString(), "ascii") // maps to 'column2' placeholder in 'addTimestamp.cql'
+            .namedQuery("addTimestamp")
+        )
+        .timestamp()
+        .execute() // This will execute the two inserts above in a single batch
+        .fail(errorHandler)
+        .done(
+
+            // When insert batch completes, execute select
+
+            db.beginQuery()
+                .param("hello", "ascii") // maps to 'column1' placeholder in 'helloWorld.cql'
+                .param("world", "ascii") // maps to 'column2' placeholder in 'helloWorld.cql'
+                .namedQuery("helloWorld")
+                .execute()
+                .fail(errorHandler)
+                .done(function (data) {
+                    var message = (Array.isArray(data) && data.length) ?
+                        (data[0].column1 + " " + data[0].column2 + "!") :
+                        "NO DATA FOUND! Please execute '/example/cql/create_db.cql' in your keyspace.";
+                    res.writeHead(200, {"Content-Type": "text/plain"});
+                    res.end(message);
+                })
+        );
 }).listen(port);
 
 logger.info("Node HTTP server listening at port %s", port);

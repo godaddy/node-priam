@@ -61,10 +61,14 @@ var db = require("priam")({
 ### Executing CQL ###
 The driver provides the `#cql()` method for executing CQL statements against [Cassandra](http://cassandra.apache.org/).
 It provides the following arguments:
+
  - `cql`: The CQL statement to execute. Parameters should be replaced with `?` characters
+
  - `dataParams`: The parameters array. Should match the order of `?` characters in the `cql` parameter
+
  - `options`: Optional. Additional options for the CQL call. Supports `consistency`, `queryName`, `keyspace`,
    and `executeAsPrepared`.
+
  - `callback(err, data)`: Optional. The callback for the CQL call. Provides `err` and `data` arguments. `data` will be
    an `Array`.
 
@@ -150,11 +154,18 @@ db.namedQuery(
 The driver provides a fluent syntax that can be used to construct queries.
 
 Calling `#beginQuery()` returns a `Query` object with the following chainable functions:
+
  - `#query(cql [string])`: Sets the cql for the query to execute.
+
  - `#namedQuery(queryName [string])`: Specifies the named query for the query to execute.
+
  - `#param(value [object], hint [optional, string])`: Adds a parameter to the query. *Note: They are applied in the order added*
- - `#options(optionsDictionary [object])`: Extends the query options. See [Executing CQL]() for valid options.
+
+ - `#options(optionsDictionary [object])`: Extends the query options. See
+    [Executing CQL](https://github.com/godaddy/node-priam/blob/master/README.md#executing-cql) for valid options.
+
  - `#consistency(consistencyLevelName [string])`: Sets consistency level for the query. Alias for `#options({ consistency: db.consistencyLevel[consistencyLevelName] })`.
+
  - `#execute(callback [optional, function])`: Executes the query. If a callback is not supplied, this will return a Promise.
 
 #### Fluent Syntax Examples ####
@@ -215,12 +226,29 @@ db
 Queries can be batched by using the fluent syntax to create a batch of queries. Standard CQL and named queries can be
 combined. If a consistency level for the batch is not supplied, the strictest consistency from the batched queries will
 be applied, if given. Similarly, if debug logs for one of the batched queries are suppressed, debug logs for the entire
-batch will be suppressed.
+batch will be suppressed. `queryName` and `executeAsPrepared` for individual queries will be ignored.
+
+*Note: Batching prepared statements is currently not supported. If prepared statements are used in a batch, the entire
+CQL query will be sent over the wire.*
+
+**IMPORTANT:** Batching is only supported with `INSERT`, `UPDATE` and `DELETE` commands. If `SELECT` statements are
+added, the query will yield a runtime error.
+
+For more information on batching, see the
+(CQL 3.0 reference)[http://www.datastax.com/documentation/cql/3.0/cql/cql_reference/batch_r.html].
 
 Calling `#beginBatch()` returns a `Query` object with the following chainable functions:
- - `#addQuery(query [Query])`: Adds a query to the batch to execute. The query shouldbe created by `db.beginQuery()`.
- - `#options(optionsDictionary [object])`: Extends the batch. See [Executing CQL]() for valid options.
+
+ - `#addQuery(query [Query])`: Adds a query to the batch to execute. The query should be created by `db.beginQuery()`.
+
+ - `#options(optionsDictionary [object])`: Extends the batch. See
+    [Executing CQL](https://github.com/godaddy/node-priam/blob/master/README.md#executing-cql) for valid options.
+
+ - `#timestamp(clientTimestamp [optional, long])`: Specifies that `USING TIMESTAMP <value>` will be sent as part of the
+    batch CQL. If `clientTimestamp` is not specified, the current time will be used.
+
  - `#consistency(consistencyLevelName [string])`: Sets consistency level for the batch. Alias for `#options({ consistency: db.consistencyLevel[consistencyLevelName] })`.
+
  - `#execute(callback [optional, function])`: Executes the query. If a callback is not supplied, this will return a Promise.
 
 #### Batch Syntax Example ####
@@ -255,24 +283,33 @@ db
 The driver also provides the following functions that wrap `#cql()`. They should be used in place of `#cql()` where
 possible, when not using named queries, as it will allow you to both use default consistency levels for different types
 of queries, and easily find references in your application to each query type.
+
 - `select`: calls `#cql()` with `db.consistencyLevel.one`
+
 - `insert`: calls `#cql()` with `db.consistencyLevel.localQuorum`
+
 - `update`: calls `#cql()` with `db.consistencyLevel.localQuorum`
+
 - `delete`: calls `#cql()` with `db.consistencyLevel.localQuorum`
 
 ### Error Retries ###
 The driver will automatically retry on network-related errors. In addition, other errors will be retried in the following
 conditions:
+
 - `db.consistencyLevel.all` will be retried at `db.consistencyLevel.quorum`
+
 - `db.consistencyLevel.quorum` will be retried at `db.consistencyLevel.localQuorum`
 
 The following retry options are supported in the driver constructor:
+
 - `enableConsistencyFailover`: Optional. Defaults to `true`. If `false`, the failover described above will not take place.
+
 - `numRetries`: Optional. Defaults to 0 (no retry). The number of retries to execute on network failure. *Note:
                 this will also affect the number of retries executed during consistency level fallback. For example,
                 if `numRetries` is 2 and a CQL query with `db.consistencyLevel.all` is submitted, it will be executed
                 3 times at `db.consistencyLevel.all`, 3 times at `db.constistencyLevel.quorum` and 3 times at
                 `db.consistencyLevel.localQuorum` before yielding an error back to the caller.
+
 - `retryDelay`: Optional. Defaults to 100.
 
 ### Logging ###
@@ -369,6 +406,7 @@ var db = require("priam")({
 
 Release Notes
 -------------
+ - `0.6.7`: Added batching support.
  - `0.6.6`: Added fluent syntax. Updated example to include setup script.
  - `0.6.4`: Added `#param()` helper method for hinted parameters.
  - `0.6.3`: Dependency updates, test Travis CI hooks.

@@ -1,7 +1,7 @@
 REPORTER = spec
 
 lint:
-	./node_modules/.bin/jshint ./lib ./test ./index.js
+	./node_modules/.bin/jshint ./lib ./test ./example ./index.js
 
 test:
 	$(MAKE) lint

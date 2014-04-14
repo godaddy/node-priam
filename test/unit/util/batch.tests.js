@@ -62,6 +62,10 @@ describe("lib/util/batch.js", function () {
             validateFunctionExists("addQuery", 1);
         });
 
+        it("provides a timestamp function", function () {
+            validateFunctionExists("timestamp", 1);
+        });
+
         it("provides a consistency function", function () {
             validateFunctionExists("consistency", 1);
         });
@@ -155,6 +159,40 @@ describe("lib/util/batch.js", function () {
             // arrange
             // act
             var result = batch.consistency("one");
+
+            // assert
+            assert.equal(result, batch, "returns self");
+            done();
+        });
+    });
+
+    describe("#timestamp()", function () {
+        it("adds timestamp to context if given", function (done) {
+            // arrange
+            var timestamp = 1234567;
+
+            // act
+            batch.timestamp(timestamp);
+
+            // assert
+            assert.strictEqual(batch.context.timestamp, timestamp, "timestamp is populated");
+            done();
+        });
+
+        it("adds default timestamp if not given", function (done) {
+            // arrange
+            // act
+            batch.timestamp();
+
+            // assert
+            assert.ok(batch.context.timestamp, "timestamp is populated");
+            done();
+        });
+
+        it("returns self", function (done) {
+            // arrange
+            // act
+            var result = batch.timestamp();
 
             // assert
             assert.equal(result, batch, "returns self");
@@ -384,6 +422,8 @@ describe("lib/util/batch.js", function () {
                             .param("param6", "ascii");
 
                     batch.context.queries = [query1, query2, query3];
+                    batch.timestamp(1234567);
+
                     db.cql = sinon.stub().yields(null, data);
 
                     // act
@@ -408,7 +448,7 @@ describe("lib/util/batch.js", function () {
                     function asserts (err, data) {
                         assert.strictEqual(db.cql.callCount, 1, "cql is only called once");
                         var callArgs = db.cql.getCall(0).args;
-                        assert.strictEqual(callArgs[0], "BEGIN BATCH\nmyCqlQuery1;\nmyCqlQuery2;\n\nmyCqlQuery3;\nAPPLY BATCH", "Query text is joined");
+                        assert.strictEqual(callArgs[0], "BEGIN BATCH\nUSING TIMESTAMP 1234567\nmyCqlQuery1;\nmyCqlQuery2;\n\nmyCqlQuery3;\nAPPLY BATCH;\n", "Query text is joined");
                         assert.strictEqual(callArgs[1].length, 6, "Query params are joined");
                         assert.strictEqual(callArgs[2].consistency, db.consistencyLevel.eachQuorum, "Strictest consistency is set");
                         assert.strictEqual(callArgs[2].suppressDebugLog, true, "Debug log is suppressed");
