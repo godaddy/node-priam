@@ -235,7 +235,7 @@ CQL query will be sent over the wire.*
 added, the query will yield a runtime error.
 
 For more information on batching, see the
-(CQL 3.0 reference)[http://www.datastax.com/documentation/cql/3.0/cql/cql_reference/batch_r.html].
+[CQL 3.0 reference](http://www.datastax.com/documentation/cql/3.0/cql/cql_reference/batch_r.html).
 
 Calling `#beginBatch()` returns a `Query` object with the following chainable functions:
 
