@@ -263,13 +263,13 @@ db
         .param("value_of_keyCol1", "ascii")
         .param("value_of_keyCol2", "ascii")
     )
-    .addQuery(db.beginQuery()
-        .options({ executeAsPrepared: true })
-        .namedQuery("myColumnFamilySelect") /* name of .cql file with contents: 'SELECT "myCol1", "myCol2" FROM "myColumnFamily" WHERE "keyCol1" = ? AND "keyCol2" = ?' */
-        .param("value_of_keyCol1", "ascii")
-        .param("value_of_keyCol2", "ascii")
+    .addQuery(db.beginQuery(
+        .query('UPDATE "myOtherColumnFamily" SET "myCol" = ? WHERE "keyCol" = ?')
+        .param("value_of_myCol", "ascii")
+        .param("value_of_keyCol", "ascii")
     )
     .consistency("quorum")
+    .timestamp()
     .execute()
     .fail(function (err) {
         console.log("ERROR: " + err);
