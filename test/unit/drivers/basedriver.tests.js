@@ -3,7 +3,9 @@
 var sinon = require("sinon"),
     chai = require("chai"),
     assert = chai.assert,
-    expect = chai.expect;
+    expect = chai.expect,
+    Query = require("../../../lib/util/query"),
+    Batch = require("../../../lib/util/batch");
 
 var Driver = require("../../../lib/drivers/basedriver");
 
@@ -81,6 +83,30 @@ describe("lib/drivers/basedriver.js", function () {
             assert.ok(instance.consistencyLevel);
             assert.ok(instance.dataType);
         });
+    });
+
+    it("BaseDriver#beginQuery() returns a Query", function (done) {
+        // arrange
+        var driver = getDefaultInstance();
+
+        // act
+        var result = driver.beginQuery();
+
+        // assert
+        assert.instanceOf(result, Query, "result is instance of Query");
+        done();
+    });
+
+    it("BaseDriver#beginBatch() returns a Batch", function (done) {
+        // arrange
+        var driver = getDefaultInstance();
+
+        // act
+        var result = driver.beginBatch();
+
+        // assert
+        assert.instanceOf(result, Batch, "result is instance of Batch");
+        done();
     });
 
     // NOTE: All of the functions below are stubs for functionality that should be

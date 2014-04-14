@@ -148,6 +148,17 @@ db.namedQuery(
 
 ### Fluent Syntax ###
 The driver provides a fluent syntax that can be used to construct queries.
+
+Calling `#beginQuery()` returns a `Query` object with the following chainable functions:
+ - `#query(cql [string])`: Sets the cql for the query to execute.
+ - `#namedQuery(queryName [string])`: Specifies the named query for the query to execute.
+ - `#param(value [object], hint [optional, string])`: Adds a parameter to the query. *Note: They are applied in the order added*
+ - `#options(optionsDictionary [object])`: Extends the query options. See [Executing CQL]() for valid options.
+ - `#consistency(consistencyLevelName [string])`: Sets consistency level for the query. Alias for `#options({ consistency: db.consistencyLevel[consistencyLevelName] })`.
+ - `#execute(callback [optional, function])`: Executes the query. If a callback is not supplied, this will return a Promise.
+
+#### Fluent Syntax Examples ####
+
 ```javascript
 db
     .beginQuery()
@@ -191,6 +202,46 @@ db
     .param("value_of_keyCol1", "ascii")
     .param("value_of_keyCol2", "ascii")
     .consistency("one")
+    .execute()
+    .fail(function (err) {
+        console.log("ERROR: " + err);
+    })
+    .done(function (data) {
+        console.log("Returned data: " + data);
+    });
+```
+
+### Batching Queries ###
+Queries can be batched by using the fluent syntax to create a batch of queries. Standard CQL and named queries can be
+combined. If a consistency level for the batch is not supplied, the strictest consistency from the batched queries will
+be applied, if given. Similarly, if debug logs for one of the batched queries are suppressed, debug logs for the entire
+batch will be suppressed.
+
+Calling `#beginBatch()` returns a `Query` object with the following chainable functions:
+ - `#addQuery(query [Query])`: Adds a query to the batch to execute. The query shouldbe created by `db.beginQuery()`.
+ - `#options(optionsDictionary [object])`: Extends the batch. See [Executing CQL]() for valid options.
+ - `#consistency(consistencyLevelName [string])`: Sets consistency level for the batch. Alias for `#options({ consistency: db.consistencyLevel[consistencyLevelName] })`.
+ - `#execute(callback [optional, function])`: Executes the query. If a callback is not supplied, this will return a Promise.
+
+#### Batch Syntax Example ####
+
+```javascript
+db
+    .beginBatch()
+    .addQuery(db.beginQuery(
+        .query('UPDATE "myColumnFamily" SET "myCol1" = ?, "myCol2" = ? WHERE "keyCol1" = ? AND "keyCol2" = ?')
+        .param("value_of_myCol1", "ascii")
+        .param("value_of_myCol2", "ascii")
+        .param("value_of_keyCol1", "ascii")
+        .param("value_of_keyCol2", "ascii")
+    )
+    .addQuery(db.beginQuery()
+        .options({ executeAsPrepared: true })
+        .namedQuery("myColumnFamilySelect") /* name of .cql file with contents: 'SELECT "myCol1", "myCol2" FROM "myColumnFamily" WHERE "keyCol1" = ? AND "keyCol2" = ?' */
+        .param("value_of_keyCol1", "ascii")
+        .param("value_of_keyCol2", "ascii")
+    )
+    .consistency("quorum")
     .execute()
     .fail(function (err) {
         console.log("ERROR: " + err);
