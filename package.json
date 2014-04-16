@@ -28,6 +28,7 @@
     "mocha": "^1.18.2",
     "chai": "^1.9.1",
     "sinon": "^1.9.1",
+    "sinon-chai": "^2.5.0",
     "istanbul": "^0.2.4",
     "mocha-istanbul": "^0.2.0",
     "jshint": "^2.5.0",

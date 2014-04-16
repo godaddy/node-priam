@@ -8,6 +8,7 @@ var sinon = require("sinon"),
     FakeResolver = require("../../stubs/fakeResolver"),
     _ = require("lodash"),
     path = require("path");
+chai.use(require('sinon-chai'));
 
 var cql = require("node-cassandra-cql");
 var Driver = require("../../../lib/drivers/node-cassandra-cql");
@@ -513,6 +514,22 @@ describe("lib/drivers/node-cassandra-cql.js", function () {
                 assert.deepEqual(call.args[1], params, "params should be passed through");
                 assert.isNull(error, "error should be null");
                 assert.deepEqual(returnData, [{ field1: "value1" }], "data should match normalized cql output");
+
+                done();
+            });
+        });
+
+        it('handles null parameters', function(done) {
+            // arrange
+            var cqlStatement = 'INSERT INTO foo (id, some_column) VALUES (?, ?)';
+            var params = [1, null];
+            var pool = getPoolStub(instance.config, true, null, null);
+            instance.pools = { default: pool };
+
+            // act
+            instance.cql(cqlStatement, params, { consistency: cql.types.consistencies.one }, function() {
+                // assert
+                expect(pool.execute).to.have.been.calledWithMatch(cqlStatement, sinon.match([1, "null"]));
 
                 done();
             });
