@@ -1,6 +1,6 @@
 {
   "name": "priam",
-  "version": "0.6.8",
+  "version": "0.6.9",
   "description": "A simple Cassandra driver. It wraps the helenus and node-cassandra-cql drivers with additional error/retry handling, external .cql file support, and connection option resolution from an external source, among other improvements.",
   "keywords": [
     "cassandra",
@@ -18,10 +18,10 @@
     "url": "https://github.com/godaddy/node-priam.git"
   },
   "dependencies": {
-    "helenus": "~0.6.8",
+    "helenus": "~0.6.10",
     "node-cassandra-cql": "~0.4.4",
     "lodash": "~2.4.1",
-    "async": "~0.7.0",
+    "async": "~0.8.0",
     "q": "^1.0.1"
   },
   "devDependencies": {
@@ -29,7 +29,7 @@
     "chai": "^1.9.1",
     "sinon": "^1.9.1",
     "sinon-chai": "^2.5.0",
-    "istanbul": "^0.2.4",
+    "istanbul": "^0.2.7",
     "mocha-istanbul": "^0.2.0",
     "jshint": "^2.5.0",
     "winston": "^0.7.3",

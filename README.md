@@ -406,6 +406,7 @@ var db = require("priam")({
 
 Release Notes
 -------------
+ - `0.6.9`: Dependency bump.
  - `0.6.8`: Bugfixes.
  - `0.6.7`: Added batching support.
  - `0.6.6`: Added fluent syntax. Updated example to include setup script.
