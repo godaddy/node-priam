@@ -334,7 +334,7 @@ describe("lib/util/query.js", function () {
                             result = null;
                         query
                             .execute()
-                            .fail(function (error) {
+                            .catch(function (error) {
                                 e = error;
                             })
                             .done(function (data) {
@@ -365,7 +365,7 @@ describe("lib/util/query.js", function () {
                             result = null;
                         query
                             .execute()
-                            .fail(function (error) {
+                            .catch(function (error) {
                                 e = error;
                             })
                             .done(function (data) {
@@ -400,7 +400,7 @@ describe("lib/util/query.js", function () {
                             result = null;
                         query
                             .execute()
-                            .fail(function (error) {
+                            .catch(function (error) {
                                 e = error;
                             })
                             .done(function (data) {
@@ -434,7 +434,7 @@ describe("lib/util/query.js", function () {
                             result = null;
                         query
                             .execute()
-                            .fail(function (error) {
+                            .catch(function (error) {
                                 e = error;
                             })
                             .done(function (data) {

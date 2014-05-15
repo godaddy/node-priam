@@ -579,13 +579,15 @@ describe("lib/drivers/node-cassandra-cql.js", function () {
                         { name: "field2", types: [1, null] },
                         { name: "field3", types: [1, null] },
                         { name: "field4", types: [1, null] },
-                        { name: "field5", types: [1, null] }
+                        { name: "field5", types: [1, null] },
+                        { name: "field6", types: [1, null] }
                     ],
                     field1: "value1",
                     field2: 2,
                     field3: "{ \"subField1\": \"blah\" }",
                     field4: "[ 4, 3, 2, 1]",
-                    field5: "{ string that looks like it could be json }"
+                    field5: "{ some invalid json }",
+                    field6: "{ \"jsonThat\": \"iDontWantToParse\" }"
                 }]
             };
 
@@ -593,7 +595,17 @@ describe("lib/drivers/node-cassandra-cql.js", function () {
             instance.pools = { default: pool };
 
             // act
-            instance.cql(cqlQuery, params, { consistency: consistency }, function (error, returnData) {
+            instance.cql(cqlQuery, params, {
+                    consistency: consistency,
+                    resultHint: {
+                        field1: instance.dataType.ascii,
+                        field2: instance.dataType.number,
+                        field3: instance.dataType.objectAscii,
+                        field4: instance.dataType.objectText,
+                        field5: instance.dataType.objectAscii
+                        //field6 intentionally omitted
+                    }
+                }, function (error, returnData) {
                 var call = pool.execute.getCall(0);
 
                 // assert
@@ -604,7 +616,8 @@ describe("lib/drivers/node-cassandra-cql.js", function () {
                 assert.strictEqual(returnData[0].field2, 2, "second field should be a number");
                 assert.deepEqual(returnData[0].field3, { subField1: 'blah' }, "third field should be an object");
                 assert.deepEqual(returnData[0].field4, [ 4, 3, 2, 1], "fourth field should be an array");
-                assert.deepEqual(returnData[0].field5, "{ string that looks like it could be json }", "fourth field should be an array");
+                assert.deepEqual(returnData[0].field5, "{ some invalid json }", "fifth field should be a string");
+                assert.deepEqual(returnData[0].field6, "{ \"jsonThat\": \"iDontWantToParse\" }", "sixth field should be a string");
 
                 done();
             });

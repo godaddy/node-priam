@@ -85,6 +85,12 @@ the constructor. See the [Monitoring / Instrumentation](#monitoring--instrumenta
 
 The `consistency` option allows you to override any default consistency level that was specified in the constructor.
 
+The `resultHint` option allows you to control how objects being returned by the underlying provider are treated. For
+example, a data type of `objectAscii` will result in `JSON.parse()` being called on the resulting value. Special data types
+of `objectAscii` and `objectText` are available for this purpose. If these data types are used in a parameter's `hint`
+field, they will be automatically mapped to the corresponding data type (e.g. `ascii` or `text) prior to executing the
+cql statement.
+
 The `keyspace` option allows you to specify another keyspace to execute a query against. This will override the default
 keyspace set in the connection information.
 
@@ -406,6 +412,9 @@ var db = require("priam")({
 
 Release Notes
 -------------
+ - `0.7.0`: Update to latest version of Promises (q.js). Potential breaking change - JSON is no longer auto-deserialized.
+            See the [Executing CQL](#executing-cql) section for more information. Use `object` data types if
+            auto-deserialization is required.
  - `0.6.9`: Dependency bump.
  - `0.6.8`: Bugfixes.
  - `0.6.7`: Added batching support.

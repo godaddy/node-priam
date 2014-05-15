@@ -123,13 +123,13 @@ describe("lib/drivers/basedriver.js", function () {
         done();
     });
 
-    it("BaseDriver#initProviderOptions() returns original argument", function (done) {
+    it("BaseDriver#getNormalizedResults() returns original argument", function (done) {
         // arrange
         var driver = getDefaultInstance();
         var expected = [{ }];
 
         // act
-        var actual = driver.getNormalizedResults(expected);
+        var actual = driver.getNormalizedResults(expected, {});
 
         assert.deepEqual(expected, actual);
         done();
@@ -210,5 +210,33 @@ describe("lib/drivers/basedriver.js", function () {
         expect(param.value).to.equal(timestamp);
         expect(param.hint).to.equal(driver.dataType.timestamp);
       });
+    });
+
+    describe("BaseDriver#getDriverDataType()", function() {
+        var driver;
+
+        beforeEach(function() {
+            driver = new getDefaultInstance();
+            driver.dataType.ascii = 1;
+            driver.dataType.text = 2;
+        });
+
+        it('returns "ascii" if "objectAscii" provided', function() {
+            var value = '{ "some": "jsonObject" }';
+            var param = driver.param(value, 'objectAscii');
+
+            var type = driver.getDriverDataType(param.hint);
+
+            expect(type).to.equal(driver.dataType.ascii);
+        });
+
+        it('returns "text" if "text" provided', function() {
+            var value = '{ "some": "jsonObject" }';
+            var param = driver.param(value, 'text');
+
+            var type = driver.getDriverDataType(param.hint);
+
+            expect(type).to.equal(driver.dataType.text);
+        });
     });
 });
