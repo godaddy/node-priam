@@ -418,7 +418,8 @@ Release Notes
 -------------
  - `0.7.0`: Update to latest version of Promises (q.js). Potential breaking change - JSON is no longer auto-deserialized.
             See the [Executing CQL](#executing-cql) section for more information. Use `object` data types if
-            auto-deserialization is required.
+            auto-deserialization is required on specific fields, or use `deserializeJsonStrings` option to detect JSON
+            as 0.6.x and prior did.
  - `0.6.9`: Dependency bump.
  - `0.6.8`: Bugfixes.
  - `0.6.7`: Added batching support.
