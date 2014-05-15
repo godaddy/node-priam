@@ -91,6 +91,10 @@ of `objectAscii` and `objectText` are available for this purpose. If these data 
 field, they will be automatically mapped to the corresponding data type (e.g. `ascii` or `text) prior to executing the
 cql statement.
 
+The `deserializeJsonStrings` option informs Priam to inspect any string results coming back from the driver and call
+`JSON.parse()` before returning the value back to you. This works similar to providing `resultHint` options for specific
+columns, but instead it applies to the entire set of columns. *This was the default behavior prior to the 0.7.0 release.*
+
 The `keyspace` option allows you to specify another keyspace to execute a query against. This will override the default
 keyspace set in the connection information.
 

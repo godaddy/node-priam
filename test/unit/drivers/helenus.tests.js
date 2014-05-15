@@ -553,6 +553,46 @@ describe("lib/drivers/helenus.js", function () {
             });
         });
 
+        it("normalizes/deserializes the data in the resulting array by detecting JSON strings", function (done) {
+            // arrange
+            var cql = "MyCqlStatement";
+            var params = ["param1", "param2", "param3"];
+            var consistency = helenus.ConsistencyLevel.ONE;
+            var err = null;
+            var data = [{
+                _map: { field1: true, field2: true, field3: true, field4: true, field5: true },
+                get: sinon.stub()
+            }];
+            data[0].get.withArgs("field1").returns({ value: "value1" });
+            data[0].get.withArgs("field2").returns({ value: 2 });
+            data[0].get.withArgs("field3").returns({ value: "{ \"subField1\": \"blah\" }" });
+            data[0].get.withArgs("field4").returns({ value: "[ 4, 3, 2, 1]" });
+            data[0].get.withArgs("field5").returns({ value: "{ some invalid json }" });
+
+            var pool = getPoolStub(instance.config, true, err, data);
+            instance.pools = { default: pool };
+
+            // act
+            instance.cql(cql, params, {
+                consistency: consistency,
+                deserializeJsonStrings: true
+            }, function (error, returnData) {
+                var call = pool.cql.getCall(0);
+
+                // assert
+                assert.strictEqual(call.args[0], cql, "cql should be passed through");
+                assert.deepEqual(call.args[1], params, "params should be passed through");
+                assert.isNull(error, "error should be null");
+                assert.strictEqual(returnData[0].field1, "value1", "first field should be a string");
+                assert.strictEqual(returnData[0].field2, 2, "second field should be a number");
+                assert.deepEqual(returnData[0].field3, { subField1: 'blah' }, "third field should be an object");
+                assert.deepEqual(returnData[0].field4, [ 4, 3, 2, 1], "fourth field should be an array");
+                assert.deepEqual(returnData[0].field5, "{ some invalid json }", "fifth field should be a string");
+
+                done();
+            });
+        });
+
         function testErrorRetry(errorName, errorCode, numRetries, shouldRetry) {
             it((shouldRetry ? "adds" : "does not add") + " error retry if error is '" + errorName + "', code '" + errorCode + "', and retries " + numRetries, function (done) {
                 // arrange
