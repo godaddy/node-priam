@@ -511,20 +511,31 @@ describe("lib/drivers/helenus.js", function () {
             var consistency = helenus.ConsistencyLevel.ONE;
             var err = null;
             var data = [{
-                _map: { field1: true, field2: true, field3: true, field4: true, field5: true },
+                _map: { field1: true, field2: true, field3: true, field4: true, field5: true, field6: true },
                 get: sinon.stub()
             }];
             data[0].get.withArgs("field1").returns({ value: "value1" });
             data[0].get.withArgs("field2").returns({ value: 2 });
             data[0].get.withArgs("field3").returns({ value: "{ \"subField1\": \"blah\" }" });
             data[0].get.withArgs("field4").returns({ value: "[ 4, 3, 2, 1]" });
-            data[0].get.withArgs("field5").returns({ value: "{ string that looks like it could be json }" });
+            data[0].get.withArgs("field5").returns({ value: "{ some invalid json }" });
+            data[0].get.withArgs("field6").returns({ value: "{ \"jsonThat\": \"iDontWantToParse\" }" });
 
             var pool = getPoolStub(instance.config, true, err, data);
             instance.pools = { default: pool };
 
             // act
-            instance.cql(cql, params, { consistency: consistency }, function (error, returnData) {
+            instance.cql(cql, params, {
+                consistency: consistency,
+                resultHint: {
+                    field1: instance.dataType.auto,
+                    field2: instance.dataType.auto,
+                    field3: instance.dataType.objectAscii,
+                    field4: instance.dataType.objectText,
+                    field5: instance.dataType.objectAscii
+                    //field6 intentionally omitted
+                }
+            }, function (error, returnData) {
                 var call = pool.cql.getCall(0);
 
                 // assert
@@ -535,7 +546,48 @@ describe("lib/drivers/helenus.js", function () {
                 assert.strictEqual(returnData[0].field2, 2, "second field should be a number");
                 assert.deepEqual(returnData[0].field3, { subField1: 'blah' }, "third field should be an object");
                 assert.deepEqual(returnData[0].field4, [ 4, 3, 2, 1], "fourth field should be an array");
-                assert.deepEqual(returnData[0].field5, "{ string that looks like it could be json }", "fourth field should be an array");
+                assert.deepEqual(returnData[0].field5, "{ some invalid json }", "fifth field should be a string");
+                assert.deepEqual(returnData[0].field6, "{ \"jsonThat\": \"iDontWantToParse\" }", "sixth field should be a string");
+
+                done();
+            });
+        });
+
+        it("normalizes/deserializes the data in the resulting array by detecting JSON strings", function (done) {
+            // arrange
+            var cql = "MyCqlStatement";
+            var params = ["param1", "param2", "param3"];
+            var consistency = helenus.ConsistencyLevel.ONE;
+            var err = null;
+            var data = [{
+                _map: { field1: true, field2: true, field3: true, field4: true, field5: true },
+                get: sinon.stub()
+            }];
+            data[0].get.withArgs("field1").returns({ value: "value1" });
+            data[0].get.withArgs("field2").returns({ value: 2 });
+            data[0].get.withArgs("field3").returns({ value: "{ \"subField1\": \"blah\" }" });
+            data[0].get.withArgs("field4").returns({ value: "[ 4, 3, 2, 1]" });
+            data[0].get.withArgs("field5").returns({ value: "{ some invalid json }" });
+
+            var pool = getPoolStub(instance.config, true, err, data);
+            instance.pools = { default: pool };
+
+            // act
+            instance.cql(cql, params, {
+                consistency: consistency,
+                deserializeJsonStrings: true
+            }, function (error, returnData) {
+                var call = pool.cql.getCall(0);
+
+                // assert
+                assert.strictEqual(call.args[0], cql, "cql should be passed through");
+                assert.deepEqual(call.args[1], params, "params should be passed through");
+                assert.isNull(error, "error should be null");
+                assert.strictEqual(returnData[0].field1, "value1", "first field should be a string");
+                assert.strictEqual(returnData[0].field2, 2, "second field should be a number");
+                assert.deepEqual(returnData[0].field3, { subField1: 'blah' }, "third field should be an object");
+                assert.deepEqual(returnData[0].field4, [ 4, 3, 2, 1], "fourth field should be an array");
+                assert.deepEqual(returnData[0].field5, "{ some invalid json }", "fifth field should be a string");
 
                 done();
             });

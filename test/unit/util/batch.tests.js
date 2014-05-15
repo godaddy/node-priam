@@ -273,7 +273,7 @@ describe("lib/util/batch.js", function () {
                             result = null;
                         batch
                             .execute()
-                            .fail(function (error) {
+                            .catch(function (error) {
                                 e = error;
                             })
                             .done(function (data) {
@@ -308,7 +308,7 @@ describe("lib/util/batch.js", function () {
                             result = null;
                         batch
                             .execute()
-                            .fail(function (error) {
+                            .catch(function (error) {
                                 e = error;
                             })
                             .done(function (data) {
@@ -343,7 +343,7 @@ describe("lib/util/batch.js", function () {
                             result = null;
                         batch
                             .execute()
-                            .fail(function (error) {
+                            .catch(function (error) {
                                 e = error;
                             })
                             .done(function (data) {
@@ -381,7 +381,7 @@ describe("lib/util/batch.js", function () {
                             result = null;
                         batch
                             .execute()
-                            .fail(function (error) {
+                            .catch(function (error) {
                                 e = error;
                             })
                             .done(function (data) {
@@ -432,7 +432,7 @@ describe("lib/util/batch.js", function () {
                             result = null;
                         batch
                             .execute()
-                            .fail(function (error) {
+                            .catch(function (error) {
                                 e = error;
                             })
                             .done(function (data) {
