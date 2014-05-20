@@ -27,7 +27,7 @@
   "devDependencies": {
     "mocha": "^1.19.0",
     "chai": "^1.9.1",
-    "sinon": "^1.10.1",
+    "sinon": "^1.10.0",
     "sinon-chai": "^2.5.0",
     "istanbul": "^0.2.10",
     "mocha-istanbul": "^0.2.0",
