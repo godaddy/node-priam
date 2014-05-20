@@ -416,6 +416,7 @@ var db = require("priam")({
 
 Release Notes
 -------------
+ - `0.7.2`: Dependency bump.
  - `0.7.1`: Revert back to Promises v1.
  - `0.7.0`: Update to latest version of Promises (q.js). Potential breaking change - JSON is no longer auto-deserialized.
             See the [Executing CQL](#executing-cql) section for more information. Use `object` data types if
