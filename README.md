@@ -258,9 +258,9 @@ Calling `#beginBatch()` returns a `Query` object with the following chainable fu
     batch CQL. If `clientTimestamp` is not specified, the current time will be used.
 
  - `#type(batchTypeName [string])`: Specifies the type of batch that will be used. Available types are `'standard'`,
-    `'counter'` and `'unlogged'`. Defaulst to `'standard'`. See
-    [Cassandra 1.3 documentation](http://www.datastax.com/documentation/cql/3.0/cql/cql_reference/batch_r.html) for more
-    details on batch types.
+    `'counter'` and `'unlogged'`. Defaults to `'standard'`. See
+    [CQL 3.0 reference](http://www.datastax.com/documentation/cql/3.0/cql/cql_reference/batch_r.html) for more details
+    on batch types.
 
  - `#consistency(consistencyLevelName [string])`: Sets consistency level for the batch. Alias for `#options({ consistency: db.consistencyLevel[consistencyLevelName] })`.
 
