@@ -19,8 +19,9 @@ in config. [Priam](https://github.com/godaddy/node-priam) uses internal aliases 
 options to facilitate easily switching between the two drivers.
 
 [Priam](https://github.com/godaddy/node-priam) is designed to be used as a single instance in order to preserve the
-connection pools. As an example, in an [Express](#) application, [priam](https://github.com/godaddy/node-priam) should be
-initialized at server startup and attached to the `request` object so that your controllers can access it.
+connection pools. As an example, in an [Express](http://expressjs.com/) application,
+[priam](https://github.com/godaddy/node-priam) should be initialized at server startup and attached to the `request`
+object so that your controllers can access it.
 
 [Priam](https://github.com/godaddy/node-priam) is actively developed and used by
 [Go Daddy Website Builder](http://www.godaddy.com/hosting/website-builder.aspx?ci=87223) to provide a high-availability
@@ -312,9 +313,9 @@ of queries, and easily find references in your application to each query type.
 The driver will automatically retry on network-related errors. In addition, other errors will be retried in the following
 conditions:
 
-- `db.consistencyLevel.all` will be retried at `db.consistencyLevel.quorum`
+- `db.consistencyLevel.all` will be retried at `db.consistencyLevel.eachQuorum`
 
-- `db.consistencyLevel.quorum` will be retried at `db.consistencyLevel.localQuorum`
+- `db.consistencyLevel.quorum` and `db.consistencyLevel.eachQuorum` will be retried at `db.consistencyLevel.localQuorum`
 
 The following retry options are supported in the driver constructor:
 
@@ -323,7 +324,7 @@ The following retry options are supported in the driver constructor:
 - `numRetries`: Optional. Defaults to 0 (no retry). The number of retries to execute on network failure. *Note:
                 this will also affect the number of retries executed during consistency level fallback. For example,
                 if `numRetries` is 2 and a CQL query with `db.consistencyLevel.all` is submitted, it will be executed
-                3 times at `db.consistencyLevel.all`, 3 times at `db.constistencyLevel.quorum` and 3 times at
+                3 times at `db.consistencyLevel.all`, 3 times at `db.constistencyLevel.eachQuorum` and 3 times at
                 `db.consistencyLevel.localQuorum` before yielding an error back to the caller.
 
 - `retryDelay`: Optional. Defaults to 100.
@@ -422,6 +423,7 @@ var db = require("priam")({
 
 Release Notes
 -------------
+ - `0.7.5`: Updated consistency failover strategy.
  - `0.7.4`: Add support for `COUNTER` and `UNLOGGED` batch types.
  - `0.7.3`: Dependency bump.
  - `0.7.1`: Revert back to Promises v1.
