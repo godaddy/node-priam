@@ -257,6 +257,11 @@ Calling `#beginBatch()` returns a `Query` object with the following chainable fu
  - `#timestamp(clientTimestamp [optional, long])`: Specifies that `USING TIMESTAMP <value>` will be sent as part of the
     batch CQL. If `clientTimestamp` is not specified, the current time will be used.
 
+ - `#type(batchTypeName [string])`: Specifies the type of batch that will be used. Available types are `'standard'`,
+    `'counter'` and `'unlogged'`. Defaulst to `'standard'`. See
+    [Cassandra 1.3 documentation](http://www.datastax.com/documentation/cql/3.0/cql/cql_reference/batch_r.html) for more
+    details on batch types.
+
  - `#consistency(consistencyLevelName [string])`: Sets consistency level for the batch. Alias for `#options({ consistency: db.consistencyLevel[consistencyLevelName] })`.
 
  - `#execute(callback [optional, function])`: Executes the query. If a callback is not supplied, this will return a Promise.
@@ -279,6 +284,7 @@ db
         .param("value_of_keyCol", "ascii")
     )
     .consistency("quorum")
+    .type('counter')
     .timestamp()
     .execute()
     .fail(function (err) {
@@ -416,6 +422,7 @@ var db = require("priam")({
 
 Release Notes
 -------------
+ - `0.7.4`: Add support for `COUNTER` and `UNLOGGED` batch types.
  - `0.7.3`: Dependency bump.
  - `0.7.1`: Revert back to Promises v1.
  - `0.7.0`: Update to latest version of Promises (q.js). Potential breaking change - JSON is no longer auto-deserialized.

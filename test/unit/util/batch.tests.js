@@ -201,7 +201,7 @@ describe("lib/util/batch.js", function () {
     });
 
     describe("#options()", function () {
-        it("adds extends the options context", function (done) {
+        it("extends the options context", function (done) {
             // arrange
             // act
             batch.options({ one: "one" });
@@ -216,6 +216,46 @@ describe("lib/util/batch.js", function () {
             // arrange
             // act
             var result = batch.options({ one: "one" });
+
+            // assert
+            assert.equal(result, batch, "returns self");
+            done();
+        });
+    });
+
+    describe("#type()", function () {
+        it("defaults to standard", function (done) {
+            // arrange
+            // act
+            // assert
+            assert.strictEqual(batch.context.batchType, batch.batchType.standard, "batch type should be standard");
+            done();
+        });
+
+        it("changes the batch type if valid type given", function (done) {
+            // arrange
+            // act
+            batch.type('unlogged');
+
+            // assert
+            assert.strictEqual(batch.context.batchType, batch.batchType.unlogged, "batch type should be unlogged");
+            done();
+        });
+
+        it("does not change the batch type if invalid type given", function (done) {
+            // arrange
+            // act
+            batch.type("someInvalidBatchType");
+
+            // assert
+            assert.notOk(batch.context.options.batchType, "batchType is not populated");
+            done();
+        });
+
+        it("returns self", function (done) {
+            // arrange
+            // act
+            var result = batch.type('counter');
 
             // assert
             assert.equal(result, batch, "returns self");
@@ -452,6 +492,92 @@ describe("lib/util/batch.js", function () {
                         assert.strictEqual(callArgs[1].length, 6, "Query params are joined");
                         assert.strictEqual(callArgs[2].consistency, db.consistencyLevel.eachQuorum, "Strictest consistency is set");
                         assert.strictEqual(callArgs[2].suppressDebugLog, true, "Debug log is suppressed");
+                        assert.notOk(err, "error is not populated");
+                        assert.equal(data, data, "data is populated");
+                        done();
+                    }
+                });
+
+                it("sets batch type appropriately", function (done) {
+                    // arrange
+                    var data = [{}];
+                    var query1 = new Query(db)
+                            .query("myCqlQuery1")
+                            .consistency("localQuorum")
+                            .param("param1", "ascii")
+                            .param("param2", "ascii");
+
+                    batch.context.queries = [query1];
+                    batch.type('counter');
+
+                    db.cql = sinon.stub().yields(null, data);
+
+                    // act
+                    if (isPromise) {
+                        var e = null,
+                            result = null;
+                        batch
+                            .execute()
+                            .catch(function (error) {
+                                e = error;
+                            })
+                            .done(function (data) {
+                                if (e) { asserts (e); }
+                                else { asserts(null, data); }
+                            });
+                    }
+                    else {
+                        batch.execute(asserts);
+                    }
+
+                    // assert
+                    function asserts (err, data) {
+                        assert.strictEqual(db.cql.callCount, 1, "cql is only called once");
+                        var callArgs = db.cql.getCall(0).args;
+                        assert.strictEqual(callArgs[0], "BEGIN COUNTER BATCH\nmyCqlQuery1;\nAPPLY BATCH;\n", "Query text is joined");
+                        assert.notOk(err, "error is not populated");
+                        assert.equal(data, data, "data is populated");
+                        done();
+                    }
+                });
+
+                it("ignores bad batch types", function (done) {
+                    // arrange
+                    var data = [{}];
+                    var query1 = new Query(db)
+                        .query("myCqlQuery1")
+                        .consistency("localQuorum")
+                        .param("param1", "ascii")
+                        .param("param2", "ascii");
+
+                    batch.context.queries = [query1];
+                    batch.context.batchType = 123456789; //invalid
+
+                    db.cql = sinon.stub().yields(null, data);
+
+                    // act
+                    if (isPromise) {
+                        var e = null,
+                            result = null;
+                        batch
+                            .execute()
+                            .catch(function (error) {
+                                e = error;
+                            })
+                            .done(function (data) {
+                                if (e) { asserts (e); }
+                                else { asserts(null, data); }
+                            });
+                    }
+                    else {
+                        batch.execute(asserts);
+                    }
+
+                    // assert
+                    function asserts (err, data) {
+                        assert.strictEqual(db.cql.callCount, 1, "cql is only called once");
+                        var callArgs = db.cql.getCall(0).args;
+                        assert.strictEqual(callArgs[0], "BEGIN BATCH\nmyCqlQuery1;\nAPPLY BATCH;\n", "Query text is joined");
                         assert.notOk(err, "error is not populated");
                         assert.equal(data, data, "data is populated");
                         done();
