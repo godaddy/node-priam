@@ -27,3 +27,4 @@ node_modules/
 # Eclipse Settings
 .project
 /dist
+/.idea

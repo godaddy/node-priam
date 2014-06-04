@@ -32,11 +32,10 @@ describe("lib/drivers/node-cassandra-cql.js", function () {
         };
     }
     function getDefaultInstance() {
-        var instance = Driver({
+        return Driver({
             config: getDefaultConfig(),
             logger: getDefaultLogger()
         });
-        return instance;
     }
 
     describe("interface", function () {
@@ -83,22 +82,14 @@ describe("lib/drivers/node-cassandra-cql.js", function () {
     describe("NodeCassandraDriver#constructor", function () {
         it ("should throw exception if context is missing", function () {
             // arrange
-            // act
-            expect(function () {
-                var instance = new Driver();
-            })
-                // assert
-                .to.throw(Error, /missing context /i);
+            // act, assert
+            expect(function () { new Driver(); }).to.throw(Error, /missing context /i);
         });
 
         it ("should throw exception if config is missing from context", function () {
             // arrange
-            // act
-            expect(function () {
-                var instance = new Driver({ });
-            })
-                // assert
-                .to.throw(Error, /missing context.config /i);
+            // act, assert
+            expect(function () { new Driver({ }); }).to.throw(Error, /missing context.config /i);
         });
         it ("sets default pool configuration", function () {
             // arrange
@@ -140,7 +131,7 @@ describe("lib/drivers/node-cassandra-cql.js", function () {
     });
 
     function getPoolStub(config, isReady, err, data) {
-        var pool = {
+        return {
             storeConfig: _.extend({ consistencyLevel: 1, version: "3.0.0"}, config),
             isReady: isReady,
             execute: sinon.stub().yields(err, data),
@@ -153,7 +144,6 @@ describe("lib/drivers/node-cassandra-cql.js", function () {
                 }
             })
         };
-        return pool;
     }
 
     describe("NodeCassandraDriver#close()", function () {
@@ -164,12 +154,15 @@ describe("lib/drivers/node-cassandra-cql.js", function () {
             // arrange
             var pool = getPoolStub(instance.config, true, null, {});
             instance.pools = { default: pool };
+            var closedHandler = sinon.stub();
+            instance.on('connectionClosed', closedHandler);
 
             // act
             instance.close(function () {
                 // assert
                 assert.strictEqual(pool.isClosed, true, "pool should be set to closed");
                 assert.ok(pool.shutdown.called, "pool shutdown should be called");
+                expect(closedHandler).to.have.been.called;
 
                 done();
             });
@@ -178,10 +171,13 @@ describe("lib/drivers/node-cassandra-cql.js", function () {
         it("just calls callback if pool does not yet exist", function (done) {
             // arrange
             instance.pools = {};
+            var closedHandler = sinon.stub();
+            instance.on('connectionClosed', closedHandler);
 
             // act
             instance.close(function () {
                 // assert
+                expect(closedHandler).to.have.not.been.called;
 
                 done();
             });
@@ -205,6 +201,15 @@ describe("lib/drivers/node-cassandra-cql.js", function () {
             }
         });
 
+        it("emits a connectionRequested event at the beginning of a query", function() {
+            var eventHandler = sinon.stub();
+            instance.on('connectionRequested', eventHandler);
+
+            instance.cql("select foo from bar");
+
+            expect(eventHandler).to.have.been.called;
+        });
+
         it("creates a new connection pool if one does not exist", function (done) {
             // arrange
             var cqlQuery = "MyCqlStatement";
@@ -215,10 +220,20 @@ describe("lib/drivers/node-cassandra-cql.js", function () {
             pool.connect = sinon.stub().yieldsAsync(null, {});
             sinon.stub(cql, "Client").returns(pool);
             instance.pools = {};
+            var connectionOpeningHandler = sinon.stub(),
+                connectionOpenedHandler = sinon.stub(),
+                queryStartedHandler = sinon.stub();
+            instance
+                .on('connectionOpening', connectionOpeningHandler)
+                .on('connectionOpened', connectionOpenedHandler)
+                .on('queryStarted', queryStartedHandler);
 
             // act
             instance.cql(cqlQuery, params, { consistency: consistency }, function () {
                 // assert
+                expect(connectionOpeningHandler).to.have.been.called;
+                expect(connectionOpenedHandler).to.have.been.called;
+                expect(queryStartedHandler).to.have.been.called;
                 assert.equal(instance.pools.default, pool, "pool should be cached");
                 assert.strictEqual(pool.waiters.length, 0, "waiters should be executed after connection completes");
                 assert.strictEqual(pool.execute.called, true, "cql statements should execute after connection completes");
@@ -285,13 +300,20 @@ describe("lib/drivers/node-cassandra-cql.js", function () {
             pool.on = sinon.stub();
             pool.connect = sinon.stub().yieldsAsync(null, {});
             sinon.stub(cql, "Client").returns(pool);
-
             var existingPool = getPoolStub(_.extend({}, instance.config), true, null, {});
             instance.pools = { default: existingPool };
+            var openingHandler = sinon.stub(), openedHandler = sinon.stub(), availableHandler = sinon.stub();
+            instance
+                .on('connectionOpening', openingHandler)
+                .on('connectionOpened', openedHandler)
+                .on('connectionAvailable', availableHandler);
 
             // act
             instance.cql(cqlQuery, params, { consistency: consistency, keyspace: instance.config.keyspace }, function () {
                 // assert
+                expect(openingHandler).to.have.not.been.called;
+                expect(openedHandler).to.have.not.been.called;
+                expect(availableHandler).to.have.been.called;
                 assert.notOk(pool.execute.called, "new pool should not be called");
                 assert.ok(existingPool.execute.called, "existing pool should be called");
 
@@ -330,16 +352,15 @@ describe("lib/drivers/node-cassandra-cql.js", function () {
             // setup arrange
             var consistency = cql.types.consistencies.one;
             var pool = getPoolStub(instance.config, true, null, {});
-            var errorCb = null;
             pool.on = sinon.stub();
             pool.connect = sinon.stub().yieldsAsync(null, {});
             sinon.stub(cql, "Client").returns(pool);
             instance.pools = {};
+            var logEventHandler = sinon.stub();
+            instance.on('connectionLogged', logEventHandler);
 
             // setup act
             instance.cql("cql", [], { consistency: consistency }, function () {
-                var ctorCall = cql.Client.getCall(0);
-
                 // setup assert
                 assert.ok(pool.on.calledWith("log", sinon.match.func), "log handler should be wired up");
 
@@ -359,6 +380,7 @@ describe("lib/drivers/node-cassandra-cql.js", function () {
                 errorCb(logLevel, message, metaData);
 
                 // handler assert
+                expect(logEventHandler).to.have.been.calledWith(logLevel, message, metaData);
                 if (expectedLevel) {
                     assert.ok(instance.logger[expectedLevel].calledWithMatch("priam.Driver: " + message, { data: metaData }));
                 }
@@ -396,7 +418,6 @@ describe("lib/drivers/node-cassandra-cql.js", function () {
             // arrange
             var consistency = cql.types.consistencies.one;
             var pool = getPoolStub(instance.config, true, null, {});
-            var errorCb = null;
             pool.on = sinon.stub();
             pool.connect = sinon.stub().yieldsAsync(new Error("Connection pool failed to connect"));
             sinon.stub(cql, "Client").returns(pool);
@@ -405,15 +426,16 @@ describe("lib/drivers/node-cassandra-cql.js", function () {
                 debug: sinon.stub(),
                 error: sinon.stub()
             };
+            var connectionFailedHandler = sinon.stub();
+            instance.on('connectionFailed', connectionFailedHandler);
 
             // act
             instance.cql("cql", [], { consistency: consistency }, function (err, result) {
-                var ctorCall = cql.Client.getCall(0);
-
                 // assert
                 assert.instanceOf(err, Error);
                 assert.isUndefined(result);
                 assert.ok(instance.logger.error.calledOnce, "error log is called once");
+                expect(connectionFailedHandler).to.have.been.calledWithMatch(sinon.match.string, err);
 
                 done();
             });
@@ -432,8 +454,6 @@ describe("lib/drivers/node-cassandra-cql.js", function () {
 
             // act
             instance.cql(cqlQuery, params, { consistency: consistency }, function () {
-                var ctorCall = cql.Client.getCall(0);
-
                 // assert
                 assert.strictEqual(pool.isReady, true, "pool should be set to true after connection completes");
                 assert.strictEqual(pool.execute.called, true, "cql statements should execute after connection completes");
@@ -446,7 +466,6 @@ describe("lib/drivers/node-cassandra-cql.js", function () {
             // arrange
             var cqlQuery = "MyCqlStatement";
             var params = ["param1", "param2", "param3"];
-            var consistency = cql.types.consistencies.one;
             var pool = getPoolStub(instance.config, true, null, []);
             instance.pools = { default: pool };
 
@@ -465,7 +484,6 @@ describe("lib/drivers/node-cassandra-cql.js", function () {
             instance.cql(cqlQuery, params);
         });
 
-
         it("uses default consistency of ONE if no options are passed", function (done) {
             // arrange
             var cqlQuery = "MyCqlStatement";
@@ -478,7 +496,7 @@ describe("lib/drivers/node-cassandra-cql.js", function () {
             instance.pools = {};
 
             // act
-            instance.cql(cqlQuery, params, function (error, returnData) {
+            instance.cql(cqlQuery, params, function () {
                 var ctorCall = cql.Client.getCall(0);
 
                 // assert
@@ -504,6 +522,8 @@ describe("lib/drivers/node-cassandra-cql.js", function () {
             };
             var pool = getPoolStub(instance.config, true, err, data);
             instance.pools = { default: pool };
+            var completedHandler = sinon.stub();
+            instance.on('queryCompleted', completedHandler);
 
             // act
             instance.cql(cqlQuery, params, { consistency: consistency }, function (error, returnData) {
@@ -514,6 +534,7 @@ describe("lib/drivers/node-cassandra-cql.js", function () {
                 assert.deepEqual(call.args[1], params, "params should be passed through");
                 assert.isNull(error, "error should be null");
                 assert.deepEqual(returnData, [{ field1: "value1" }], "data should match normalized cql output");
+                expect(completedHandler).to.have.been.called;
 
                 done();
             });
@@ -679,6 +700,8 @@ describe("lib/drivers/node-cassandra-cql.js", function () {
                 var pool = getPoolStub(instance.config, true, null, {});
                 var data = [];
                 var callCount = 0;
+                var queryRetriedHandler = sinon.stub();
+                instance.on('queryRetried', queryRetriedHandler);
                 pool.execute = sinon.spy(function (c, d, con, cb) {
                     callCount++;
                     if (callCount === 1) {
@@ -705,9 +728,11 @@ describe("lib/drivers/node-cassandra-cql.js", function () {
                         assert.notEqual(call1.args[1], call2.args[1], "parameters should be cloned");
                         assert.deepEqual(call1.args[1], call2.args[1], "parameters should be cloned");
                         assert.deepEqual(returnData, data, "data should match cql output");
+                        expect(queryRetriedHandler.getCalls()).to.have.lengthOf(numRetries);
                     }
                     else {
                         assert.strictEqual(pool.execute.callCount, 1, "cql should be called once");
+                        expect(queryRetriedHandler).to.have.not.been.called;
                     }
 
                     done();
@@ -823,6 +848,23 @@ describe("lib/drivers/node-cassandra-cql.js", function () {
             });
         });
 
+        it("emits a queryFailed event when a query fails", function (done) {
+            // arrange
+            var cqlQuery = "MyCqlStatement";
+            var params = ["param1", "param2", "param3"];
+            var consistency = cql.types.consistencies.quorum;
+            var pool = getPoolStub(instance.config, true, null, {});
+            pool.execute = sinon.stub().yields(new Error("throws error on QUORUM"));
+            instance.pools = { default: pool };
+            var failedHandler = sinon.stub();
+            instance.on('queryFailed', failedHandler);
+
+            // act
+            instance.cql(cqlQuery, params, { consistency: consistency }, function () {
+                expect(failedHandler).to.have.been.called;
+                done();
+            });
+        });
 
         it("captures metrics if metrics and queryName are provided", function (done) {
             // arrange
@@ -839,7 +881,7 @@ describe("lib/drivers/node-cassandra-cql.js", function () {
             };
 
             // act
-            instance.cql(cqlQuery, params, { consistency: consistency, queryName: queryName }, function (error, returnData) {
+            instance.cql(cqlQuery, params, { consistency: consistency, queryName: queryName }, function () {
                 var call = instance.metrics.measurement.getCall(0);
 
                 // assert
@@ -860,8 +902,7 @@ describe("lib/drivers/node-cassandra-cql.js", function () {
                     warn: sinon.stub(),
                     error: sinon.stub()
                 };
-                var instance = new Driver(_.extend({ config: getDefaultConfig(), logger: logger }, context));
-                return instance;
+                return new Driver(_.extend({ config: getDefaultConfig(), logger: logger }, context));
             }
 
             beforeEach(function () {
@@ -975,6 +1016,8 @@ describe("lib/drivers/node-cassandra-cql.js", function () {
                 pool.connect = sinon.stub().yieldsAsync(null, {});
                 sinon.stub(cql, "Client").returns(pool);
                 instance.pools = {};
+                var connectionResolvedErrorHandler = sinon.stub();
+                instance.on('connectionResolvedError', connectionResolvedErrorHandler);
 
                 // act
                 instance.cql(cqlQuery, params, { consistency: consistency }, function (err, result) {
@@ -982,6 +1025,7 @@ describe("lib/drivers/node-cassandra-cql.js", function () {
                     assert.instanceOf(err, Error);
                     assert.isUndefined(result);
                     assert.ok(logger.error.calledOnce, "error log is called once");
+                    expect(connectionResolvedErrorHandler).to.have.been.calledWithMatch(sinon.match.string, err);
 
 //                    setTimeout(function () {
 //                        assert.notOk(logger.error.calledTwice, "error logger should only be called once");
@@ -1003,20 +1047,24 @@ describe("lib/drivers/node-cassandra-cql.js", function () {
                     password: "myResolvedPassword",
                     hosts: []
                 };
-                fakeResolver.resolveConnection = sinon.stub().yieldsAsync(new Error("connection resolution failed"), fakeConnectionInfo);
+                var resolutionError = new Error("connection resolution failed");
+                fakeResolver.resolveConnection = sinon.stub().yieldsAsync(resolutionError, fakeConnectionInfo);
                 var pool = getPoolStub(instance.config, true, null, {});
                 pool.on = sinon.stub();
                 pool.connect = sinon.stub().yieldsAsync(null, {});
                 sinon.stub(cql, "Client").returns(pool);
                 instance.pools = {};
+                var resolutionErrorHandler = sinon.stub();
+                instance.on('connectionResolvedError', resolutionErrorHandler);
 
                 // act
-                instance.cql(cqlQuery, params, { consistency: consistency }, function (err, result) {
+                instance.cql(cqlQuery, params, { consistency: consistency }, function (err) {
                     // assert
                     assert.isNull(err);
                     assert.strictEqual(pool.storeConfig.username, fakeConnectionInfo.username, "username successfully updated");
                     assert.strictEqual(pool.storeConfig.password, fakeConnectionInfo.password, "password successfully updated");
                     assert.ok(logger.error.called, "error log is called");
+                    expect(resolutionErrorHandler).to.have.been.calledWithMatch(sinon.match.string, resolutionError);
                     done();
                 });
             });
@@ -1032,22 +1080,25 @@ describe("lib/drivers/node-cassandra-cql.js", function () {
                     password: "myResolvedPassword",
                     hosts: []
                 };
+                var fetchError = new Error("lazy fetch error");
                 fakeResolver.resolveConnection = function (data, cb) {
+                    fakeResolver.on.getCall(1).args[1](fetchError);
                     cb(null, fakeConnectionInfo);
-                    fakeResolver.on.getCall(1).args[1](new Error("lazy fetch error"));
                 };
                 var pool = getPoolStub(instance.config, true, null, {});
                 pool.on = sinon.stub();
                 pool.connect = sinon.stub().yieldsAsync(null, {});
                 sinon.stub(cql, "Client").returns(pool);
                 instance.pools = {};
+                var connectionOptionsErrorHandler = sinon.stub();
+                instance.on('connectionOptionsError', connectionOptionsErrorHandler);
 
                 // act
-                instance.cql(cqlQuery, params, { consistency: consistency }, function (err, result) {
+                instance.cql(cqlQuery, params, { consistency: consistency }, function () {
                     // assert
                     assert.strictEqual(pool.storeConfig.username, fakeConnectionInfo.username, "username successfully updated");
                     assert.strictEqual(pool.storeConfig.password, fakeConnectionInfo.password, "password successfully updated");
-                    assert.ok(logger.warn.calledOnce, "logger should only be called once");
+                    expect(connectionOptionsErrorHandler).to.have.been.calledWith(fetchError);
                     done();
                 });
             });
@@ -1063,7 +1114,7 @@ describe("lib/drivers/node-cassandra-cql.js", function () {
                     password: "myResolvedPassword",
                     hosts: []
                 };
-                fakeResolver.resolveConnection = function (data, cb, lazyCb) {
+                fakeResolver.resolveConnection = function (data, cb) {
                     cb(null, fakeConnectionInfo);
                     fakeResolver.on.getCall(1).args[1](null, { user: "someOtherInfo", password: "someOtherPassword" });
                 };
@@ -1072,13 +1123,19 @@ describe("lib/drivers/node-cassandra-cql.js", function () {
                 pool.connect = sinon.stub().yieldsAsync(null, {});
                 sinon.stub(cql, "Client").returns(pool);
                 instance.pools = {};
+                var connectionOptionsFetchedHandler = sinon.stub();
+                var connectionResolvedHandler = sinon.stub();
+                instance.on('connectionOptionsFetched', connectionOptionsFetchedHandler);
+                instance.on('connectionResolved', connectionResolvedHandler);
 
                 // act
-                instance.cql(cqlQuery, params, { consistency: consistency }, function (err, result) {
+                instance.cql(cqlQuery, params, { consistency: consistency }, function () {
                     // assert
                     assert.strictEqual(pool.storeConfig.username, fakeConnectionInfo.username, "username successfully updated");
                     assert.strictEqual(pool.storeConfig.password, fakeConnectionInfo.password, "password successfully updated");
                     assert.notOk(logger.warn.called, "warn logger should not be called");
+                    expect(connectionOptionsFetchedHandler).to.have.been.called;
+                    expect(connectionResolvedHandler).to.have.been.called;
                     done();
                 });
             });
@@ -1127,7 +1184,6 @@ describe("lib/drivers/node-cassandra-cql.js", function () {
 
                 it("leaves object parameter untouched", function (done) {
                     // arrange
-                    var dt = new Date();
                     var params = { foo: "bar" };
 
                     // act
@@ -1144,7 +1200,6 @@ describe("lib/drivers/node-cassandra-cql.js", function () {
 
                 it("turns empty parameter into empty array", function (done) {
                     // arrange
-                    var dt = new Date();
                     var params = null;
 
                     // act
@@ -1167,8 +1222,6 @@ describe("lib/drivers/node-cassandra-cql.js", function () {
 
                     // act
                     instance[method](cqlQuery, params, options, function () {
-                        var call = instance.execCql.getCall(0);
-
                         // assert
                         assert.notOk(instance.logger.debug.calledOnce, "cql is logged");
 
@@ -1296,9 +1349,7 @@ describe("lib/drivers/node-cassandra-cql.js", function () {
                     if (asPromise) {
                         query
                             .execute()
-                            .then(function (data) {
-                                asserts(done);
-                            });
+                            .then(function () { asserts(done); });
                     }
                     else {
                         query.execute(function () {
@@ -1339,10 +1390,7 @@ describe("lib/drivers/node-cassandra-cql.js", function () {
         function getNamedQueryInstance() {
             var config = getDefaultConfig();
             config.queryDirectory = path.join(__dirname, "../../stubs/cql");
-            var instance = new Driver({
-                config: config
-            });
-            return instance;
+            return new Driver({ config: config });
         }
 
         it("executes the CQL specified by the named query", function (done) {
@@ -1354,7 +1402,7 @@ describe("lib/drivers/node-cassandra-cql.js", function () {
             instance.pools = { default: pool };
 
             // act
-            instance.namedQuery(queryName, params, { consistency: consistency }, function (error, returnData) {
+            instance.namedQuery(queryName, params, { consistency: consistency }, function () {
                 var call = instance.execCql.getCall(0),
                     opts = call.args[2];
 
@@ -1377,7 +1425,7 @@ describe("lib/drivers/node-cassandra-cql.js", function () {
             instance.pools = { default: pool };
 
             // act
-            instance.namedQuery(queryName, params, { consistency: consistency, executeAsPrepared: false }, function (error, returnData) {
+            instance.namedQuery(queryName, params, { consistency: consistency, executeAsPrepared: false }, function () {
                 var call = instance.execCql.getCall(0),
                     opts = call.args[2];
 
@@ -1407,7 +1455,6 @@ describe("lib/drivers/node-cassandra-cql.js", function () {
         it("yields error if named query does not exist", function (done) {
             // arrange
             var queryName = "idontexist";
-            var consistency = cql.types.consistencies.one;
 
             // act
             instance.namedQuery(queryName, [], function (error, returnData) {

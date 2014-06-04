@@ -7,6 +7,8 @@ var sinon = require("sinon"),
     Query = require("../../../lib/util/query"),
     Batch = require("../../../lib/util/batch");
 
+var EventEmitter = require('events').EventEmitter;
+
 var Driver = require("../../../lib/drivers/basedriver");
 
 describe("lib/drivers/basedriver.js", function () {
@@ -50,26 +52,32 @@ describe("lib/drivers/basedriver.js", function () {
         it("is a constructor function", function () {
             assert.strictEqual(typeof Driver, "function", "exports a constructor function");
         });
-        it("instance provides a cql function", function () {
-            validateFunctionExists("cql", 4);
-        });
-        it("instance provides a namedQuery function", function () {
-            validateFunctionExists("namedQuery", 4);
-        });
-        it("instance provides a select function", function () {
-            validateFunctionExists("select", 4);
-        });
-        it("instance provides a insert function", function () {
-            validateFunctionExists("insert", 4);
-        });
-        it("instance provides a update function", function () {
-            validateFunctionExists("update", 4);
-        });
-        it("instance provides a delete function", function () {
-            validateFunctionExists("delete", 4);
-        });
-        it("instance provides a close function", function () {
-            validateFunctionExists("close", 1);
+
+        describe("instance", function() {
+            it("provides a cql function", function () {
+                validateFunctionExists("cql", 4);
+            });
+            it("provides a namedQuery function", function () {
+                validateFunctionExists("namedQuery", 4);
+            });
+            it("provides a select function", function () {
+                validateFunctionExists("select", 4);
+            });
+            it("provides a insert function", function () {
+                validateFunctionExists("insert", 4);
+            });
+            it("provides a update function", function () {
+                validateFunctionExists("update", 4);
+            });
+            it("provides a delete function", function () {
+                validateFunctionExists("delete", 4);
+            });
+            it("provides a close function", function () {
+                validateFunctionExists("close", 1);
+            });
+            it("is an EventEmitter", function () {
+                expect(instance).to.be.an.instanceOf(EventEmitter);
+            });
         });
     });
 
