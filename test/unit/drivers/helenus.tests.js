@@ -8,6 +8,7 @@ var sinon = require("sinon"),
     FakeResolver = require("../../stubs/fakeResolver"),
     _ = require("lodash"),
     path = require("path");
+chai.use(require('sinon-chai'));
 
 var helenus = require("helenus");
 var Driver = require("../../../lib/drivers/helenus");
@@ -891,6 +892,8 @@ describe("lib/drivers/helenus.js", function () {
                 pool.connect = sinon.stub().yieldsAsync(null, {});
                 sinon.stub(helenus, "ConnectionPool").returns(pool);
                 instance.pools = {};
+                var resolvedErrorHandler = sinon.stub();
+                instance.on('connectionResolvedError', resolvedErrorHandler);
 
                 // act
                 instance.cql(cql, params, { consistency: consistency }, function (err, result) {
@@ -898,6 +901,7 @@ describe("lib/drivers/helenus.js", function () {
                     assert.instanceOf(err, Error);
                     assert.isUndefined(result);
                     assert.ok(logger.error.calledOnce, "error log is called once");
+                    expect(resolvedErrorHandler).to.have.been.calledWithMatch(sinon.match.string, err);
                     done();
                 });
             });
@@ -913,12 +917,15 @@ describe("lib/drivers/helenus.js", function () {
                     password: "myResolvedPassword",
                     hosts: ["123.456.789.012:1234"]
                 };
-                fakeResolver.resolveConnection = sinon.stub().yieldsAsync(new Error("connection resolution failed"), fakeConnectionInfo);
+                var resolutionError = new Error("connection resolution failed");
+                fakeResolver.resolveConnection = sinon.stub().yieldsAsync(resolutionError, fakeConnectionInfo);
                 var pool = getPoolStub(instance.config, true, null, {});
                 pool.on = sinon.stub();
                 pool.connect = sinon.stub().yieldsAsync(null, {});
                 sinon.stub(helenus, "ConnectionPool").returns(pool);
                 instance.pools = {};
+                var resolutionErrorHandler = sinon.stub();
+                instance.on('connectionResolvedError', resolutionErrorHandler);
 
                 // act
                 instance.cql(cql, params, { consistency: consistency }, function (err, result) {
@@ -928,6 +935,7 @@ describe("lib/drivers/helenus.js", function () {
                     assert.strictEqual(pool.storeConfig.password, fakeConnectionInfo.password, "password successfully updated");
                     assert.deepEqual(pool.storeConfig.hosts, fakeConnectionInfo.hosts, "hosts successfully updated");
                     assert.ok(logger.error.called, "error log is called");
+                    expect(resolutionErrorHandler).to.have.been.calledWithMatch(sinon.match.string, resolutionError);
                     done();
                 });
             });
@@ -943,15 +951,18 @@ describe("lib/drivers/helenus.js", function () {
                     password: "myResolvedPassword",
                     hosts: ["123.456.789.012:1234"]
                 };
+                var fetchError = new Error("lazy fetch error");
                 fakeResolver.resolveConnection = function (data, cb, lazyCb) {
+                    fakeResolver.on.getCall(1).args[1](fetchError);
                     cb(null, fakeConnectionInfo);
-                    fakeResolver.on.getCall(1).args[1](new Error("lazy fetch error"));
                 };
                 var pool = getPoolStub(instance.config, true, null, {});
                 pool.on = sinon.stub();
                 pool.connect = sinon.stub().yieldsAsync(null, {});
                 sinon.stub(helenus, "ConnectionPool").returns(pool);
                 instance.pools = {};
+                var connectionOptionsErrorHandler = sinon.stub();
+                instance.on('connectionOptionsError', connectionOptionsErrorHandler);
 
                 // act
                 instance.cql(cql, params, { consistency: consistency }, function (err, result) {
@@ -959,7 +970,7 @@ describe("lib/drivers/helenus.js", function () {
                     assert.strictEqual(pool.storeConfig.username, fakeConnectionInfo.username, "username successfully updated");
                     assert.strictEqual(pool.storeConfig.password, fakeConnectionInfo.password, "password successfully updated");
                     assert.deepEqual(pool.storeConfig.hosts, fakeConnectionInfo.hosts, "hosts successfully updated");
-                    assert.ok(logger.warn.calledOnce, "logger should only be called once");
+                    expect(connectionOptionsErrorHandler).to.have.been.calledWith(fetchError);
                     done();
                 });
             });
