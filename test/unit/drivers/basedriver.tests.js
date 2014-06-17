@@ -218,6 +218,15 @@ describe("lib/drivers/basedriver.js", function () {
         expect(param.value).to.equal(timestamp);
         expect(param.hint).to.equal(driver.dataType.timestamp);
       });
+
+      it('returns a hinted value wrapper if an unmapped type hint was provided as a string', function() {
+        var type = 'map<text,text>';
+        var val = {key: 'value'};
+        var param = driver.param(val, type);
+
+        expect(param.value).to.equal(val);
+        expect(param.hint).to.equal(type);
+      });
     });
 
     describe("BaseDriver#getDriverDataType()", function() {
