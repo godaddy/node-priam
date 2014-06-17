@@ -505,7 +505,8 @@ var db = require("priam")({
 
 Release Notes
 -------------
- - `0.7.5`: Updated consistency failover strategy.
+ - `0.7.6`: Updated to support `insert`/`update` statements on `map<,>` types.
+ - `0.7.5`: Updated consistency failover strategy. Added `EventEmitter` inheritance.
  - `0.7.4`: Add support for `COUNTER` and `UNLOGGED` batch types.
  - `0.7.3`: Dependency bump.
  - `0.7.1`: Revert back to Promises v1.
