@@ -9,9 +9,9 @@ var sinon = require("sinon"),
 
 var EventEmitter = require('events').EventEmitter;
 
-var Driver = require("../../../lib/drivers/basedriver");
+var Driver = require("../../../lib/drivers/base-driver");
 
-describe("lib/drivers/basedriver.js", function () {
+describe("lib/drivers/base-driver.js", function () {
 
   function getDefaultLogger() {
     return {
@@ -117,6 +117,50 @@ describe("lib/drivers/basedriver.js", function () {
     // assert
     assert.instanceOf(result, Batch, "result is instance of Batch");
     done();
+  });
+
+  describe("BaseDriver#connect()", function () {
+
+    var driver;
+    beforeEach(function () {
+      driver = getDefaultInstance();
+      driver.init({ config: {} });
+    });
+
+    it("creates a connection for the supplied keyspace", function (done) {
+      // arrange
+      var keyspace = 'myKeyspace';
+
+      // act
+      driver.connect(keyspace, function (err, pool) {
+        assert.notOk(err);
+        assert.equal(driver.pools[keyspace], pool);
+        done();
+      });
+    });
+
+    it("creates a connection for the default keyspace if keyspace is not supplied", function (done) {
+      // arrange
+      // act
+      driver.connect(function (err, pool) {
+        assert.notOk(err);
+        assert.equal(driver.pools.default, pool);
+        done();
+      });
+    });
+
+    it("yields error if connection pool fails to initialize", function (done) {
+      // arrange
+      var error = new Error('connection failed');
+      driver.getConnectionPool = sinon.stub().yields(error);
+
+      // act
+      driver.connect(function (err, pool) {
+        assert.equal(err, error);
+        assert.notOk(pool);
+        done();
+      });
+    });
   });
 
   // NOTE: All of the functions below are stubs for functionality that should be

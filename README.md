@@ -172,6 +172,8 @@ Calling `#beginQuery()` returns a `Query` object with the following chainable fu
 
  - `#param(value [object], hint [optional, string])`: Adds a parameter to the query. *Note: They are applied in the order added*
 
+ - `#params(parameters [Array])`: Adds the array of parameters to the query. Parameters should be created using `db.param()`
+
  - `#options(optionsDictionary [object])`: Extends the query options. See
     [Executing CQL](https://github.com/godaddy/node-priam/blob/master/README.md#executing-cql) for valid options.
 
@@ -252,6 +254,9 @@ Calling `#beginBatch()` returns a `Query` object with the following chainable fu
 
  - `#addQuery(query [Query])`: Adds a query to the batch to execute. The query should be created by `db.beginQuery()`.
 
+ - `#addBatch(batch [Batch])`: Adds the queries contained within the `batch` parameter to the current batch.. The batch
+    should be created by `db.beginBatch()`.
+
  - `#options(optionsDictionary [object])`: Extends the batch. See
     [Executing CQL](https://github.com/godaddy/node-priam/blob/master/README.md#executing-cql) for valid options.
 
@@ -263,7 +268,8 @@ Calling `#beginBatch()` returns a `Query` object with the following chainable fu
     [CQL 3.0 reference](http://www.datastax.com/documentation/cql/3.0/cql/cql_reference/batch_r.html) for more details
     on batch types.
 
- - `#consistency(consistencyLevelName [string])`: Sets consistency level for the batch. Alias for `#options({ consistency: db.consistencyLevel[consistencyLevelName] })`.
+ - `#consistency(consistencyLevelName [string])`: Sets consistency level for the batch. Alias for
+   `#options({ consistency: db.consistencyLevel[consistencyLevelName] })`.
 
  - `#execute(callback [optional, function])`: Executes the query. If a callback is not supplied, this will return a Promise.
 
@@ -308,6 +314,15 @@ of queries, and easily find references in your application to each query type.
 - `update`: calls `#cql()` with `db.consistencyLevel.localQuorum`
 
 - `delete`: calls `#cql()` with `db.consistencyLevel.localQuorum`
+
+### Connection Management ###
+Connection pools are automatically instantiated when the first query is run and kept alive for the lifetime of the driver.
+To manually initiate and/or close connections, you can use the following functions:
+
+ - `#connect(keyspace [string, optional], callback [Function])`: Calls `callback` parameter after connection pool is initialized,
+   or existing pool is retrieved. Can be used at application startup to immediately start the connection pool.
+
+ - `#close(callback [Function])`: Calls `callback` after all connection pools are closed. Useful for testing purposes.
 
 ### Error Retries ###
 The driver will automatically retry on network-related errors. In addition, other errors will be retried in the following
@@ -505,6 +520,7 @@ var db = require("priam")({
 
 Release Notes
 -------------
+ - `0.8.0`: Added `Batch.addBatch()`, `Query.params([Array])`, and `driver.connect([Function])`. Updated internal file naming conventions.
  - `0.7.6`: Updated to support `insert`/`update` statements on `map<,>` types.
  - `0.7.5`: Updated consistency failover strategy. Added `EventEmitter` inheritance.
  - `0.7.4`: Add support for `COUNTER` and `UNLOGGED` batch types.

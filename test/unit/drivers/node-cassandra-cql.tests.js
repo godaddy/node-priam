@@ -5,7 +5,7 @@ var sinon = require("sinon"),
   util = require("util"),
   assert = chai.assert,
   expect = chai.expect,
-  FakeResolver = require("../../stubs/fakeResolver"),
+  FakeResolver = require("../../stubs/fake-resolver"),
   _ = require("lodash"),
   path = require("path");
 chai.use(require('sinon-chai'));
@@ -962,7 +962,7 @@ describe("lib/drivers/node-cassandra-cql.js", function () {
         var cqlQuery = "MyCqlStatement";
         var params = ["param1", "param2", "param3"];
         var consistency = cql.types.consistencies.one;
-        instance = getResolverInstance({ config: { connectionResolverPath: "../../test/stubs/fakeResolver" } });
+        instance = getResolverInstance({ config: { connectionResolverPath: "../../test/stubs/fake-resolver" } });
         var userName = "myResolvedUsername";
         var fakeConnectionInfo = {
           user: userName,
@@ -992,7 +992,7 @@ describe("lib/drivers/node-cassandra-cql.js", function () {
         var cqlQuery = "MyCqlStatement";
         var params = ["param1", "param2", "param3"];
         var consistency = cql.types.consistencies.one;
-        instance = getResolverInstance({ config: { connectionResolverPath: "../../test/stubs/fakeResolver" } });
+        instance = getResolverInstance({ config: { connectionResolverPath: "../../test/stubs/fake-resolver" } });
         instance.config.connectionResolverPortMap = {
           from: "1234",
           to: "2345"

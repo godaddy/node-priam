@@ -6,10 +6,10 @@ var sinon = require('sinon'),
   expect = chai.expect,
   path = require("path");
 
-var QueryCache = require("../../../lib/util/queryCache"),
+var QueryCache = require("../../../lib/util/query-cache"),
   queryDir = path.join(__dirname, "../../stubs/cql");
 
-describe("lib/util/queryCache.js", function () {
+describe("lib/util/query-cache.js", function () {
 
   describe("interface", function () {
 

@@ -30,7 +30,7 @@
     "iterator": false,
     "lastsemic": false,
     "laxbreak": false,
-    "laxcomma": false,
+    "laxcomma": true,
     "loopfunc": false,
     "multistr": false,
     "proto": false,
