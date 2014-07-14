@@ -172,7 +172,7 @@ Calling `#beginQuery()` returns a `Query` object with the following chainable fu
 
  - `#param(value [object], hint [optional, string])`: Adds a parameter to the query. *Note: They are applied in the order added*
 
- - `#params(values [Array])`: Adds the array of parameters to the query. Parameters should be created using `db.param()`
+ - `#params(parameters [Array])`: Adds the array of parameters to the query. Parameters should be created using `db.param()`
 
  - `#options(optionsDictionary [object])`: Extends the query options. See
     [Executing CQL](https://github.com/godaddy/node-priam/blob/master/README.md#executing-cql) for valid options.
@@ -520,7 +520,7 @@ var db = require("priam")({
 
 Release Notes
 -------------
- - `0.8.0`: Added `Batch.addBatch()`, `Query.param([Array])`, and `driver.connect([Function])`. Updated internal file naming conventions.
+ - `0.8.0`: Added `Batch.addBatch()`, `Query.params([Array])`, and `driver.connect([Function])`. Updated internal file naming conventions.
  - `0.7.6`: Updated to support `insert`/`update` statements on `map<,>` types.
  - `0.7.5`: Updated consistency failover strategy. Added `EventEmitter` inheritance.
  - `0.7.4`: Add support for `COUNTER` and `UNLOGGED` batch types.
