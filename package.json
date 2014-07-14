@@ -26,15 +26,15 @@
     "node-uuid": "~1.4.1"
   },
   "devDependencies": {
-    "mocha": "^1.20.0",
+    "mocha": "^1.20.1",
     "chai": "^1.9.1",
-    "sinon": "^1.10.1",
+    "sinon": "^1.10.3",
     "sinon-chai": "^2.5.0",
-    "istanbul": "^0.2.10",
+    "istanbul": "^0.3.0",
     "mocha-istanbul": "^0.2.0",
-    "jshint": "^2.5.1",
+    "jshint": "^2.5.2",
     "winston": "^0.7.3",
-    "coveralls": "^2.10.0",
+    "coveralls": "^2.11.1",
     "mocha-lcov-reporter": "~0.0.1"
   },
   "scripts": {
