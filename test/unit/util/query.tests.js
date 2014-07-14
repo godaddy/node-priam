@@ -64,6 +64,10 @@ describe("lib/util/query.js", function () {
       validateFunctionExists("param", 2);
     });
 
+    it("provides a params function", function () {
+      validateFunctionExists("params", 1);
+    });
+
     it("provides a consistency function", function () {
       validateFunctionExists("consistency", 1);
     });
@@ -230,6 +234,37 @@ describe("lib/util/query.js", function () {
 
       // act
       var result = query.param(param1.value, param1.hint);
+
+      // assert
+      assert.equal(result, query, "returns self");
+      done();
+    });
+  });
+
+  describe("#param()", function () {
+    it("adds parameters to the context", function (done) {
+      // arrange
+      var param1 = { value: "myVal1", hint: "ascii"};
+      var param2 = { value: 12345, hint: "int"};
+
+      // act
+      query.params([param1, param2]);
+
+      // assert
+      assert.strictEqual(query.context.params.length, 2, "params is populated");
+      assert.strictEqual(query.context.params[0].value, param1.value, "param1 value is populated");
+      assert.strictEqual(query.context.params[0].hint, param1.hint, "param1 hint is populated");
+      assert.strictEqual(query.context.params[1].value, param2.value, "param2 value is populated");
+      assert.strictEqual(query.context.params[1].hint, param2.hint, "param2 hint is populated");
+      done();
+    });
+
+    it("returns self", function (done) {
+      // arrange
+      var param1 = { value: "myVal1", hint: "ascii"};
+
+      // act
+      var result = query.params([param1]);
 
       // assert
       assert.equal(result, query, "returns self");

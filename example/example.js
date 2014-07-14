@@ -2,8 +2,8 @@
 
 var http = require("http"),
   path = require("path"),
-  ConnectionResolver = require("./lib/connectionResolver"),
-  MetricsClient = require("./lib/metricsClient"),
+  ConnectionResolver = require("./lib/connection-resolver"),
+  MetricsClient = require("./lib/metrics-client"),
   winston = require("winston"),
   _ = require("lodash"),
   logger = new (winston.Logger)({
@@ -43,7 +43,7 @@ http.createServer(function (req, res) {
       var statusCode = 500;
       var message = "If you're getting this error message, please ensure the following:\n\n" +
         " - The data in '/example/lib/credentials.json' is updated with your connection information.\n" +
-        " - You have executed the '/example/cql/create_db.cql' in your keyspace.\n\n";
+        " - You have executed the '/example/cql/create-db.cql' in your keyspace.\n\n";
       if (Array.isArray(err.inner)) {
         _.each(err.inner, function (innerErr) {
           message += "------------------------\n";
@@ -67,18 +67,18 @@ http.createServer(function (req, res) {
     .addQuery(db.beginQuery()
       .param("hello from Priam - batch query 1", "ascii") // maps to 'column1' placeholder in 'addTimestamp.cql'
       .param((new Date()).toISOString(), "ascii") // maps to 'column2' placeholder in 'addTimestamp.cql'
-      .namedQuery("addTimestamp")
+      .namedQuery("add-timestamp")
     )
     .addQuery(db.beginQuery()
       .param("hello from Priam - batch query 2", "ascii") // maps to 'column1' placeholder in 'addTimestamp.cql'
       .param((new Date()).toISOString(), "ascii") // maps to 'column2' placeholder in 'addTimestamp.cql'
-      .namedQuery("addTimestamp")
+      .namedQuery("add-timestamp")
     )
     .addQuery(db.beginQuery()
       .param({ "key3": (new Date()).toISOString() }, "map<text, text>") // maps to 'column3' placeholder in 'updateWorld.cql'
       .param("hello", "ascii") // maps to 'column1' placeholder in 'updateWorld.cql'
       .param("world", "ascii") // maps to 'column2' placeholder in 'updateWorld.cql'
-      .namedQuery("updateWorld")
+      .namedQuery("update-world")
     )
     .timestamp()
     .execute() // This will execute the two inserts above in a single batch
@@ -89,13 +89,13 @@ http.createServer(function (req, res) {
       db.beginQuery()
         .param("hello", "ascii") // maps to 'column1' placeholder in 'helloWorld.cql'
         .param("world", "ascii") // maps to 'column2' placeholder in 'helloWorld.cql'
-        .namedQuery("helloWorld")
+        .namedQuery("hello-world")
         .execute()
         .fail(errorHandler)
         .done(function (data) {
           var message = (Array.isArray(data) && data.length) ?
             (data[0].column1 + " " + data[0].column2 + "! Map: " + JSON.stringify(data[0].column3)) :
-            "NO DATA FOUND! Please execute '/example/cql/create_db.cql' in your keyspace.";
+            "NO DATA FOUND! Please execute '/example/cql/create-db.cql' in your keyspace.";
           res.writeHead(200, {"Content-Type": "text/plain"});
           res.end(message);
         })

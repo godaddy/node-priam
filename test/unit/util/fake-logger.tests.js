@@ -1,12 +1,12 @@
 "use strict";
 
-var logger = require("../../../lib/util/fakeLogger"),
+var logger = require("../../../lib/util/fake-logger"),
   sinon = require('sinon'),
   chai = require('chai'),
   assert = chai.assert,
   expect = chai.expect;
 
-describe("lib/util/fakeLogger.js", function () {
+describe("lib/util/fake-logger.js", function () {
 
   beforeEach(function () {
     sinon.spy(console, "log");

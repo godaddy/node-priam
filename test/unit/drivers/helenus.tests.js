@@ -5,7 +5,7 @@ var sinon = require("sinon"),
   util = require("util"),
   assert = chai.assert,
   expect = chai.expect,
-  FakeResolver = require("../../stubs/fakeResolver"),
+  FakeResolver = require("../../stubs/fake-resolver"),
   _ = require("lodash"),
   path = require("path");
 chai.use(require('sinon-chai'));
@@ -832,7 +832,7 @@ describe("lib/drivers/helenus.js", function () {
         var cql = "MyCqlStatement";
         var params = ["param1", "param2", "param3"];
         var consistency = helenus.ConsistencyLevel.ONE;
-        instance = getResolverInstance({ config: { connectionResolverPath: "../../test/stubs/fakeResolver" } });
+        instance = getResolverInstance({ config: { connectionResolverPath: "../../test/stubs/fake-resolver" } });
         var fakeConnectionInfo = {
           username: "myResolvedUsername",
           password: "myResolvedPassword",
@@ -861,7 +861,7 @@ describe("lib/drivers/helenus.js", function () {
         var cql = "MyCqlStatement";
         var params = ["param1", "param2", "param3"];
         var consistency = helenus.ConsistencyLevel.ONE;
-        instance = getResolverInstance({ config: { connectionResolverPath: "../../test/stubs/fakeResolver" } });
+        instance = getResolverInstance({ config: { connectionResolverPath: "../../test/stubs/fake-resolver" } });
         instance.config.connectionResolverPortMap = {
           from: "1234",
           to: "2345"

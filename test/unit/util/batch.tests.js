@@ -62,6 +62,10 @@ describe("lib/util/batch.js", function () {
       validateFunctionExists("addQuery", 1);
     });
 
+    it("provides an addBatch function", function () {
+      validateFunctionExists("addBatch", 1);
+    });
+
     it("provides a timestamp function", function () {
       validateFunctionExists("timestamp", 1);
     });
@@ -127,6 +131,61 @@ describe("lib/util/batch.js", function () {
 
       // act
       var result = batch.addQuery(query);
+
+      // assert
+      assert.equal(result, batch, "returns self");
+      done();
+    });
+  });
+
+  describe("#addBatch()", function () {
+    it("adds appends the queries inside the given batch to the current batch", function (done) {
+      // arrange
+      var newBatch = new Batch(db);
+      newBatch.addQuery(new Query(db));
+
+      // act
+      batch.addBatch(newBatch);
+
+      // assert
+      assert.strictEqual(batch.context.queries.length, 1, "batch queries are added to list");
+      assert.strictEqual(batch.context.queries[0], newBatch.context.queries[0], "batch queries are added to list of queries");
+      assert.strictEqual(batch.context.errors.length, 0, "no error is generated");
+      done();
+    });
+
+    it("adds error if batch is not a valid Batch object", function (done) {
+      // arrange
+      var newBatch = { context: { queries: [] } };
+
+      // act
+      batch.addBatch(newBatch);
+
+      // assert
+      assert.strictEqual(batch.context.queries.length, 0, "batch is NOT added to list");
+      assert.strictEqual(batch.context.errors.length, 1, "error is added to list");
+      done();
+    });
+
+    it("adds error if batch is null", function (done) {
+      // arrange
+      var newBatch = null;
+
+      // act
+      batch.addQuery(newBatch);
+
+      // assert
+      assert.strictEqual(batch.context.queries.length, 0, "batch is NOT added to list");
+      assert.strictEqual(batch.context.errors.length, 1, "error is added to list");
+      done();
+    });
+
+    it("returns self", function (done) {
+      // arrange
+      var newBatch = new Batch(db);
+
+      // act
+      var result = batch.addBatch(newBatch);
 
       // assert
       assert.equal(result, batch, "returns self");
