@@ -3,7 +3,7 @@
 /*
 // wire up zones if available
 if (global.zone) {
-    var BaseDriver = require("./lib/drivers/basedriver"),
+    var BaseDriver = require("./lib/drivers/base-driver"),
         zone = global.zone;
 
     var origCql = BaseDriver.prototype.cql;
