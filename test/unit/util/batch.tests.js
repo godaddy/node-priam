@@ -770,6 +770,140 @@ describe("lib/util/batch.js", function () {
           childBatch.addQuery(query3);
           batch.addQuery(query1);
           batch.addBatch(childBatch);
+
+          db.cql = sinon.stub().yields(null, data);
+
+          // act
+          if (isPromise) {
+            var e = null,
+              result = null;
+            batch
+              .execute()
+              .catch(function (error) {
+                e = error;
+              })
+              .done(function (data) {
+                if (e) {
+                  asserts(e);
+                }
+                else {
+                  asserts(null, data);
+                }
+              });
+          }
+          else {
+            batch.execute(asserts);
+          }
+
+          // assert
+          function asserts(err, data) {
+            assert.strictEqual(db.cql.callCount, 1, "cql is only called once");
+            var callArgs = db.cql.getCall(0).args;
+            assert.strictEqual(callArgs[0], "BEGIN BATCH\nmyCqlQuery1;\nmyCqlQuery2;\nmyCqlQuery3;\nAPPLY BATCH;\n", "Query text is joined");
+            assert.strictEqual(callArgs[1].length, 6, "Query params are joined");
+            assert.strictEqual(callArgs[2].consistency, db.consistencyLevel.eachQuorum, "Strictest consistency is set");
+            assert.strictEqual(callArgs[2].suppressDebugLog, true, "Debug log is suppressed");
+            assert.notOk(err, "error is not populated");
+            assert.equal(data, data, "data is populated");
+            done();
+          }
+        });
+
+        it("joins nested batches correctly through multiple levels", function (done) {
+          // arrange
+          var data = [
+            {}
+          ];
+          var query1 = new Query(db)
+              .query("myCqlQuery1")
+              .consistency("localQuorum")
+              .param("param1", "ascii")
+              .param("param2", "ascii"),
+            query2 = new Query(db)
+              .query("myCqlQuery2;\n")
+              .consistency("eachQuorum")
+              .param("param3", "ascii")
+              .param("param4", "ascii"),
+            query3 = new Query(db)
+              .query("myCqlQuery3")
+              .options({ suppressDebugLog: true })
+              .consistency("one")
+              .param("param5", "ascii")
+              .param("param6", "ascii"),
+            childBatch1 = new Batch(db),
+            childBatch2 = new Batch(db);
+
+          batch.addQuery(query1);
+          batch.addBatch(childBatch1);
+          childBatch1.addQuery(query2);
+          childBatch1.addBatch(childBatch2);
+          childBatch2.addQuery(query3);
+
+          db.cql = sinon.stub().yields(null, data);
+
+          // act
+          if (isPromise) {
+            var e = null,
+              result = null;
+            batch
+              .execute()
+              .catch(function (error) {
+                e = error;
+              })
+              .done(function (data) {
+                if (e) {
+                  asserts(e);
+                }
+                else {
+                  asserts(null, data);
+                }
+              });
+          }
+          else {
+            batch.execute(asserts);
+          }
+
+          // assert
+          function asserts(err, data) {
+            assert.strictEqual(db.cql.callCount, 1, "cql is only called once");
+            var callArgs = db.cql.getCall(0).args;
+            assert.strictEqual(callArgs[0], "BEGIN BATCH\nmyCqlQuery1;\nmyCqlQuery2;\nmyCqlQuery3;\nAPPLY BATCH;\n", "Query text is joined");
+            assert.strictEqual(callArgs[1].length, 6, "Query params are joined");
+            assert.strictEqual(callArgs[2].consistency, db.consistencyLevel.eachQuorum, "Strictest consistency is set");
+            assert.strictEqual(callArgs[2].suppressDebugLog, true, "Debug log is suppressed");
+            assert.notOk(err, "error is not populated");
+            assert.equal(data, data, "data is populated");
+            done();
+          }
+        });
+
+        it("joins nested batches correctly when the parent has a timestamp and child does not", function (done) {
+          // arrange
+          var data = [
+            {}
+          ];
+          var query1 = new Query(db)
+              .query("myCqlQuery1")
+              .consistency("localQuorum")
+              .param("param1", "ascii")
+              .param("param2", "ascii"),
+            query2 = new Query(db)
+              .query("myCqlQuery2;\n")
+              .consistency("eachQuorum")
+              .param("param3", "ascii")
+              .param("param4", "ascii"),
+            query3 = new Query(db)
+              .query("myCqlQuery3")
+              .options({ suppressDebugLog: true })
+              .consistency("one")
+              .param("param5", "ascii")
+              .param("param6", "ascii"),
+            childBatch = new Batch(db);
+
+          childBatch.addQuery(query2);
+          childBatch.addQuery(query3);
+          batch.addQuery(query1);
+          batch.addBatch(childBatch);
           batch.timestamp(1234567);
 
           db.cql = sinon.stub().yields(null, data);
@@ -896,7 +1030,7 @@ describe("lib/util/batch.js", function () {
       // NOTE: Fake timers break Promises, so can only test coverage on this for standard execute.
 
 
-      it("sets nested batch timestamps correctly", function (done) {
+      it("and propagates to child batches appropriately", function (done) {
         // arrange
         var data = [
           {}
