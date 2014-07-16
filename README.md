@@ -179,7 +179,15 @@ Calling `#beginQuery()` returns a `Query` object with the following chainable fu
 
  - `#consistency(consistencyLevelName [string])`: Sets consistency level for the query. Alias for `#options({ consistency: db.consistencyLevel[consistencyLevelName] })`.
 
+ - `#all()`: Default functionality. After calling execute will return array of any results found.
+
+ - `#first()`: After calling execute will return first, if any of the results found.
+
+ - `#single()`: Similar to first, will return first result however will throw exception if more than one record found.
+
  - `#execute(callback [optional, function])`: Executes the query. If a callback is not supplied, this will return a Promise.
+ 
+
 
 #### Fluent Syntax Examples ####
 
@@ -520,6 +528,7 @@ var db = require("priam")({
 
 Release Notes
 -------------
+ - `0.8.3`: Added `Query.single()`, `Query.first()`, and `Query.all()` enhancements.
  - `0.8.2`: Added generalized `Batch.add()` that can take a `Query` or `Batch` argument.
  - `0.8.1`: Added `Batch.addBatch()` enhancements.
  - `0.8.0`: Added `Batch.addBatch()`, `Query.params([Array])`, and `driver.connect([Function])`. Updated internal file naming conventions.
