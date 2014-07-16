@@ -58,6 +58,10 @@ describe("lib/util/batch.js", function () {
       assert.strictEqual(batch[name].length, argCount, name + " takes " + argCount + " arguments");
     }
 
+    it("provides an add function", function () {
+      validateFunctionExists("add", 1);
+    });
+
     it("provides an addQuery function", function () {
       validateFunctionExists("addQuery", 1);
     });
@@ -82,6 +86,61 @@ describe("lib/util/batch.js", function () {
       validateFunctionExists("execute", 1);
     });
 
+  });
+
+  describe("#add()", function () {
+    it("adds the query to the query list", function (done) {
+      // arrange
+      var query = new Query(db);
+
+      // act
+      batch.add(query);
+
+      // assert
+      assert.strictEqual(batch.context.queries.length, 1, "query is added to list");
+      assert.strictEqual(batch.context.queries[0], query, "query is added to list");
+      assert.strictEqual(batch.context.errors.length, 0, "no error is generated");
+      done();
+    });
+
+    it("adds the batch to the query list", function (done) {
+      // arrange
+      var newBatch = new Batch(db);
+
+      // act
+      batch.add(newBatch);
+
+      // assert
+      assert.strictEqual(batch.context.queries.length, 1, "batch is added to list");
+      assert.strictEqual(batch.context.queries[0], newBatch, "batch is added to list of queries");
+      assert.strictEqual(batch.context.errors.length, 0, "no error is generated");
+      done();
+    });
+
+    it("adds error if query is not a valid Query or Batch object", function (done) {
+      // arrange
+      var query = { cql: "mySql", queryName: "myQueryName" };
+
+      // act
+      batch.add(query);
+
+      // assert
+      assert.strictEqual(batch.context.queries.length, 0, "query is NOT added to list");
+      assert.strictEqual(batch.context.errors.length, 1, "error is added to list");
+      done();
+    });
+
+    it("returns self", function (done) {
+      // arrange
+      var query = new Query(db);
+
+      // act
+      var result = batch.add(query);
+
+      // assert
+      assert.equal(result, batch, "returns self");
+      done();
+    });
   });
 
   describe("#addQuery()", function () {
@@ -142,7 +201,6 @@ describe("lib/util/batch.js", function () {
     it("adds the batch to the query list", function (done) {
       // arrange
       var newBatch = new Batch(db);
-      newBatch.addQuery(new Query(db));
 
       // act
       batch.addBatch(newBatch);
