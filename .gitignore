@@ -28,3 +28,7 @@ node_modules/
 .project
 /dist
 /.idea
+
+# Sublime Settings
+*.sublime-project
+*.sublime-workspace

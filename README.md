@@ -520,6 +520,7 @@ var db = require("priam")({
 
 Release Notes
 -------------
+ - `0.8.2`: Added generalized `Batch.add()` that can take a `Query` or `Batch` argument.
  - `0.8.1`: Added `Batch.addBatch()` enhancements.
  - `0.8.0`: Added `Batch.addBatch()`, `Query.params([Array])`, and `driver.connect([Function])`. Updated internal file naming conventions.
  - `0.7.6`: Updated to support `insert`/`update` statements on `map<,>` types.
