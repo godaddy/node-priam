@@ -183,7 +183,7 @@ Calling `#beginQuery()` returns a `Query` object with the following chainable fu
 
  - `#first()`: After calling execute will return first, if any of the results found.
 
- - `#single()`: Similar to first, will return first result however will throw exception if more than one record found.
+ - `#single()`: Similar to first, will return first result however will yield an error if more than one record found.
 
  - `#execute(callback [optional, function])`: Executes the query. If a callback is not supplied, this will return a Promise.
  
