@@ -80,6 +80,18 @@ describe("lib/util/query.js", function () {
       validateFunctionExists("execute", 1);
     });
 
+    it("provides an all function", function () {
+      validateFunctionExists("all", 0);
+    });
+
+    it("provides a first function", function () {
+      validateFunctionExists("first", 0);
+    });
+
+    it("provides a single function", function () {
+      validateFunctionExists("single", 0);
+    });
+
   });
 
   describe("#query()", function () {
@@ -509,10 +521,169 @@ describe("lib/util/query.js", function () {
             done();
           }
         });
+
+        it("yields first of data if db yields data and first is set", function (done) {
+          // arrange
+          var first = {};
+          var data = [first, {}];
+          query.context.cql = "myCqlStatement";
+          query.first();
+          db.cql = sinon.stub().yields(null, data);
+
+          // act
+          if (isPromise) {
+            var e = null,
+              result = null;
+            query
+              .execute()
+              .catch(function (error) {
+                e = error;
+              })
+              .done(function (data) {
+                if (e) {
+                  asserts(e);
+                }
+                else {
+                  asserts(null, data);
+                }
+              });
+          }
+          else {
+            query.execute(asserts);
+          }
+
+          // assert
+          function asserts(err, data) {
+            assert.notOk(err, "error is not populated");
+            assert.equal(data, first, "data is populated");
+            done();
+          }
+        });
+
+        it("yields first of data if db yields data and first is single", function (done) {
+          // arrange
+          var first = {};
+          var data = [first];
+          query.context.cql = "myCqlStatement";
+          query.single();
+          db.cql = sinon.stub().yields(null, data);
+
+          // act
+          if (isPromise) {
+            var e = null,
+              result = null;
+            query
+              .execute()
+              .catch(function (error) {
+                e = error;
+              })
+              .done(function (data) {
+                if (e) {
+                  asserts(e);
+                }
+                else {
+                  asserts(null, data);
+                }
+              });
+          }
+          else {
+            query.execute(asserts);
+          }
+
+          // assert
+          function asserts(err, data) {
+            assert.notOk(err, "error is not populated");
+            assert.equal(data, first, "data is populated");
+            done();
+          }
+        });
+
+        it("yields error if db yields data with more than one result and single is enabled", function (done) {
+          // arrange
+          var first = {};
+          var data = [first, {}];
+          query.context.cql = "myCqlStatement";
+          query.single();
+          db.cql = sinon.stub().yields(null, data);
+
+          // act
+          if (isPromise) {
+            var e = null,
+              result = null;
+            query
+              .execute()
+              .catch(function (error) {
+                e = error;
+              })
+              .done(function (data) {
+                if (e) {
+                  asserts(e);
+                }
+                else {
+                  asserts(null, data);
+                }
+              });
+          }
+          else {
+            query.execute(asserts);
+          }
+
+          // assert
+          function asserts(err, data) {
+            assert.ok(err, "error is populated");
+            assert.notOk(data, "data is not populated");
+            done();
+          }
+        });
       });
     }
 
     testCallbacks(false);
     testCallbacks(true);
+  });
+
+  describe("#all()", function () {
+    it("sets single and first to false", function () {
+      query.context.single = true;
+      query.context.first = true;
+      query.all();
+      assert.notOk(query.context.single, "single is false");
+      assert.notOk(query.context.first, "first is false");
+    });
+
+    it("returns self", function () {
+      var result = query.all();
+      assert.equal(result, query, "returns self");
+    });
+  });
+
+  describe("#first()", function () {
+    it("sets first to true, and single to false", function () {
+      query.context.single = true;
+      query.context.first = false;
+      query.first();
+      assert.ok(query.context.first, "first is true");
+      assert.notOk(query.context.single, "single is false");
+    });
+
+    it("returns self", function () {
+      var result = query.first();
+      assert.equal(result, query, "returns self");
+    });
+  });
+
+  describe("#single()", function () {
+    it("sets single to true, and first to false", function () {
+      query.context.first = true;
+      query.context.single = false;
+      query.single();
+      assert.ok(query.context.single, "single is true");
+      assert.notOk(query.context.first, "first is false");
+    });
+
+    it("returns self", function () {
+      var result = query.single();
+      assert.equal(result, query, "returns self");
+    });
   });
 });
