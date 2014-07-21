@@ -40,7 +40,7 @@ var db = require("priam")({
                 cqlVersion: "3.0.0", /* optional, defaults to "3.0.0" */
                 timeout: 4000, /* optional, defaults to 4000 */
                 poolSize: 2, /* optional, defaults to 1 */
-                consistencyLevel: 1, /* optional, defaults to 1. Should be a valid db.consistencyLevel value */
+                consistencyLevel: "one", /* optional, defaults to one. Will throw if not a valid Cassandra consistency level*/
                 driver: "helenus", /* optional, defaults to "node-cassandra-cql" */,
                 numRetries: 3, /* optional, defaults to 0. Retries occur on connection failures. */
                 retryDelay: 100, /* optional, defaults to 100ms. Used on error retry or consistency fallback retry */
@@ -528,6 +528,10 @@ var db = require("priam")({
 
 Release Notes
 -------------
+ - `0.8.5`: Changed config to look up consistency level enum if given a string
+            Added resultTransformers to drivers and queries-- synchronous functions that are mapped over query results
+            Query consistency is set to driver's at instantiation, rather than being looked up at execution if not present
+            Added `query` method to base driver, alias for `cql`
  - `0.8.4`: Modified `Batch.execute()` to send timestamps as parameters instead of CQL strings.
  - `0.8.3`: Added `Query.single()`, `Query.first()`, and `Query.all()` enhancements.
  - `0.8.2`: Added generalized `Batch.add()` that can take a `Query` or `Batch` argument.
