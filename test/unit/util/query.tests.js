@@ -28,7 +28,7 @@ describe("lib/util/query.js", function () {
     query = new Query(db);
   });
 
-  describe("interface", function () {
+  describe("constructor", function () {
 
     it("is a constructor function", function () {
       assert.strictEqual(typeof Query, "function", "is a constructor function");
@@ -42,6 +42,32 @@ describe("lib/util/query.js", function () {
 
       done();
     });
+
+    it("creates a resultTransformer array in context", function (done) {
+      // arrange
+      query = new Query(db);
+
+      // assert
+      assert.deepEqual(query.context.resultTransformers, [], "resultTransformers created");
+      done();
+    });
+
+    it("applies provided settings to its context", function () {
+      // arrange
+      var resultTransformer = function(obj){return obj;};
+
+      // act
+      query = new Query(db, {
+        resultTransformers: [resultTransformer],
+        options: {consistency: 1}
+      });
+
+      // assert
+      assert.strictEqual(query.context.resultTransformers.length, 1, "resultTransformer added");
+      assert.strictEqual(typeof query.context.resultTransformers[0], "function", "resultTransformer is a function");
+      assert.strictEqual(query.context.options.consistency, 1, "options set");
+    });
+
   });
 
   describe("constructed instance", function () {
@@ -91,6 +117,15 @@ describe("lib/util/query.js", function () {
     it("provides a single function", function () {
       validateFunctionExists("single", 0);
     });
+
+    it("provides an addResultTransformer function", function () {
+      validateFunctionExists("addResultTransformer", 1);
+    });
+
+    it("provides a clearResultTransformers function", function () {
+      validateFunctionExists("clearResultTransformers", 0);
+    });
+
 
   });
 
@@ -683,6 +718,35 @@ describe("lib/util/query.js", function () {
 
     it("returns self", function () {
       var result = query.single();
+      assert.equal(result, query, "returns self");
+    });
+  });
+
+  describe("#addResultTransformer()", function(){
+    it("adds a transformer to the context", function(){
+      var transformer = function(obj){return obj;};
+      query.addResultTransformer(transformer);
+      assert.strictEqual(query.context.resultTransformers.length, 1, "resultTransformer added");
+      assert.strictEqual(typeof query.context.resultTransformers[0], "function", "resultTransformer is a function");
+    });
+
+    it("returns self", function () {
+      var result = query.addResultTransformer();
+      assert.equal(result, query, "returns self");
+    });
+  });
+
+  describe("#clearResultTransformers()", function(){
+    it("removes transformers from the context", function(){
+      var transformer = function(obj){return obj;};
+      query.addResultTransformer(transformer);
+      query.addResultTransformer(transformer);
+      query.clearResultTransformers();
+      assert.strictEqual(query.context.resultTransformers.length, 0, "resultTransformer removed");
+    });
+
+    it("returns self", function () {
+      var result = query.clearResultTransformers();
       assert.equal(result, query, "returns self");
     });
   });

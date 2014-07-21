@@ -32,10 +32,12 @@ describe("lib/drivers/base-driver.js", function () {
   }
 
   function getDefaultInstance() {
-    var instance = new Driver({
+    var instance = new Driver();
+    var context = {
       config: getDefaultConfig(),
       logger: getDefaultLogger()
-    });
+    };
+    instance.init(context);
     return instance;
   }
 
@@ -92,6 +94,30 @@ describe("lib/drivers/base-driver.js", function () {
       // assert
       assert.ok(instance.consistencyLevel);
       assert.ok(instance.dataType);
+    });
+
+    it("converts consistency levels to DB codes", function () {
+      // arrange
+      // act
+      var instance = new Driver();
+      instance.consistencyLevel = {one: 1};
+      instance.init({config: {consistency: 'one'}});
+
+      // assert
+      assert.equal(instance.consistencyLevel.one, instance.poolConfig.consistencyLevel);
+    });
+
+    it("throws an error if given an invalid consistency level", function () {
+      // arrange
+      // act
+      var instance = new Driver();
+      instance.consistencyLevel = {one: 1};
+      var initWithInvalidConsistency = function() {
+        instance.init({config: {consistency: 'invalid consistency level'}});
+      };
+
+      // assert
+      assert.throw(initWithInvalidConsistency, 'Error: "invalid consistency level" is not a valid consistency level' );
     });
   });
 

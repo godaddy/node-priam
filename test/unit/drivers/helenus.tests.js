@@ -584,7 +584,8 @@ describe("lib/drivers/helenus.js", function () {
       // act
       instance.cql(cql, params, {
         consistency: consistency,
-        deserializeJsonStrings: true
+        deserializeJsonStrings: true,
+        resultTransformers: []
       }, function (error, returnData) {
         var call = pool.cql.getCall(0);
 
@@ -600,6 +601,35 @@ describe("lib/drivers/helenus.js", function () {
 
         done();
       });
+
+    });
+
+
+    it("runs result transformers on the returned data in order", function (done) {
+      // arrange
+      instance.execCql = sinon.stub();
+      instance.execCql.yields(null, [0, 1, 2, 3]);
+
+      var firstTransform = function(x){return x + 1;};
+      var secondTransform = function(x){return x * x;};
+
+      // act
+      instance.cql("some query", null, {
+        suppressDebugLog: true,
+        deserializeJsonStrings: true,
+        resultTransformers:[firstTransform, secondTransform]
+      }, function (error, returnData) {
+
+        // assert
+        assert.isNull(error, "error should be null");
+        assert.strictEqual(returnData[0], 1);
+        assert.strictEqual(returnData[1], 4);
+        assert.deepEqual(returnData[2], 9);
+        assert.deepEqual(returnData[3], 16 );
+
+        done();
+      });
+
     });
 
     function testErrorRetry(errorName, errorCode, numRetries, shouldRetry) {
