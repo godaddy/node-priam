@@ -1007,7 +1007,7 @@ describe("lib/util/batch.js", function () {
           function asserts(err, data) {
             assert.strictEqual(db.cql.callCount, 1, "cql is only called once");
             var callArgs = db.cql.getCall(0).args;
-            assert.strictEqual(callArgs[0], "BEGIN BATCH\nmyCqlQuery1 USING TIMESTAMP ?;\nmyCqlQuery2 USING TIMESTAMP ?;\nmyCqlQuery3 USING TIMESTAMP ?;\nAPPLY BATCH;\n", "Query text is joined");
+            assert.strictEqual(callArgs[0], "BEGIN BATCH\nmyCqlQuery1\nUSING TIMESTAMP ?;\nmyCqlQuery2\nUSING TIMESTAMP ?;\nmyCqlQuery3\nUSING TIMESTAMP ?;\nAPPLY BATCH;\n", "Query text is joined");
             var queryParams = callArgs[1];
             assert.strictEqual(queryParams.length, 9, "Query params are joined with timestamps");
             assert.strictEqual(callArgs[2].consistency, db.consistencyLevel.eachQuorum, "Strictest consistency is set");
@@ -1085,7 +1085,7 @@ describe("lib/util/batch.js", function () {
           function asserts(err, result) {
             assert.strictEqual(db.cql.callCount, 1, "cql is only called once");
             var callArgs = db.cql.getCall(0).args;
-            assert.strictEqual(callArgs[0], "BEGIN BATCH\nmyCqlQuery1 USING TIMESTAMP ?;\nmyCqlQuery2 USING TIMESTAMP ?;\nmyCqlQuery3 USING TIMESTAMP ?;\nAPPLY BATCH;\n", "Query text is joined");
+            assert.strictEqual(callArgs[0], "BEGIN BATCH\nmyCqlQuery1\nUSING TIMESTAMP ?;\nmyCqlQuery2\nUSING TIMESTAMP ?;\nmyCqlQuery3\nUSING TIMESTAMP ?;\nAPPLY BATCH;\n", "Query text is joined");
             var queryParams = callArgs[1];
             assert.strictEqual(queryParams.length, 9, "Query params are joined with timestamps");
             assert.strictEqual(callArgs[2].consistency, db.consistencyLevel.eachQuorum, "Strictest consistency is set");
@@ -1164,7 +1164,7 @@ describe("lib/util/batch.js", function () {
         function asserts(err, data) {
           assert.strictEqual(db.cql.callCount, 1, "cql is only called once");
           var callArgs = db.cql.getCall(0).args;
-          assert.strictEqual(callArgs[0], "BEGIN BATCH\nmyCqlQuery1 USING TIMESTAMP ?;\nmyCqlQuery2 USING TIMESTAMP ?;\nmyCqlQuery3 USING TIMESTAMP ?;\nAPPLY BATCH;\n", "Query text is joined");
+          assert.strictEqual(callArgs[0], "BEGIN BATCH\nmyCqlQuery1\nUSING TIMESTAMP ?;\nmyCqlQuery2\nUSING TIMESTAMP ?;\nmyCqlQuery3\nUSING TIMESTAMP ?;\nAPPLY BATCH;\n", "Query text is joined");
             var queryParams = callArgs[1];
             assert.strictEqual(queryParams.length, 9, "Query params are joined with timestamps");
           assert.strictEqual(callArgs[2].consistency, db.consistencyLevel.eachQuorum, "Strictest consistency is set");
