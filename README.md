@@ -528,9 +528,9 @@ var db = require("priam")({
 
 Release Notes
 -------------
- - `0.8.5`: Changed config to look up consistency level enum if given a string
-            Added resultTransformers to drivers and queries-- synchronous functions that are mapped over query results
-            Query consistency is set to driver's at instantiation, rather than being looked up at execution if not present
+ - `0.8.5`: Changed config to look up consistency level enum if given a string  
+            Added resultTransformers to drivers and queries-- synchronous functions that are mapped over query results  
+            Query consistency is set to driver's at instantiation, rather than being looked up at execution if not present  
             Added `query` method to base driver, alias for `cql`
  - `0.8.4`: Modified `Batch.execute()` to send timestamps as parameters instead of CQL strings.
  - `0.8.3`: Added `Query.single()`, `Query.first()`, and `Query.all()` enhancements.
