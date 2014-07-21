@@ -30,7 +30,7 @@ and high-performance hosting platform based on the [Cassandra](http://cassandra.
 Example Usage
 -------------
 
-Check the `example` folder for a more complete example.
+Check the `example` folder for a more complete example. Start by running: `npm start` followed by `curl http://localhost:8080/`.
 
 ### Using Known Connection Information ###
 ```javascript
@@ -528,6 +528,7 @@ var db = require("priam")({
 
 Release Notes
 -------------
+ - `0.8.4`: Modified `Batch.execute()` to send timestamps as parameters instead of CQL strings.
  - `0.8.3`: Added `Query.single()`, `Query.first()`, and `Query.all()` enhancements.
  - `0.8.2`: Added generalized `Batch.add()` that can take a `Query` or `Batch` argument.
  - `0.8.1`: Added `Batch.addBatch()` enhancements.

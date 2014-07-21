@@ -690,15 +690,20 @@ describe("lib/util/batch.js", function () {
           }
 
           // assert
-          function asserts(err, data) {
+          function asserts(err, result) {
             assert.strictEqual(db.cql.callCount, 1, "cql is only called once");
             var callArgs = db.cql.getCall(0).args;
-            assert.strictEqual(callArgs[0], "BEGIN BATCH\nUSING TIMESTAMP 1234567\nmyCqlQuery1;\nmyCqlQuery2;\nmyCqlQuery3;\nAPPLY BATCH;\n", "Query text is joined");
-            assert.strictEqual(callArgs[1].length, 6, "Query params are joined");
+            assert.strictEqual(callArgs[0], "BEGIN BATCH\nUSING TIMESTAMP ?\nmyCqlQuery1;\nmyCqlQuery2;\nmyCqlQuery3;\nAPPLY BATCH;\n", "Query text is joined");
+            var queryParams = callArgs[1];
+            assert.strictEqual(queryParams.length, 7, "Query params are joined with timestamp");
             assert.strictEqual(callArgs[2].consistency, db.consistencyLevel.eachQuorum, "Strictest consistency is set");
             assert.strictEqual(callArgs[2].suppressDebugLog, true, "Debug log is suppressed");
             assert.notOk(err, "error is not populated");
-            assert.equal(data, data, "data is populated");
+            assert.equal(data, result, "result is populated");
+            assert.equal(queryParams[0].value, 1234567, "timestamp param is populated");
+            for (var i = 1; i < queryParams.length; i++) {
+              assert.equal(queryParams[i].value, "param" + i, "query param " + i + " is populated");
+            }
             done();
           }
         });
@@ -742,12 +747,12 @@ describe("lib/util/batch.js", function () {
           }
 
           // assert
-          function asserts(err, data) {
+          function asserts(err, result) {
             assert.strictEqual(db.cql.callCount, 1, "cql is only called once");
             var callArgs = db.cql.getCall(0).args;
             assert.strictEqual(callArgs[0], "BEGIN COUNTER BATCH\nmyCqlQuery1;\nAPPLY BATCH;\n", "Query text is joined");
             assert.notOk(err, "error is not populated");
-            assert.equal(data, data, "data is populated");
+            assert.equal(result, data, "result is populated");
             done();
           }
         });
@@ -791,12 +796,12 @@ describe("lib/util/batch.js", function () {
           }
 
           // assert
-          function asserts(err, data) {
+          function asserts(err, result) {
             assert.strictEqual(db.cql.callCount, 1, "cql is only called once");
             var callArgs = db.cql.getCall(0).args;
             assert.strictEqual(callArgs[0], "BEGIN BATCH\nmyCqlQuery1;\nAPPLY BATCH;\n", "Query text is joined");
             assert.notOk(err, "error is not populated");
-            assert.equal(data, data, "data is populated");
+            assert.equal(result, data, "result is populated");
             done();
           }
         });
@@ -854,15 +859,20 @@ describe("lib/util/batch.js", function () {
           }
 
           // assert
-          function asserts(err, data) {
+          function asserts(err, result) {
             assert.strictEqual(db.cql.callCount, 1, "cql is only called once");
             var callArgs = db.cql.getCall(0).args;
             assert.strictEqual(callArgs[0], "BEGIN BATCH\nmyCqlQuery1;\nmyCqlQuery2;\nmyCqlQuery3;\nAPPLY BATCH;\n", "Query text is joined");
-            assert.strictEqual(callArgs[1].length, 6, "Query params are joined");
+            var queryParams = callArgs[1];
+            assert.strictEqual(queryParams.length, 6, "Query params are joined");
             assert.strictEqual(callArgs[2].consistency, db.consistencyLevel.eachQuorum, "Strictest consistency is set");
             assert.strictEqual(callArgs[2].suppressDebugLog, true, "Debug log is suppressed");
             assert.notOk(err, "error is not populated");
-            assert.equal(data, data, "data is populated");
+            assert.equal(result, data, "result is populated");
+            for (var i = 0; i < queryParams.length; i++) {
+              var num = i + 1;
+              assert.equal(queryParams[i].value, "param" + num, "query param " + num + " is populated");
+            }
             done();
           }
         });
@@ -922,15 +932,20 @@ describe("lib/util/batch.js", function () {
           }
 
           // assert
-          function asserts(err, data) {
+          function asserts(err, result) {
             assert.strictEqual(db.cql.callCount, 1, "cql is only called once");
             var callArgs = db.cql.getCall(0).args;
             assert.strictEqual(callArgs[0], "BEGIN BATCH\nmyCqlQuery1;\nmyCqlQuery2;\nmyCqlQuery3;\nAPPLY BATCH;\n", "Query text is joined");
-            assert.strictEqual(callArgs[1].length, 6, "Query params are joined");
+            var queryParams = callArgs[1];
+            assert.strictEqual(queryParams.length, 6, "Query params are joined");
             assert.strictEqual(callArgs[2].consistency, db.consistencyLevel.eachQuorum, "Strictest consistency is set");
             assert.strictEqual(callArgs[2].suppressDebugLog, true, "Debug log is suppressed");
             assert.notOk(err, "error is not populated");
-            assert.equal(data, data, "data is populated");
+            assert.equal(result, data, "result is populated");
+            for (var i = 0; i < queryParams.length; i++) {
+              var num = i + 1;
+              assert.equal(queryParams[i].value, "param" + num, "query param " + num + " is populated");
+            }
             done();
           }
         });
@@ -992,12 +1007,22 @@ describe("lib/util/batch.js", function () {
           function asserts(err, data) {
             assert.strictEqual(db.cql.callCount, 1, "cql is only called once");
             var callArgs = db.cql.getCall(0).args;
-            assert.strictEqual(callArgs[0], "BEGIN BATCH\nmyCqlQuery1 USING TIMESTAMP 1234567;\nmyCqlQuery2 USING TIMESTAMP 1234568;\nmyCqlQuery3 USING TIMESTAMP 1234568;\nAPPLY BATCH;\n", "Query text is joined");
-            assert.strictEqual(callArgs[1].length, 6, "Query params are joined");
+            assert.strictEqual(callArgs[0], "BEGIN BATCH\nmyCqlQuery1\nUSING TIMESTAMP ?;\nmyCqlQuery2\nUSING TIMESTAMP ?;\nmyCqlQuery3\nUSING TIMESTAMP ?;\nAPPLY BATCH;\n", "Query text is joined");
+            var queryParams = callArgs[1];
+            assert.strictEqual(queryParams.length, 9, "Query params are joined with timestamps");
             assert.strictEqual(callArgs[2].consistency, db.consistencyLevel.eachQuorum, "Strictest consistency is set");
             assert.strictEqual(callArgs[2].suppressDebugLog, true, "Debug log is suppressed");
             assert.notOk(err, "error is not populated");
             assert.equal(data, data, "data is populated");
+            assert.equal(queryParams[0].value, "param1", "query param 1 is populated");
+            assert.equal(queryParams[1].value, "param2", "query param 2 is populated");
+            assert.equal(queryParams[2].value, 1234567, "query timestamp 1 is populated");
+            assert.equal(queryParams[3].value, "param3", "query param 3 is populated");
+            assert.equal(queryParams[4].value, "param4", "query param 4 is populated");
+            assert.equal(queryParams[5].value, 1234568, "query timestamp 2 is populated");
+            assert.equal(queryParams[6].value, "param5", "query param 5 is populated");
+            assert.equal(queryParams[7].value, "param6", "query param 6 is populated");
+            assert.equal(queryParams[8].value, 1234568, "query timestamp 3 is populated");
             done();
           }
         });
@@ -1057,15 +1082,25 @@ describe("lib/util/batch.js", function () {
           }
 
           // assert
-          function asserts(err, data) {
+          function asserts(err, result) {
             assert.strictEqual(db.cql.callCount, 1, "cql is only called once");
             var callArgs = db.cql.getCall(0).args;
-            assert.strictEqual(callArgs[0], "BEGIN BATCH\nmyCqlQuery1 USING TIMESTAMP 7654321;\nmyCqlQuery2 USING TIMESTAMP 1234567;\nmyCqlQuery3 USING TIMESTAMP 1234567;\nAPPLY BATCH;\n", "Query text is joined");
-            assert.strictEqual(callArgs[1].length, 6, "Query params are joined");
+            assert.strictEqual(callArgs[0], "BEGIN BATCH\nmyCqlQuery1\nUSING TIMESTAMP ?;\nmyCqlQuery2\nUSING TIMESTAMP ?;\nmyCqlQuery3\nUSING TIMESTAMP ?;\nAPPLY BATCH;\n", "Query text is joined");
+            var queryParams = callArgs[1];
+            assert.strictEqual(queryParams.length, 9, "Query params are joined with timestamps");
             assert.strictEqual(callArgs[2].consistency, db.consistencyLevel.eachQuorum, "Strictest consistency is set");
             assert.strictEqual(callArgs[2].suppressDebugLog, true, "Debug log is suppressed");
             assert.notOk(err, "error is not populated");
-            assert.equal(data, data, "data is populated");
+            assert.equal(result, data, "result is populated");
+            assert.equal(queryParams[0].value, "param1", "query param 1 is populated");
+            assert.equal(queryParams[1].value, "param2", "query param 2 is populated");
+            assert.equal(queryParams[2].value, 7654321, "query timestamp 1 is populated");
+            assert.equal(queryParams[3].value, "param3", "query param 3 is populated");
+            assert.equal(queryParams[4].value, "param4", "query param 4 is populated");
+            assert.equal(queryParams[5].value, 1234567, "query timestamp 2 is populated");
+            assert.equal(queryParams[6].value, "param5", "query param 5 is populated");
+            assert.equal(queryParams[7].value, "param6", "query param 6 is populated");
+            assert.equal(queryParams[8].value, 1234567, "query timestamp 3 is populated");
             done();
           }
         });
@@ -1129,12 +1164,22 @@ describe("lib/util/batch.js", function () {
         function asserts(err, data) {
           assert.strictEqual(db.cql.callCount, 1, "cql is only called once");
           var callArgs = db.cql.getCall(0).args;
-          assert.strictEqual(callArgs[0], "BEGIN BATCH\nmyCqlQuery1 USING TIMESTAMP " + nowTs.toString() + ";\nmyCqlQuery2 USING TIMESTAMP " + nowTs.toString() + ";\nmyCqlQuery3 USING TIMESTAMP " + (nowTs+1).toString() + ";\nAPPLY BATCH;\n", "Query text is joined");
-          assert.strictEqual(callArgs[1].length, 6, "Query params are joined");
+          assert.strictEqual(callArgs[0], "BEGIN BATCH\nmyCqlQuery1\nUSING TIMESTAMP ?;\nmyCqlQuery2\nUSING TIMESTAMP ?;\nmyCqlQuery3\nUSING TIMESTAMP ?;\nAPPLY BATCH;\n", "Query text is joined");
+            var queryParams = callArgs[1];
+            assert.strictEqual(queryParams.length, 9, "Query params are joined with timestamps");
           assert.strictEqual(callArgs[2].consistency, db.consistencyLevel.eachQuorum, "Strictest consistency is set");
           assert.strictEqual(callArgs[2].suppressDebugLog, true, "Debug log is suppressed");
           assert.notOk(err, "error is not populated");
           assert.equal(data, data, "data is populated");
+          assert.equal(queryParams[0].value, "param1", "query param 1 is populated");
+          assert.equal(queryParams[1].value, "param2", "query param 2 is populated");
+          assert.equal(queryParams[2].value, nowTs, "query timestamp 1 is populated");
+          assert.equal(queryParams[3].value, "param3", "query param 3 is populated");
+          assert.equal(queryParams[4].value, "param4", "query param 4 is populated");
+          assert.equal(queryParams[5].value, nowTs, "query timestamp 2 is populated");
+          assert.equal(queryParams[6].value, "param5", "query param 5 is populated");
+          assert.equal(queryParams[7].value, "param6", "query param 6 is populated");
+          assert.equal(queryParams[8].value, nowTs+1, "query timestamp 3 is populated");
           done();
         }
       });
