@@ -30,7 +30,7 @@ and high-performance hosting platform based on the [Cassandra](http://cassandra.
 Example Usage
 -------------
 
-Check the `example` folder for a more complete example.
+Check the `example` folder for a more complete example. Start by running: `npm start` followed by `curl http://localhost:8080/`.
 
 ### Using Known Connection Information ###
 ```javascript
