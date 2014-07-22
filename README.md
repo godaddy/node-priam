@@ -528,6 +528,7 @@ var db = require("priam")({
 
 Release Notes
 -------------
+ - `0.8.6`: Fixed bug which caused resultTransformers to not execute
  - `0.8.5`: Changed config to look up consistency level enum if given a string
             Added resultTransformers to drivers and queries-- synchronous functions that are mapped over query results
             Query consistency is set to driver's at instantiation, rather than being looked up at execution if not present

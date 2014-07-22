@@ -557,6 +557,49 @@ describe("lib/util/query.js", function () {
           }
         });
 
+
+
+
+        it("passes resultTransformers to the db through the options object", function (done) {
+          // arrange
+          query.context.cql = "myCqlStatement";
+          query.context.resultTransformers = ["foo"];
+          query.first();
+          db.cql = sinon.stub().yields(null);
+
+          // act
+          if (isPromise) {
+            var e = null,
+              result = null;
+            query
+              .execute()
+              .catch(function (error) {
+                e = error;
+              })
+              .done(function (data) {
+                if (e) {
+                  asserts(e);
+                }
+                else {
+                  asserts(null, data);
+                }
+              });
+          }
+          else {
+            query.execute(asserts);
+          }
+
+          // assert
+          function asserts(err, data) {
+            assert.ok(db.cql.calledWith(sinon.match.any, sinon.match.any, sinon.match({resultTransformers: ["foo"]})));
+            done();
+          }
+        });
+
+
+
+
+
         it("yields first of data if db yields data and first is set", function (done) {
           // arrange
           var first = {};
