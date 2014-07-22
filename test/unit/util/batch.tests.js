@@ -1165,8 +1165,8 @@ describe("lib/util/batch.js", function () {
           assert.strictEqual(db.cql.callCount, 1, "cql is only called once");
           var callArgs = db.cql.getCall(0).args;
           assert.strictEqual(callArgs[0], "BEGIN BATCH\nmyCqlQuery1\nUSING TIMESTAMP ?;\nmyCqlQuery2\nUSING TIMESTAMP ?;\nmyCqlQuery3\nUSING TIMESTAMP ?;\nAPPLY BATCH;\n", "Query text is joined");
-            var queryParams = callArgs[1];
-            assert.strictEqual(queryParams.length, 9, "Query params are joined with timestamps");
+          var queryParams = callArgs[1];
+          assert.strictEqual(queryParams.length, 9, "Query params are joined with timestamps");
           assert.strictEqual(callArgs[2].consistency, db.consistencyLevel.eachQuorum, "Strictest consistency is set");
           assert.strictEqual(callArgs[2].suppressDebugLog, true, "Debug log is suppressed");
           assert.notOk(err, "error is not populated");
