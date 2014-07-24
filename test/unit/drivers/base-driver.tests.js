@@ -1,17 +1,17 @@
-"use strict";
+'use strict';
 
-var sinon = require("sinon"),
-  chai = require("chai"),
-  assert = chai.assert,
-  expect = chai.expect,
-  Query = require("../../../lib/util/query"),
-  Batch = require("../../../lib/util/batch");
+var sinon = require('sinon')
+  , chai = require('chai')
+  , assert = chai.assert
+  , expect = chai.expect
+  , Query = require('../../../lib/util/query')
+  , Batch = require('../../../lib/util/batch');
 
 var EventEmitter = require('events').EventEmitter;
 
-var Driver = require("../../../lib/drivers/base-driver");
+var Driver = require('../../../lib/drivers/base-driver');
 
-describe("lib/drivers/base-driver.js", function () {
+describe('lib/drivers/base-driver.js', function () {
 
   function getDefaultLogger() {
     return {
@@ -25,8 +25,8 @@ describe("lib/drivers/base-driver.js", function () {
 
   function getDefaultConfig() {
     return {
-      hosts: ["123.456.789.012:9160"],
-      keyspace: "myKeySpace",
+      hosts: ['123.456.789.012:9160'],
+      keyspace: 'myKeySpace',
       timeout: 12345
     };
   }
@@ -41,7 +41,7 @@ describe("lib/drivers/base-driver.js", function () {
     return instance;
   }
 
-  describe("interface", function () {
+  describe('interface', function () {
 
     var instance = getDefaultInstance();
 
@@ -49,44 +49,44 @@ describe("lib/drivers/base-driver.js", function () {
       // arrange
       // act
       // assert
-      assert.strictEqual(typeof instance[name], "function");
-      assert.strictEqual(instance[name].length, argCount, name + " takes " + argCount + " arguments");
+      assert.strictEqual(typeof instance[name], 'function');
+      assert.strictEqual(instance[name].length, argCount, name + ' takes ' + argCount + ' arguments');
     }
 
-    it("is a constructor function", function () {
-      assert.strictEqual(typeof Driver, "function", "exports a constructor function");
+    it('is a constructor function', function () {
+      assert.strictEqual(typeof Driver, 'function', 'exports a constructor function');
     });
 
-    describe("instance", function () {
-      it("provides a cql function", function () {
-        validateFunctionExists("cql", 4);
+    describe('instance', function () {
+      it('provides a cql function', function () {
+        validateFunctionExists('cql', 4);
       });
-      it("provides a namedQuery function", function () {
-        validateFunctionExists("namedQuery", 4);
+      it('provides a namedQuery function', function () {
+        validateFunctionExists('namedQuery', 4);
       });
-      it("provides a select function", function () {
-        validateFunctionExists("select", 4);
+      it('provides a select function', function () {
+        validateFunctionExists('select', 4);
       });
-      it("provides a insert function", function () {
-        validateFunctionExists("insert", 4);
+      it('provides a insert function', function () {
+        validateFunctionExists('insert', 4);
       });
-      it("provides a update function", function () {
-        validateFunctionExists("update", 4);
+      it('provides a update function', function () {
+        validateFunctionExists('update', 4);
       });
-      it("provides a delete function", function () {
-        validateFunctionExists("delete", 4);
+      it('provides a delete function', function () {
+        validateFunctionExists('delete', 4);
       });
-      it("provides a close function", function () {
-        validateFunctionExists("close", 1);
+      it('provides a close function', function () {
+        validateFunctionExists('close', 1);
       });
-      it("is an EventEmitter", function () {
+      it('is an EventEmitter', function () {
         expect(instance).to.be.an.instanceOf(EventEmitter);
       });
     });
   });
 
-  describe("BaseDriver#constructor", function () {
-    it("sets default values", function () {
+  describe('BaseDriver#constructor', function () {
+    it('sets default values', function () {
       // arrange
       // act
       var instance = new Driver();
@@ -96,7 +96,7 @@ describe("lib/drivers/base-driver.js", function () {
       assert.ok(instance.dataType);
     });
 
-    it("converts consistency levels to DB codes", function () {
+    it('converts consistency levels to DB codes', function () {
       // arrange
       // act
       var instance = new Driver();
@@ -107,7 +107,7 @@ describe("lib/drivers/base-driver.js", function () {
       assert.equal(instance.consistencyLevel.one, instance.poolConfig.consistencyLevel);
     });
 
-    it("throws an error if given an invalid consistency level", function () {
+    it('throws an error if given an invalid consistency level', function () {
       // arrange
       // act
       var instance = new Driver();
@@ -121,7 +121,7 @@ describe("lib/drivers/base-driver.js", function () {
     });
   });
 
-  it("BaseDriver#beginQuery() returns a Query", function (done) {
+  it('BaseDriver#beginQuery() returns a Query', function (done) {
     // arrange
     var driver = getDefaultInstance();
 
@@ -129,11 +129,11 @@ describe("lib/drivers/base-driver.js", function () {
     var result = driver.beginQuery();
 
     // assert
-    assert.instanceOf(result, Query, "result is instance of Query");
+    assert.instanceOf(result, Query, 'result is instance of Query');
     done();
   });
 
-  it("BaseDriver#beginBatch() returns a Batch", function (done) {
+  it('BaseDriver#beginBatch() returns a Batch', function (done) {
     // arrange
     var driver = getDefaultInstance();
 
@@ -141,11 +141,11 @@ describe("lib/drivers/base-driver.js", function () {
     var result = driver.beginBatch();
 
     // assert
-    assert.instanceOf(result, Batch, "result is instance of Batch");
+    assert.instanceOf(result, Batch, 'result is instance of Batch');
     done();
   });
 
-  describe("BaseDriver#connect()", function () {
+  describe('BaseDriver#connect()', function () {
 
     var driver;
     beforeEach(function () {
@@ -153,7 +153,7 @@ describe("lib/drivers/base-driver.js", function () {
       driver.init({ config: {} });
     });
 
-    it("creates a connection for the supplied keyspace", function (done) {
+    it('creates a connection for the supplied keyspace', function (done) {
       // arrange
       var keyspace = 'myKeyspace';
 
@@ -165,7 +165,7 @@ describe("lib/drivers/base-driver.js", function () {
       });
     });
 
-    it("creates a connection for the default keyspace if keyspace is not supplied", function (done) {
+    it('creates a connection for the default keyspace if keyspace is not supplied', function (done) {
       // arrange
       // act
       driver.connect(function (err, pool) {
@@ -175,7 +175,7 @@ describe("lib/drivers/base-driver.js", function () {
       });
     });
 
-    it("yields error if connection pool fails to initialize", function (done) {
+    it('yields error if connection pool fails to initialize', function (done) {
       // arrange
       var error = new Error('connection failed');
       driver.getConnectionPool = sinon.stub().yields(error);
@@ -193,7 +193,7 @@ describe("lib/drivers/base-driver.js", function () {
   //       provided by the inheriting driver classes. These tests are present solely for
   //       code coverage purposes
 
-  it("BaseDriver#initProviderOptions() does nothing", function (done) {
+  it('BaseDriver#initProviderOptions() does nothing', function (done) {
     // arrange
     var driver = getDefaultInstance();
 
@@ -203,7 +203,7 @@ describe("lib/drivers/base-driver.js", function () {
     done();
   });
 
-  it("BaseDriver#getNormalizedResults() returns original argument", function (done) {
+  it('BaseDriver#getNormalizedResults() returns original argument', function (done) {
     // arrange
     var driver = getDefaultInstance();
     var expected = [
@@ -217,10 +217,10 @@ describe("lib/drivers/base-driver.js", function () {
     done();
   });
 
-  it("BaseDriver#dataToCql() returns original argument", function (done) {
+  it('BaseDriver#dataToCql() returns original argument', function (done) {
     // arrange
     var driver = getDefaultInstance();
-    var expected = "myValue";
+    var expected = 'myValue';
 
     // act
     var actual = driver.dataToCql(expected);
@@ -229,7 +229,7 @@ describe("lib/drivers/base-driver.js", function () {
     done();
   });
 
-  it("BaseDriver#executeCqlOnDriver() calls callback", function (done) {
+  it('BaseDriver#executeCqlOnDriver() calls callback', function (done) {
     // arrange
     var driver = getDefaultInstance();
 
@@ -237,7 +237,7 @@ describe("lib/drivers/base-driver.js", function () {
     driver.executeCqlOnDriver(null, null, null, null, null, done);
   });
 
-  it("BaseDriver#canRetryError() returns false", function (done) {
+  it('BaseDriver#canRetryError() returns false', function (done) {
     // arrange
     var driver = getDefaultInstance();
 
@@ -249,7 +249,7 @@ describe("lib/drivers/base-driver.js", function () {
     done();
   });
 
-  it("BaseDriver#closePool() calls callback", function (done) {
+  it('BaseDriver#closePool() calls callback', function (done) {
     // arrange
     var driver = getDefaultInstance();
 
@@ -257,15 +257,15 @@ describe("lib/drivers/base-driver.js", function () {
     driver.closePool(null, done);
   });
 
-  it("BaseDriver#createConnectionPool() calls callback", function (done) {
+  it('BaseDriver#createConnectionPool() calls callback', function (done) {
     // arrange
     var driver = getDefaultInstance();
 
     // act
-    driver.createConnectionPool(null, done);
+    driver.createConnectionPool(null, false, done);
   });
 
-  describe("BaseDriver#param()", function () {
+  describe('BaseDriver#param()', function () {
     var driver;
 
     beforeEach(function () {
@@ -303,7 +303,7 @@ describe("lib/drivers/base-driver.js", function () {
     });
   });
 
-  describe("BaseDriver#getDriverDataType()", function () {
+  describe('BaseDriver#getDriverDataType()', function () {
     var driver;
 
     beforeEach(function () {

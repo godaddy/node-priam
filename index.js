@@ -1,4 +1,4 @@
-"use strict";
+'use strict';
 
 /*
 // wire up zones if available
@@ -25,5 +25,5 @@ if (global.zone) {
 }
 */
 
-var driver = require("./lib/driver");
+var driver = require('./lib/driver');
 module.exports = driver;

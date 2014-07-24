@@ -1,19 +1,19 @@
-"use strict";
+'use strict';
 
-var sinon = require("sinon"),
-  chai = require("chai"),
-  util = require("util"),
-  assert = chai.assert,
-  expect = chai.expect,
-  FakeResolver = require("../../stubs/fake-resolver"),
-  _ = require("lodash"),
-  path = require("path");
+var sinon = require('sinon')
+  , chai = require('chai')
+  , util = require('util')
+  , assert = chai.assert
+  , expect = chai.expect
+  , FakeResolver = require('../../stubs/fake-resolver')
+  , _ = require('lodash')
+  , path = require('path');
 chai.use(require('sinon-chai'));
 
-var helenus = require("helenus");
-var Driver = require("../../../lib/drivers/helenus");
+var helenus = require('helenus');
+var Driver = require('../../../lib/drivers/helenus');
 
-describe("lib/drivers/helenus.js", function () {
+describe('lib/drivers/helenus.js', function () {
 
   function getDefaultLogger() {
     return {
@@ -27,8 +27,8 @@ describe("lib/drivers/helenus.js", function () {
 
   function getDefaultConfig() {
     return {
-      hosts: ["123.456.789.012:9160"],
-      keyspace: "myKeySpace",
+      hosts: ['123.456.789.012:9160'],
+      keyspace: 'myKeySpace',
       timeout: 12345
     };
   }
@@ -41,7 +41,7 @@ describe("lib/drivers/helenus.js", function () {
     return instance;
   }
 
-  describe("interface", function () {
+  describe('interface', function () {
 
     var instance = getDefaultInstance();
 
@@ -49,41 +49,41 @@ describe("lib/drivers/helenus.js", function () {
       // arrange
       // act
       // assert
-      assert.strictEqual(typeof instance[name], "function");
-      assert.strictEqual(instance[name].length, argCount, name + " takes " + argCount + " arguments");
+      assert.strictEqual(typeof instance[name], 'function');
+      assert.strictEqual(instance[name].length, argCount, name + ' takes ' + argCount + ' arguments');
     }
 
-    it("is a constructor function", function () {
-      assert.strictEqual(typeof Driver, "function", "exports a constructor function");
+    it('is a constructor function', function () {
+      assert.strictEqual(typeof Driver, 'function', 'exports a constructor function');
     });
-    it("instance provides a cql function", function () {
-      validateFunctionExists("cql", 4);
+    it('instance provides a cql function', function () {
+      validateFunctionExists('cql', 4);
     });
-    it("instance provides a namedQuery function", function () {
-      validateFunctionExists("namedQuery", 4);
+    it('instance provides a namedQuery function', function () {
+      validateFunctionExists('namedQuery', 4);
     });
-    it("instance provides consistencyLevel object", function () {
+    it('instance provides consistencyLevel object', function () {
       assert.isDefined(instance.consistencyLevel);
     });
-    it("instance provides a select function", function () {
-      validateFunctionExists("select", 4);
+    it('instance provides a select function', function () {
+      validateFunctionExists('select', 4);
     });
-    it("instance provides a insert function", function () {
-      validateFunctionExists("insert", 4);
+    it('instance provides a insert function', function () {
+      validateFunctionExists('insert', 4);
     });
-    it("instance provides a update function", function () {
-      validateFunctionExists("update", 4);
+    it('instance provides a update function', function () {
+      validateFunctionExists('update', 4);
     });
-    it("instance provides a delete function", function () {
-      validateFunctionExists("delete", 4);
+    it('instance provides a delete function', function () {
+      validateFunctionExists('delete', 4);
     });
-    it("instance provides a close function", function () {
-      validateFunctionExists("close", 1);
+    it('instance provides a close function', function () {
+      validateFunctionExists('close', 1);
     });
   });
 
-  describe("HelenusDriver#constructor", function () {
-    it("should throw exception if context is missing", function () {
+  describe('HelenusDriver#constructor', function () {
+    it('should throw exception if context is missing', function () {
       // arrange
       // act
       expect(function () {
@@ -93,7 +93,7 @@ describe("lib/drivers/helenus.js", function () {
         .to.throw(Error, /missing context /i);
     });
 
-    it("should throw exception if config is missing from context", function () {
+    it('should throw exception if config is missing from context', function () {
       // arrange
       // act
       expect(function () {
@@ -102,27 +102,27 @@ describe("lib/drivers/helenus.js", function () {
         // assert
         .to.throw(Error, /missing context.config /i);
     });
-    it("sets default pool configuration", function () {
+    it('sets default pool configuration', function () {
       // arrange
       var config = _.extend({ }, getDefaultConfig());
-      var cqlVersion = "3.0.0";
+      var cqlVersion = '3.0.0';
       var consistencyLevel = helenus.ConsistencyLevel.ONE;
 
       // act
       var instance = new Driver({ config: config });
 
       // assert
-      assert.deepEqual(instance.poolConfig.hosts, config.hosts, "hosts should be passed through");
-      assert.strictEqual(instance.poolConfig.keyspace, config.keyspace, "keyspace should be passed through");
-      assert.strictEqual(instance.poolConfig.timeout, config.timeout, "timeout should be passed through");
-      assert.strictEqual(instance.poolConfig.cqlVersion, cqlVersion, "cqlVersion should default to 3.0.0");
-      assert.strictEqual(instance.poolConfig.consistencyLevel, consistencyLevel, "consistencyLevel should default to ONE");
+      assert.deepEqual(instance.poolConfig.hosts, config.hosts, 'hosts should be passed through');
+      assert.strictEqual(instance.poolConfig.keyspace, config.keyspace, 'keyspace should be passed through');
+      assert.strictEqual(instance.poolConfig.timeout, config.timeout, 'timeout should be passed through');
+      assert.strictEqual(instance.poolConfig.cqlVersion, cqlVersion, 'cqlVersion should default to 3.0.0');
+      assert.strictEqual(instance.poolConfig.consistencyLevel, consistencyLevel, 'consistencyLevel should default to ONE');
     });
 
-    it("should override default pool config with additional store options", function () {
+    it('should override default pool config with additional store options', function () {
       // arrange
       var config = _.extend({}, getDefaultConfig());
-      var cqlVersion = "2.0.0";
+      var cqlVersion = '2.0.0';
       var consistencyLevel = helenus.ConsistencyLevel.ANY;
       config.cqlVersion = cqlVersion;
       config.consistencyLevel = consistencyLevel;
@@ -131,17 +131,17 @@ describe("lib/drivers/helenus.js", function () {
       var instance = new Driver({ config: config });
 
       // assert
-      assert.deepEqual(instance.poolConfig.hosts, config.hosts, "hosts should be passed through");
-      assert.strictEqual(instance.poolConfig.keyspace, config.keyspace, "keyspace should be passed through");
-      assert.strictEqual(instance.poolConfig.timeout, config.timeout, "timeout should be passed through");
-      assert.strictEqual(instance.poolConfig.cqlVersion, cqlVersion, "cqlVersion should be overridden");
-      assert.strictEqual(instance.poolConfig.consistencyLevel, consistencyLevel, "consistencyLevel should be overridden");
+      assert.deepEqual(instance.poolConfig.hosts, config.hosts, 'hosts should be passed through');
+      assert.strictEqual(instance.poolConfig.keyspace, config.keyspace, 'keyspace should be passed through');
+      assert.strictEqual(instance.poolConfig.timeout, config.timeout, 'timeout should be passed through');
+      assert.strictEqual(instance.poolConfig.cqlVersion, cqlVersion, 'cqlVersion should be overridden');
+      assert.strictEqual(instance.poolConfig.consistencyLevel, consistencyLevel, 'consistencyLevel should be overridden');
     });
   });
 
   function getPoolStub(config, isReady, err, data) {
     var pool = {
-      storeConfig: _.extend({ consistencyLevel: 1, cqlVersion: "3.0.0"}, config),
+      storeConfig: _.extend({ consistencyLevel: 1, cqlVersion: '3.0.0'}, config),
       isReady: isReady,
       cql: sinon.stub().yields(err, data),
       monitorConnections: sinon.stub(),
@@ -163,11 +163,115 @@ describe("lib/drivers/helenus.js", function () {
     return pool;
   }
 
-  describe("HelenusDriver#close()", function () {
+  describe('HelenusDriver#connect()', function () {
+
+    var instance;
+
+    beforeEach(function () {
+      instance = getDefaultInstance();
+    });
+
+    afterEach(function () {
+      if (helenus.ConnectionPool.restore) {
+        helenus.ConnectionPool.restore();
+      }
+    });
+
+    it('returns the connection pool on successful connection', function (done) {
+      // arrange
+      var pool = getPoolStub(instance.config, true, null, {});
+      pool.on = sinon.stub();
+      pool.connect = sinon.stub().yieldsAsync(null, {});
+      sinon.stub(helenus, 'ConnectionPool').returns(pool);
+
+      // act
+      instance.connect(function (err, newPool) {
+        // assert
+        assert.notOk(err, 'error should not be passed');
+        assert.equal(newPool, pool, 'pool should be passed');
+        assert.strictEqual(pool.isReady, true, 'pool should be ready');
+
+        done();
+      });
+    });
+
+    it('returns error if pool fails to connect', function (done) {
+      // arrange
+      var pool = getPoolStub(instance.config, true, null, {});
+      var error = new Error('connection failed');
+      pool.on = sinon.stub();
+      pool.connect = sinon.stub().yieldsAsync(error);
+      sinon.stub(helenus, 'ConnectionPool').returns(pool);
+
+      // act
+      instance.connect(function (err, pool) {
+        // assert
+        assert.notOk(pool, 'pool should not be populated');
+        assert.equal(err, error, 'error should be populated');
+
+        done();
+      });
+    });
+
+  });
+
+  describe('HelenusDriver#connect()', function () {
+
+    var instance;
+
+    beforeEach(function () {
+      instance = getDefaultInstance();
+    });
+
+    afterEach(function () {
+      if (helenus.ConnectionPool.restore) {
+        helenus.ConnectionPool.restore();
+      }
+    });
+
+    it('returns the connection pool on successful connection if "waitForConnect" is true', function (done) {
+      // arrange
+      var pool = getPoolStub(instance.config, true, null, {});
+      pool.on = sinon.stub();
+      pool.connect = sinon.stub().yieldsAsync(null, {});
+      sinon.stub(helenus, 'ConnectionPool').returns(pool);
+
+      // act
+      instance.createConnectionPool({}, true, function (err, newPool) {
+        // assert
+        assert.notOk(err, 'error should not be passed');
+        assert.equal(newPool, pool, 'pool should be passed');
+        assert.strictEqual(pool.isReady, true, 'pool should be ready');
+
+        done();
+      });
+    });
+
+    it('returns the connection pool immediately "waitForConnect" is false', function (done) {
+      // arrange
+      var pool = getPoolStub(instance.config, true, null, {});
+      pool.on = sinon.stub();
+      pool.connect = sinon.stub().yieldsAsync(null, {});
+      sinon.stub(helenus, 'ConnectionPool').returns(pool);
+
+      // act
+      instance.createConnectionPool({}, false, function (err, newPool) {
+        // assert
+        assert.notOk(err, 'error should not be passed');
+        assert.equal(newPool, pool, 'pool should be passed');
+        assert.strictEqual(pool.isReady, false, 'pool should NOT be ready');
+
+        done();
+      });
+    });
+
+  });
+
+  describe('HelenusDriver#close()', function () {
 
     var instance = getDefaultInstance();
 
-    it("closes the connection pool if it exists", function (done) {
+    it('closes the connection pool if it exists', function (done) {
       // arrange
       var pool = getPoolStub(instance.config, true, null, {});
       instance.pools = { default: pool };
@@ -175,14 +279,14 @@ describe("lib/drivers/helenus.js", function () {
       // act
       instance.close(function () {
         // assert
-        assert.strictEqual(pool.isClosed, true, "pool should be set to closed");
-        assert.ok(pool.close.called, "pool close should be called");
+        assert.strictEqual(pool.isClosed, true, 'pool should be set to closed');
+        assert.ok(pool.close.called, 'pool close should be called');
 
         done();
       });
     });
 
-    it("just calls callback if pool does not yet exist", function (done) {
+    it('just calls callback if pool does not yet exist', function (done) {
       // arrange
       instance.pools = {};
 
@@ -196,7 +300,7 @@ describe("lib/drivers/helenus.js", function () {
 
   });
 
-  describe("HelenusDriver#cql()", function () {
+  describe('HelenusDriver#cql()', function () {
 
     var instance = null,
       fakeResolver = null;
@@ -212,67 +316,67 @@ describe("lib/drivers/helenus.js", function () {
       }
     });
 
-    it("creates a new connection pool if one does not exist", function (done) {
+    it('creates a new connection pool if one does not exist', function (done) {
       // arrange
-      var cql = "MyCqlStatement";
-      var params = ["param1", "param2", "param3"];
+      var cql = 'MyCqlStatement';
+      var params = ['param1', 'param2', 'param3'];
       var consistency = helenus.ConsistencyLevel.ONE;
       var pool = getPoolStub(instance.config, true, null, {});
       pool.on = sinon.stub();
       pool.connect = sinon.stub().yieldsAsync(null, {});
-      sinon.stub(helenus, "ConnectionPool").returns(pool);
+      sinon.stub(helenus, 'ConnectionPool').returns(pool);
       instance.pools = {};
 
       // act
       instance.cql(cql, params, { consistency: consistency }, function () {
         // assert
-        assert.equal(instance.pools.default, pool, "pool should be cached");
-        assert.strictEqual(pool.waiters.length, 0, "waiters should be executed after connection completes");
-        assert.strictEqual(pool.cql.called, true, "cql statements should execute after connection completes");
+        assert.equal(instance.pools.default, pool, 'pool should be cached');
+        assert.strictEqual(pool.waiters.length, 0, 'waiters should be executed after connection completes');
+        assert.strictEqual(pool.cql.called, true, 'cql statements should execute after connection completes');
 
         done();
       });
 
       // before callback asserts
-      assert.strictEqual(pool.cql.called, false, "cql statements should wait to execute until after connection completes");
+      assert.strictEqual(pool.cql.called, false, 'cql statements should wait to execute until after connection completes');
     });
 
-    it("creates a new connection pool if config no longer matches", function (done) {
+    it('creates a new connection pool if config no longer matches', function (done) {
       // arrange
-      var cql = "MyCqlStatement";
-      var params = ["param1", "param2", "param3"];
+      var cql = 'MyCqlStatement';
+      var params = ['param1', 'param2', 'param3'];
       var consistency = helenus.ConsistencyLevel.ONE;
-      var pool = getPoolStub({ different: "config", keyspace: instance.config.keyspace }, true, null, {});
+      var pool = getPoolStub({ different: 'config', keyspace: instance.config.keyspace }, true, null, {});
       pool.on = sinon.stub();
       pool.connect = sinon.stub().yieldsAsync(null, {});
-      sinon.stub(helenus, "ConnectionPool").returns(pool);
+      sinon.stub(helenus, 'ConnectionPool').returns(pool);
       var existingPool = getPoolStub({ keyspace: instance.config.keyspace }, true, null, {});
       instance.pools = { default: existingPool };
 
       // act
       instance.cql(cql, params, { consistency: consistency }, function () {
         // assert
-        assert.notEqual(instance.pools.default, existingPool, "existing pool should be replaced");
-        assert.equal(instance.pools.default, pool, "pool should be cached");
-        assert.strictEqual(pool.waiters.length, 0, "waiters should be executed after connection completes");
-        assert.strictEqual(pool.cql.called, true, "cql statements should execute after connection completes");
+        assert.notEqual(instance.pools.default, existingPool, 'existing pool should be replaced');
+        assert.equal(instance.pools.default, pool, 'pool should be cached');
+        assert.strictEqual(pool.waiters.length, 0, 'waiters should be executed after connection completes');
+        assert.strictEqual(pool.cql.called, true, 'cql statements should execute after connection completes');
 
         done();
       });
 
       // before callback asserts
-      assert.strictEqual(pool.cql.called, false, "cql statements should wait to execute until after connection completes");
+      assert.strictEqual(pool.cql.called, false, 'cql statements should wait to execute until after connection completes');
     });
 
-    it("creates a new connection pool if pool is closed", function (done) {
+    it('creates a new connection pool if pool is closed', function (done) {
       // arrange
-      var cql = "MyCqlStatement";
-      var params = ["param1", "param2", "param3"];
+      var cql = 'MyCqlStatement';
+      var params = ['param1', 'param2', 'param3'];
       var consistency = helenus.ConsistencyLevel.ONE;
       var pool = getPoolStub(instance.config, true, null, {});
       pool.on = sinon.stub();
       pool.connect = sinon.stub().yieldsAsync(null, {});
-      sinon.stub(helenus, "ConnectionPool").returns(pool);
+      sinon.stub(helenus, 'ConnectionPool').returns(pool);
       var existingPool = getPoolStub(instance.config, true, null, {});
       existingPool.isClosed = true;
       instance.pools = { default: existingPool };
@@ -280,47 +384,47 @@ describe("lib/drivers/helenus.js", function () {
       // act
       instance.cql(cql, params, { consistency: consistency }, function () {
         // assert
-        assert.notOk(existingPool.cql.called, "existing pool should not be called");
-        assert.ok(pool.cql.called, "new pool should be called");
+        assert.notOk(existingPool.cql.called, 'existing pool should not be called');
+        assert.ok(pool.cql.called, 'new pool should be called');
 
         done();
       });
 
-      assert.strictEqual(pool.cql.called, false, "cql statements should wait to execute until after connection completes");
+      assert.strictEqual(pool.cql.called, false, 'cql statements should wait to execute until after connection completes');
     });
 
-    it("adds a new connection pool if keyspace is different", function (done) {
+    it('adds a new connection pool if keyspace is different', function (done) {
       // arrange
-      var cql = "MyCqlStatement";
-      var params = ["param1", "param2", "param3"];
+      var cql = 'MyCqlStatement';
+      var params = ['param1', 'param2', 'param3'];
       var consistency = helenus.ConsistencyLevel.ONE;
-      var pool = getPoolStub(_.extend(_.extend({}, instance.config), { keyspace: "myNewKeyspace" }), true, null, {});
+      var pool = getPoolStub(_.extend(_.extend({}, instance.config), { keyspace: 'myNewKeyspace' }), true, null, {});
       pool.on = sinon.stub();
       pool.connect = sinon.stub().yieldsAsync(null, {});
-      sinon.stub(helenus, "ConnectionPool").returns(pool);
+      sinon.stub(helenus, 'ConnectionPool').returns(pool);
 
       var existingPool = getPoolStub(_.extend({}, instance.config), true, null, {});
       instance.pools = { default: existingPool };
 
       // act
-      instance.cql(cql, params, { consistency: consistency, keyspace: "myNewKeyspace" }, function () {
+      instance.cql(cql, params, { consistency: consistency, keyspace: 'myNewKeyspace' }, function () {
         // assert
-        assert.notOk(existingPool.cql.called, "existing pool should not be called");
-        assert.ok(pool.cql.called, "new pool should be called");
+        assert.notOk(existingPool.cql.called, 'existing pool should not be called');
+        assert.ok(pool.cql.called, 'new pool should be called');
 
         done();
       });
     });
 
-    it("uses default connection pool if supplied keyspace matches default", function (done) {
+    it('uses default connection pool if supplied keyspace matches default', function (done) {
       // arrange
-      var cql = "MyCqlStatement";
-      var params = ["param1", "param2", "param3"];
+      var cql = 'MyCqlStatement';
+      var params = ['param1', 'param2', 'param3'];
       var consistency = helenus.ConsistencyLevel.ONE;
       var pool = getPoolStub(_.extend(_.extend({}, instance.config), { keyspace: instance.config.keyspace }), true, null, {});
       pool.on = sinon.stub();
       pool.connect = sinon.stub().yieldsAsync(null, {});
-      sinon.stub(helenus, "ConnectionPool").returns(pool);
+      sinon.stub(helenus, 'ConnectionPool').returns(pool);
 
       var existingPool = getPoolStub(_.extend({}, instance.config), true, null, {});
       instance.pools = { default: existingPool };
@@ -328,33 +432,33 @@ describe("lib/drivers/helenus.js", function () {
       // act
       instance.cql(cql, params, { consistency: consistency, keyspace: instance.config.keyspace }, function () {
         // assert
-        assert.notOk(pool.cql.called, "new pool should not be called");
-        assert.ok(existingPool.cql.called, "existing pool should be called");
+        assert.notOk(pool.cql.called, 'new pool should not be called');
+        assert.ok(existingPool.cql.called, 'existing pool should be called');
 
         done();
       });
     });
 
-    it("sets up a global error handler for the connection pool", function (done) {
+    it('sets up a global error handler for the connection pool', function (done) {
       // setup arrange
       var consistency = helenus.ConsistencyLevel.ONE;
       var pool = getPoolStub(instance.config, true, null, {});
       var errorCb = null;
       pool.on = sinon.stub();
       pool.connect = sinon.stub().yieldsAsync(null, {});
-      sinon.stub(helenus, "ConnectionPool").returns(pool);
+      sinon.stub(helenus, 'ConnectionPool').returns(pool);
       instance.pools = {};
 
       // setup act
-      instance.cql("cql", [], { consistency: consistency }, function () {
+      instance.cql('cql', [], { consistency: consistency }, function () {
         var ctorCall = helenus.ConnectionPool.getCall(0);
 
         // setup assert
-        assert.ok(pool.on.calledWith("error", sinon.match.func), "error handler should be wired up");
+        assert.ok(pool.on.calledWith('error', sinon.match.func), 'error handler should be wired up');
 
         // handler arrange
         var errorCb = pool.on.getCall(0).args[1];
-        var error = new Error("the connection blew up");
+        var error = new Error('the connection blew up');
         instance.logger = getDefaultLogger();
 
         // handler act
@@ -367,39 +471,39 @@ describe("lib/drivers/helenus.js", function () {
       });
     });
 
-    it("sets up an error handler for pool.connect", function (done) {
+    it('sets up an error handler for pool.connect', function (done) {
       // arrange
       var consistency = helenus.ConsistencyLevel.ONE;
       var pool = getPoolStub(instance.config, true, null, {});
       var errorCb = null;
       pool.on = sinon.stub();
-      pool.connect = sinon.stub().yieldsAsync(new Error("Connection pool failed to connect"));
-      sinon.stub(helenus, "ConnectionPool").returns(pool);
+      pool.connect = sinon.stub().yieldsAsync(new Error('Connection pool failed to connect'));
+      sinon.stub(helenus, 'ConnectionPool').returns(pool);
       instance.pools = {};
       instance.logger = getDefaultLogger();
 
       // act
-      instance.cql("cql", [], { consistency: consistency }, function (err, result) {
+      instance.cql('cql', [], { consistency: consistency }, function (err, result) {
         var ctorCall = helenus.ConnectionPool.getCall(0);
 
         // assert
         assert.instanceOf(err, Error);
         assert.isUndefined(result);
-        assert.ok(instance.logger.error.calledOnce, "error log is called once");
+        assert.ok(instance.logger.error.calledOnce, 'error log is called once');
 
         done();
       });
     });
 
-    it("executes queued queries when connection completes", function (done) {
+    it('executes queued queries when connection completes', function (done) {
       // arrange
-      var cql = "MyCqlStatement";
-      var params = ["param1", "param2", "param3"];
+      var cql = 'MyCqlStatement';
+      var params = ['param1', 'param2', 'param3'];
       var consistency = helenus.ConsistencyLevel.ONE;
       var pool = getPoolStub(instance.config, true, null, {});
       pool.on = sinon.stub();
-      pool.connect = sinon.stub().yieldsAsync(null, "myKeySpace");
-      sinon.stub(helenus, "ConnectionPool").returns(pool);
+      pool.connect = sinon.stub().yieldsAsync(null, 'myKeySpace');
+      sinon.stub(helenus, 'ConnectionPool').returns(pool);
       instance.pools = {};
 
       // act
@@ -407,17 +511,17 @@ describe("lib/drivers/helenus.js", function () {
         var ctorCall = helenus.ConnectionPool.getCall(0);
 
         // assert
-        assert.strictEqual(pool.isReady, true, "pool should be set to true after connection completes");
-        assert.strictEqual(pool.cql.called, true, "cql statements should execute after connection completes");
+        assert.strictEqual(pool.isReady, true, 'pool should be set to true after connection completes');
+        assert.strictEqual(pool.cql.called, true, 'cql statements should execute after connection completes');
 
         done();
       });
     });
 
-    it("allows callback to be optional to support fire-and-forget scenarios", function (done) {
+    it('allows callback to be optional to support fire-and-forget scenarios', function (done) {
       // arrange
-      var cql = "MyCqlStatement";
-      var params = ["param1", "param2", "param3"];
+      var cql = 'MyCqlStatement';
+      var params = ['param1', 'param2', 'param3'];
       var consistency = helenus.ConsistencyLevel.ONE;
       var pool = getPoolStub(instance.config, true, null, []);
       instance.pools = { default: pool };
@@ -426,8 +530,8 @@ describe("lib/drivers/helenus.js", function () {
         var call = pool.cql.getCall(0);
 
         // assert
-        assert.strictEqual(call.args[0], cql, "cql should be passed through");
-        assert.deepEqual(call.args[1], params, "params should be passed through");
+        assert.strictEqual(call.args[0], cql, 'cql should be passed through');
+        assert.deepEqual(call.args[1], params, 'params should be passed through');
 
         cb(null, []);
         done();
@@ -438,15 +542,15 @@ describe("lib/drivers/helenus.js", function () {
     });
 
 
-    it("uses default consistency of ONE if no options are passed", function (done) {
+    it('uses default consistency of ONE if no options are passed', function (done) {
       // arrange
-      var cql = "MyCqlStatement";
-      var params = ["param1", "param2", "param3"];
+      var cql = 'MyCqlStatement';
+      var params = ['param1', 'param2', 'param3'];
       var consistency = helenus.ConsistencyLevel.ONE;
       var pool = getPoolStub(instance.config, true, null, []);
       pool.on = sinon.stub();
-      pool.connect = sinon.stub().yieldsAsync(null, "myKeySpace");
-      sinon.stub(helenus, "ConnectionPool").returns(pool);
+      pool.connect = sinon.stub().yieldsAsync(null, 'myKeySpace');
+      sinon.stub(helenus, 'ConnectionPool').returns(pool);
       instance.pools = {};
 
       // act
@@ -454,19 +558,19 @@ describe("lib/drivers/helenus.js", function () {
         var ctorCall = helenus.ConnectionPool.getCall(0);
 
         // assert
-        assert.strictEqual(ctorCall.args[0].consistencyLevel, consistency, "consistency should be ONE");
+        assert.strictEqual(ctorCall.args[0].consistencyLevel, consistency, 'consistency should be ONE');
 
         done();
       });
     });
 
-    it("executes CQL and returns the data", function (done) {
+    it('executes CQL and returns the data', function (done) {
       // arrange
-      var cql = "MyCqlStatement";
-      var params = ["param1", "param2", "param3", new Buffer("param4")];
+      var cql = 'MyCqlStatement';
+      var params = ['param1', 'param2', 'param3', new Buffer('param4')];
       var consistency = helenus.ConsistencyLevel.ONE;
       var err = null;
-      var data = { field1: "value1" };
+      var data = { field1: 'value1' };
       var pool = getPoolStub(instance.config, true, err, data);
       instance.pools = { default: pool };
 
@@ -475,25 +579,25 @@ describe("lib/drivers/helenus.js", function () {
         var call = pool.cql.getCall(0);
 
         // assert
-        assert.strictEqual(call.args[0], cql, "cql should be passed through");
-        assert.deepEqual(call.args[1], params, "params should be passed through");
-        assert.isNull(error, "error should be null");
-        assert.equal(returnData, data, "data should match cql output");
+        assert.strictEqual(call.args[0], cql, 'cql should be passed through');
+        assert.deepEqual(call.args[1], params, 'params should be passed through');
+        assert.isNull(error, 'error should be null');
+        assert.equal(returnData, data, 'data should match cql output');
 
         done();
       });
     });
 
-    it("converts parameters with a UUID hint to a UUID object", function (done) {
+    it('converts parameters with a UUID hint to a UUID object', function (done) {
       // arrange
-      var cql = "INSERT INTO table (key) VALUES (?)";
+      var cql = 'INSERT INTO table (key) VALUES (?)';
       var origUUID = '8bf58bc0-5d52-4066-b521-83e93fc7a2c5';
       var params = [
         { value: origUUID, hint: instance.dataType.uuid }
       ];
       var consistency = helenus.ConsistencyLevel.ONE;
       var err = null;
-      var data = { field1: "value1" };
+      var data = { field1: 'value1' };
       var pool = getPoolStub(instance.config, true, err, data);
       instance.pools = { default: pool };
 
@@ -509,10 +613,10 @@ describe("lib/drivers/helenus.js", function () {
       });
     });
 
-    it("normalizes/deserializes the data in the resulting array", function (done) {
+    it('normalizes/deserializes the data in the resulting array', function (done) {
       // arrange
-      var cql = "MyCqlStatement";
-      var params = ["param1", "param2", "param3"];
+      var cql = 'MyCqlStatement';
+      var params = ['param1', 'param2', 'param3'];
       var consistency = helenus.ConsistencyLevel.ONE;
       var err = null;
       var data = [
@@ -521,12 +625,12 @@ describe("lib/drivers/helenus.js", function () {
           get: sinon.stub()
         }
       ];
-      data[0].get.withArgs("field1").returns({ value: "value1" });
-      data[0].get.withArgs("field2").returns({ value: 2 });
-      data[0].get.withArgs("field3").returns({ value: "{ \"subField1\": \"blah\" }" });
-      data[0].get.withArgs("field4").returns({ value: "[ 4, 3, 2, 1]" });
-      data[0].get.withArgs("field5").returns({ value: "{ some invalid json }" });
-      data[0].get.withArgs("field6").returns({ value: "{ \"jsonThat\": \"iDontWantToParse\" }" });
+      data[0].get.withArgs('field1').returns({ value: 'value1' });
+      data[0].get.withArgs('field2').returns({ value: 2 });
+      data[0].get.withArgs('field3').returns({ value: '{ "subField1": "blah" }' });
+      data[0].get.withArgs('field4').returns({ value: '[ 4, 3, 2, 1]' });
+      data[0].get.withArgs('field5').returns({ value: '{ some invalid json }' });
+      data[0].get.withArgs('field6').returns({ value: '{ "jsonThat": "iDontWantToParse" }' });
 
       var pool = getPoolStub(instance.config, true, err, data);
       instance.pools = { default: pool };
@@ -546,24 +650,24 @@ describe("lib/drivers/helenus.js", function () {
         var call = pool.cql.getCall(0);
 
         // assert
-        assert.strictEqual(call.args[0], cql, "cql should be passed through");
-        assert.deepEqual(call.args[1], params, "params should be passed through");
-        assert.isNull(error, "error should be null");
-        assert.strictEqual(returnData[0].field1, "value1", "first field should be a string");
-        assert.strictEqual(returnData[0].field2, 2, "second field should be a number");
-        assert.deepEqual(returnData[0].field3, { subField1: 'blah' }, "third field should be an object");
-        assert.deepEqual(returnData[0].field4, [ 4, 3, 2, 1], "fourth field should be an array");
-        assert.deepEqual(returnData[0].field5, "{ some invalid json }", "fifth field should be a string");
-        assert.deepEqual(returnData[0].field6, "{ \"jsonThat\": \"iDontWantToParse\" }", "sixth field should be a string");
+        assert.strictEqual(call.args[0], cql, 'cql should be passed through');
+        assert.deepEqual(call.args[1], params, 'params should be passed through');
+        assert.isNull(error, 'error should be null');
+        assert.strictEqual(returnData[0].field1, 'value1', 'first field should be a string');
+        assert.strictEqual(returnData[0].field2, 2, 'second field should be a number');
+        assert.deepEqual(returnData[0].field3, { subField1: 'blah' }, 'third field should be an object');
+        assert.deepEqual(returnData[0].field4, [ 4, 3, 2, 1], 'fourth field should be an array');
+        assert.deepEqual(returnData[0].field5, '{ some invalid json }', 'fifth field should be a string');
+        assert.deepEqual(returnData[0].field6, '{ "jsonThat": "iDontWantToParse" }', 'sixth field should be a string');
 
         done();
       });
     });
 
-    it("normalizes/deserializes the data in the resulting array by detecting JSON strings", function (done) {
+    it('normalizes/deserializes the data in the resulting array by detecting JSON strings', function (done) {
       // arrange
-      var cql = "MyCqlStatement";
-      var params = ["param1", "param2", "param3"];
+      var cql = 'MyCqlStatement';
+      var params = ['param1', 'param2', 'param3'];
       var consistency = helenus.ConsistencyLevel.ONE;
       var err = null;
       var data = [
@@ -572,11 +676,11 @@ describe("lib/drivers/helenus.js", function () {
           get: sinon.stub()
         }
       ];
-      data[0].get.withArgs("field1").returns({ value: "value1" });
-      data[0].get.withArgs("field2").returns({ value: 2 });
-      data[0].get.withArgs("field3").returns({ value: "{ \"subField1\": \"blah\" }" });
-      data[0].get.withArgs("field4").returns({ value: "[ 4, 3, 2, 1]" });
-      data[0].get.withArgs("field5").returns({ value: "{ some invalid json }" });
+      data[0].get.withArgs('field1').returns({ value: 'value1' });
+      data[0].get.withArgs('field2').returns({ value: 2 });
+      data[0].get.withArgs('field3').returns({ value: '{ "subField1": "blah" }' });
+      data[0].get.withArgs('field4').returns({ value: '[ 4, 3, 2, 1]' });
+      data[0].get.withArgs('field5').returns({ value: '{ some invalid json }' });
 
       var pool = getPoolStub(instance.config, true, err, data);
       instance.pools = { default: pool };
@@ -590,14 +694,14 @@ describe("lib/drivers/helenus.js", function () {
         var call = pool.cql.getCall(0);
 
         // assert
-        assert.strictEqual(call.args[0], cql, "cql should be passed through");
-        assert.deepEqual(call.args[1], params, "params should be passed through");
-        assert.isNull(error, "error should be null");
-        assert.strictEqual(returnData[0].field1, "value1", "first field should be a string");
-        assert.strictEqual(returnData[0].field2, 2, "second field should be a number");
-        assert.deepEqual(returnData[0].field3, { subField1: 'blah' }, "third field should be an object");
-        assert.deepEqual(returnData[0].field4, [ 4, 3, 2, 1], "fourth field should be an array");
-        assert.deepEqual(returnData[0].field5, "{ some invalid json }", "fifth field should be a string");
+        assert.strictEqual(call.args[0], cql, 'cql should be passed through');
+        assert.deepEqual(call.args[1], params, 'params should be passed through');
+        assert.isNull(error, 'error should be null');
+        assert.strictEqual(returnData[0].field1, 'value1', 'first field should be a string');
+        assert.strictEqual(returnData[0].field2, 2, 'second field should be a number');
+        assert.deepEqual(returnData[0].field3, { subField1: 'blah' }, 'third field should be an object');
+        assert.deepEqual(returnData[0].field4, [ 4, 3, 2, 1], 'fourth field should be an array');
+        assert.deepEqual(returnData[0].field5, '{ some invalid json }', 'fifth field should be a string');
 
         done();
       });
@@ -605,7 +709,7 @@ describe("lib/drivers/helenus.js", function () {
     });
 
 
-    it("runs result transformers on the returned data in order", function (done) {
+    it('runs result transformers on the returned data in order', function (done) {
       // arrange
       instance.execCql = sinon.stub();
       instance.execCql.yields(null, [0, 1, 2, 3]);
@@ -614,14 +718,14 @@ describe("lib/drivers/helenus.js", function () {
       var secondTransform = function(x){return x * x;};
 
       // act
-      instance.cql("some query", null, {
+      instance.cql('some query', null, {
         suppressDebugLog: true,
         deserializeJsonStrings: true,
         resultTransformers:[firstTransform, secondTransform]
       }, function (error, returnData) {
 
         // assert
-        assert.isNull(error, "error should be null");
+        assert.isNull(error, 'error should be null');
         assert.strictEqual(returnData[0], 1);
         assert.strictEqual(returnData[1], 4);
         assert.deepEqual(returnData[2], 9);
@@ -633,10 +737,10 @@ describe("lib/drivers/helenus.js", function () {
     });
 
     function testErrorRetry(errorName, errorCode, numRetries, shouldRetry) {
-      it((shouldRetry ? "adds" : "does not add") + " error retry if error is '" + errorName + "', code '" + errorCode + "', and retries " + numRetries, function (done) {
+      it((shouldRetry ? 'adds' : 'does not add') + ' error retry if error is "' + errorName + '", code "' + errorCode + '", and retries ' + numRetries, function (done) {
         // arrange
-        var cql = "MyCqlStatement";
-        var params = ["param1", "param2", "param3"];
+        var cql = 'MyCqlStatement';
+        var params = ['param1', 'param2', 'param3'];
         var consistency = helenus.ConsistencyLevel.ONE;
         var pool = getPoolStub(instance.config, true, null, {});
         var data = [];
@@ -644,7 +748,7 @@ describe("lib/drivers/helenus.js", function () {
         pool.cql = sinon.spy(function (c, d, cb) {
           callCount++;
           if (callCount === 1) {
-            var e = new Error("some connection error");
+            var e = new Error('some connection error');
             e.name = errorName;
             e.code = errorCode;
             cb(e);
@@ -663,13 +767,13 @@ describe("lib/drivers/helenus.js", function () {
           if (shouldRetry) {
             var call1 = pool.cql.getCall(0);
             var call2 = pool.cql.getCall(1);
-            assert.strictEqual(pool.cql.callCount, 2, "cql should be called twice");
-            assert.notEqual(call1.args[1], call2.args[1], "parameters should be cloned");
-            assert.deepEqual(call1.args[1], call2.args[1], "parameters should be cloned");
-            assert.deepEqual(returnData, data, "data should match cql output");
+            assert.strictEqual(pool.cql.callCount, 2, 'cql should be called twice');
+            assert.notEqual(call1.args[1], call2.args[1], 'parameters should be cloned');
+            assert.deepEqual(call1.args[1], call2.args[1], 'parameters should be cloned');
+            assert.deepEqual(returnData, data, 'data should match cql output');
           }
           else {
-            assert.strictEqual(pool.cql.callCount, 1, "cql should be called once");
+            assert.strictEqual(pool.cql.callCount, 1, 'cql should be called once');
           }
 
           done();
@@ -677,18 +781,18 @@ describe("lib/drivers/helenus.js", function () {
       });
     }
 
-    testErrorRetry("HelenusPoolError", null, 0, false);
-    testErrorRetry("HelenusPoolError", null, 1, true);
-    testErrorRetry("HelenusInvalidNameError", null, 1, false);
-    testErrorRetry("HelenusInvalidRequestException", null, 1, false);
-    testErrorRetry("Error", "ECONNRESET", 1, true);
-    testErrorRetry("Error", "ECONNREFUSED", 1, true);
-    testErrorRetry("Error", "ENOTFOUND", 1, true);
+    testErrorRetry('HelenusPoolError', null, 0, false);
+    testErrorRetry('HelenusPoolError', null, 1, true);
+    testErrorRetry('HelenusInvalidNameError', null, 1, false);
+    testErrorRetry('HelenusInvalidRequestException', null, 1, false);
+    testErrorRetry('Error', 'ECONNRESET', 1, true);
+    testErrorRetry('Error', 'ECONNREFUSED', 1, true);
+    testErrorRetry('Error', 'ENOTFOUND', 1, true);
 
-    it("does not add error retry at consistency QUORUM when original consistency is ALL and enableConsistencyFailover is false", function (done) {
+    it('does not add error retry at consistency QUORUM when original consistency is ALL and enableConsistencyFailover is false', function (done) {
       // arrange
-      var cql = "MyCqlStatement";
-      var params = ["param1", "param2", "param3"];
+      var cql = 'MyCqlStatement';
+      var params = ['param1', 'param2', 'param3'];
       var consistency = helenus.ConsistencyLevel.ALL;
       var pool = getPoolStub(instance.config, true, null, {});
       var data = [];
@@ -696,7 +800,7 @@ describe("lib/drivers/helenus.js", function () {
       pool.cql = sinon.spy(function (c, d, cb) {
         callCount++;
         if (callCount === 1) {
-          cb(new Error("throws error on ALL"));
+          cb(new Error('throws error on ALL'));
         }
         else {
           cb(null, data);
@@ -709,7 +813,7 @@ describe("lib/drivers/helenus.js", function () {
       // act
       instance.cql(cql, params, { consistency: consistency }, function (error, returnData) {
         // assert
-        assert.strictEqual(pool.cql.callCount, 1, "cql should be called once");
+        assert.strictEqual(pool.cql.callCount, 1, 'cql should be called once');
         assert.ok(error);
         assert.notOk(returnData);
 
@@ -717,10 +821,10 @@ describe("lib/drivers/helenus.js", function () {
       });
     });
 
-    it("adds error retry at consistency QUORUM when original consistency is ALL", function (done) {
+    it('adds error retry at consistency QUORUM when original consistency is ALL', function (done) {
       // arrange
-      var cql = "MyCqlStatement";
-      var params = ["param1", "param2", "param3"];
+      var cql = 'MyCqlStatement';
+      var params = ['param1', 'param2', 'param3'];
       var consistency = helenus.ConsistencyLevel.ALL;
       var pool = getPoolStub(instance.config, true, null, {});
       var data = [];
@@ -728,7 +832,7 @@ describe("lib/drivers/helenus.js", function () {
       pool.cql = sinon.spy(function (c, d, cb) {
         callCount++;
         if (callCount === 1) {
-          cb(new Error("throws error on ALL"));
+          cb(new Error('throws error on ALL'));
         }
         else {
           cb(null, data);
@@ -742,19 +846,19 @@ describe("lib/drivers/helenus.js", function () {
         var call1 = pool.cql.getCall(0);
         var call2 = pool.cql.getCall(1);
         // assert
-        assert.strictEqual(pool.cql.callCount, 2, "cql should be called twice");
-        assert.notEqual(call1.args[1], call2.args[1], "parameters should be cloned");
-        assert.deepEqual(call1.args[1], call2.args[1], "parameters should be cloned");
-        assert.deepEqual(returnData, data, "data should match cql output");
+        assert.strictEqual(pool.cql.callCount, 2, 'cql should be called twice');
+        assert.notEqual(call1.args[1], call2.args[1], 'parameters should be cloned');
+        assert.deepEqual(call1.args[1], call2.args[1], 'parameters should be cloned');
+        assert.deepEqual(returnData, data, 'data should match cql output');
 
         done();
       });
     });
 
-    it("adds error retry at consistency LOCUM_QUORUM when original consistency is QUORUM", function (done) {
+    it('adds error retry at consistency LOCUM_QUORUM when original consistency is QUORUM', function (done) {
       // arrange
-      var cql = "MyCqlStatement";
-      var params = ["param1", "param2", "param3"];
+      var cql = 'MyCqlStatement';
+      var params = ['param1', 'param2', 'param3'];
       var consistency = helenus.ConsistencyLevel.QUORUM;
       var pool = getPoolStub(instance.config, true, null, {});
       var data = [];
@@ -762,7 +866,7 @@ describe("lib/drivers/helenus.js", function () {
       pool.cql = sinon.spy(function (c, d, cb) {
         callCount++;
         if (callCount === 1) {
-          cb(new Error("throws error on QUORUM"));
+          cb(new Error('throws error on QUORUM'));
         }
         else {
           cb(null, data);
@@ -776,24 +880,24 @@ describe("lib/drivers/helenus.js", function () {
         var call1 = pool.cql.getCall(0);
         var call2 = pool.cql.getCall(1);
         // assert
-        assert.strictEqual(pool.cql.callCount, 2, "cql should be called twice");
-        assert.notEqual(call1.args[1], call2.args[1], "parameters should be cloned");
-        assert.deepEqual(call1.args[1], call2.args[1], "parameters should be cloned");
-        assert.deepEqual(returnData, data, "data should match cql output");
+        assert.strictEqual(pool.cql.callCount, 2, 'cql should be called twice');
+        assert.notEqual(call1.args[1], call2.args[1], 'parameters should be cloned');
+        assert.deepEqual(call1.args[1], call2.args[1], 'parameters should be cloned');
+        assert.deepEqual(returnData, data, 'data should match cql output');
 
         done();
       });
     });
 
 
-    it("captures metrics if metrics and queryName are provided", function (done) {
+    it('captures metrics if metrics and queryName are provided', function (done) {
       // arrange
-      var cql = "MyCqlStatement";
-      var queryName = "MyQueryName";
-      var params = ["param1", "param2", "param3"];
+      var cql = 'MyCqlStatement';
+      var queryName = 'MyQueryName';
+      var params = ['param1', 'param2', 'param3'];
       var consistency = helenus.ConsistencyLevel.ONE;
       var err = null;
-      var data = { field1: "value1" };
+      var data = { field1: 'value1' };
       var pool = getPoolStub(instance.config, true, err, data);
       instance.pools = { default: pool };
       instance.metrics = {
@@ -805,14 +909,14 @@ describe("lib/drivers/helenus.js", function () {
         var call = instance.metrics.measurement.getCall(0);
 
         // assert
-        assert.ok(instance.metrics.measurement.calledOnce, "measurement called once");
-        assert.strictEqual(call.args[0], "query." + queryName, "measurement called with appropriate query name");
+        assert.ok(instance.metrics.measurement.calledOnce, 'measurement called once');
+        assert.strictEqual(call.args[0], 'query.' + queryName, 'measurement called with appropriate query name');
 
         done();
       });
     });
 
-    describe("with connection resolver", function () {
+    describe('with connection resolver', function () {
 
       var logger = null;
 
@@ -828,22 +932,22 @@ describe("lib/drivers/helenus.js", function () {
       });
 
 
-      it("uses supplied connection resolver to override base config", function (done) {
+      it('uses supplied connection resolver to override base config', function (done) {
         // arrange
-        var cql = "MyCqlStatement";
-        var params = ["param1", "param2", "param3"];
+        var cql = 'MyCqlStatement';
+        var params = ['param1', 'param2', 'param3'];
         var consistency = helenus.ConsistencyLevel.ONE;
         instance = getResolverInstance({ connectionResolver: fakeResolver });
         var fakeConnectionInfo = {
-          username: "myResolvedUsername",
-          password: "myResolvedPassword",
-          hosts: ["123.456.789.012:1234"]
+          username: 'myResolvedUsername',
+          password: 'myResolvedPassword',
+          hosts: ['123.456.789.012:1234']
         };
         fakeResolver.resolveConnection = sinon.stub().yieldsAsync(null, fakeConnectionInfo);
         var pool = getPoolStub(instance.config, true, null, {});
         pool.on = sinon.stub();
         pool.connect = sinon.stub().yieldsAsync(null, {});
-        sinon.stub(helenus, "ConnectionPool").returns(pool);
+        sinon.stub(helenus, 'ConnectionPool').returns(pool);
         instance.pools = {};
 
         // act
@@ -851,28 +955,28 @@ describe("lib/drivers/helenus.js", function () {
           // assert
           assert.strictEqual(pool.storeConfig.username, fakeConnectionInfo.username);
           assert.strictEqual(pool.storeConfig.password, fakeConnectionInfo.password);
-          assert.deepEqual(pool.storeConfig.hosts, fakeConnectionInfo.hosts, "hosts successfully updated");
+          assert.deepEqual(pool.storeConfig.hosts, fakeConnectionInfo.hosts, 'hosts successfully updated');
 
           done();
         });
       });
 
-      it("uses resolved connection resolver from path to override base config", function (done) {
+      it('uses resolved connection resolver from path to override base config', function (done) {
         // arrange
-        var cql = "MyCqlStatement";
-        var params = ["param1", "param2", "param3"];
+        var cql = 'MyCqlStatement';
+        var params = ['param1', 'param2', 'param3'];
         var consistency = helenus.ConsistencyLevel.ONE;
-        instance = getResolverInstance({ config: { connectionResolverPath: "../../test/stubs/fake-resolver" } });
+        instance = getResolverInstance({ config: { connectionResolverPath: '../../test/stubs/fake-resolver' } });
         var fakeConnectionInfo = {
-          username: "myResolvedUsername",
-          password: "myResolvedPassword",
-          hosts: ["123.456.789.012:1234"]
+          username: 'myResolvedUsername',
+          password: 'myResolvedPassword',
+          hosts: ['123.456.789.012:1234']
         };
         instance.connectionResolver.resolveConnection = sinon.stub().yieldsAsync(null, fakeConnectionInfo);
         var pool = getPoolStub(instance.config, true, null, {});
         pool.on = sinon.stub();
         pool.connect = sinon.stub().yieldsAsync(null, {});
-        sinon.stub(helenus, "ConnectionPool").returns(pool);
+        sinon.stub(helenus, 'ConnectionPool').returns(pool);
         instance.pools = {};
 
         // act
@@ -880,33 +984,33 @@ describe("lib/drivers/helenus.js", function () {
           // assert
           assert.strictEqual(pool.storeConfig.username, fakeConnectionInfo.username);
           assert.strictEqual(pool.storeConfig.password, fakeConnectionInfo.password);
-          assert.deepEqual(pool.storeConfig.hosts, fakeConnectionInfo.hosts, "hosts successfully updated");
+          assert.deepEqual(pool.storeConfig.hosts, fakeConnectionInfo.hosts, 'hosts successfully updated');
 
           done();
         });
       });
 
-      it("applies port remapping to resolved connection information if specified", function (done) {
+      it('applies port remapping to resolved connection information if specified', function (done) {
         // arrange
-        var cql = "MyCqlStatement";
-        var params = ["param1", "param2", "param3"];
+        var cql = 'MyCqlStatement';
+        var params = ['param1', 'param2', 'param3'];
         var consistency = helenus.ConsistencyLevel.ONE;
-        instance = getResolverInstance({ config: { connectionResolverPath: "../../test/stubs/fake-resolver" } });
+        instance = getResolverInstance({ config: { connectionResolverPath: '../../test/stubs/fake-resolver' } });
         instance.config.connectionResolverPortMap = {
-          from: "1234",
-          to: "2345"
+          from: '1234',
+          to: '2345'
         };
         instance.poolConfig.connectionResolverPortMap = instance.config.connectionResolverPortMap;
         var fakeConnectionInfo = {
-          username: "myResolvedUsername",
-          password: "myResolvedPassword",
-          hosts: ["123.456.789.012:1234", "234.567.890.123"]
+          username: 'myResolvedUsername',
+          password: 'myResolvedPassword',
+          hosts: ['123.456.789.012:1234', '234.567.890.123']
         };
         instance.connectionResolver.resolveConnection = sinon.stub().yieldsAsync(null, fakeConnectionInfo);
         var pool = getPoolStub(instance.config, true, null, {});
         pool.on = sinon.stub();
         pool.connect = sinon.stub().yieldsAsync(null, {});
-        sinon.stub(helenus, "ConnectionPool").returns(pool);
+        sinon.stub(helenus, 'ConnectionPool').returns(pool);
         instance.pools = {};
 
         // act
@@ -914,23 +1018,23 @@ describe("lib/drivers/helenus.js", function () {
           // assert
           assert.strictEqual(pool.storeConfig.username, fakeConnectionInfo.username);
           assert.strictEqual(pool.storeConfig.password, fakeConnectionInfo.password);
-          assert.deepEqual(pool.storeConfig.hosts, ["123.456.789.012:2345", "234.567.890.123"], "hosts were applied with remapped ports");
+          assert.deepEqual(pool.storeConfig.hosts, ['123.456.789.012:2345', '234.567.890.123'], 'hosts were applied with remapped ports');
 
           done();
         });
       });
 
-      it("logs and returns error if connection resolver throws error", function (done) {
+      it('logs and returns error if connection resolver throws error', function (done) {
         // arrange
-        var cql = "MyCqlStatement";
-        var params = ["param1", "param2", "param3"];
+        var cql = 'MyCqlStatement';
+        var params = ['param1', 'param2', 'param3'];
         var consistency = helenus.ConsistencyLevel.ONE;
         instance = getResolverInstance({ connectionResolver: fakeResolver });
-        fakeResolver.resolveConnection = sinon.stub().yieldsAsync(new Error("connection resolution failed"));
+        fakeResolver.resolveConnection = sinon.stub().yieldsAsync(new Error('connection resolution failed'));
         var pool = getPoolStub(instance.config, true, null, {});
         pool.on = sinon.stub();
         pool.connect = sinon.stub().yieldsAsync(null, {});
-        sinon.stub(helenus, "ConnectionPool").returns(pool);
+        sinon.stub(helenus, 'ConnectionPool').returns(pool);
         instance.pools = {};
         var resolvedErrorHandler = sinon.stub();
         instance.on('connectionResolvedError', resolvedErrorHandler);
@@ -940,29 +1044,29 @@ describe("lib/drivers/helenus.js", function () {
           // assert
           assert.instanceOf(err, Error);
           assert.isUndefined(result);
-          assert.ok(logger.error.calledOnce, "error log is called once");
+          assert.ok(logger.error.calledOnce, 'error log is called once');
           expect(resolvedErrorHandler).to.have.been.calledWithMatch(sinon.match.string, err);
           done();
         });
       });
 
-      it("logs error and updates connection if connection resolver returns error AND data", function (done) {
+      it('logs error and updates connection if connection resolver returns error AND data', function (done) {
         // arrange
-        var cql = "MyCqlStatement";
-        var params = ["param1", "param2", "param3"];
+        var cql = 'MyCqlStatement';
+        var params = ['param1', 'param2', 'param3'];
         var consistency = helenus.ConsistencyLevel.ONE;
         instance = getResolverInstance({ connectionResolver: fakeResolver });
         var fakeConnectionInfo = {
-          username: "myResolvedUsername",
-          password: "myResolvedPassword",
-          hosts: ["123.456.789.012:1234"]
+          username: 'myResolvedUsername',
+          password: 'myResolvedPassword',
+          hosts: ['123.456.789.012:1234']
         };
-        var resolutionError = new Error("connection resolution failed");
+        var resolutionError = new Error('connection resolution failed');
         fakeResolver.resolveConnection = sinon.stub().yieldsAsync(resolutionError, fakeConnectionInfo);
         var pool = getPoolStub(instance.config, true, null, {});
         pool.on = sinon.stub();
         pool.connect = sinon.stub().yieldsAsync(null, {});
-        sinon.stub(helenus, "ConnectionPool").returns(pool);
+        sinon.stub(helenus, 'ConnectionPool').returns(pool);
         instance.pools = {};
         var resolutionErrorHandler = sinon.stub();
         instance.on('connectionResolvedError', resolutionErrorHandler);
@@ -971,27 +1075,27 @@ describe("lib/drivers/helenus.js", function () {
         instance.cql(cql, params, { consistency: consistency }, function (err, result) {
           // assert
           assert.isNull(err);
-          assert.strictEqual(pool.storeConfig.username, fakeConnectionInfo.username, "username successfully updated");
-          assert.strictEqual(pool.storeConfig.password, fakeConnectionInfo.password, "password successfully updated");
-          assert.deepEqual(pool.storeConfig.hosts, fakeConnectionInfo.hosts, "hosts successfully updated");
-          assert.ok(logger.error.called, "error log is called");
+          assert.strictEqual(pool.storeConfig.username, fakeConnectionInfo.username, 'username successfully updated');
+          assert.strictEqual(pool.storeConfig.password, fakeConnectionInfo.password, 'password successfully updated');
+          assert.deepEqual(pool.storeConfig.hosts, fakeConnectionInfo.hosts, 'hosts successfully updated');
+          assert.ok(logger.error.called, 'error log is called');
           expect(resolutionErrorHandler).to.have.been.calledWithMatch(sinon.match.string, resolutionError);
           done();
         });
       });
 
-      it("returns data and logs error if connection resolver throws error on lazy fetch", function (done) {
+      it('returns data and logs error if connection resolver throws error on lazy fetch', function (done) {
         // arrange
-        var cql = "MyCqlStatement";
-        var params = ["param1", "param2", "param3"];
+        var cql = 'MyCqlStatement';
+        var params = ['param1', 'param2', 'param3'];
         var consistency = helenus.ConsistencyLevel.ONE;
         instance = getResolverInstance({ connectionResolver: fakeResolver });
         var fakeConnectionInfo = {
-          username: "myResolvedUsername",
-          password: "myResolvedPassword",
-          hosts: ["123.456.789.012:1234"]
+          username: 'myResolvedUsername',
+          password: 'myResolvedPassword',
+          hosts: ['123.456.789.012:1234']
         };
-        var fetchError = new Error("lazy fetch error");
+        var fetchError = new Error('lazy fetch error');
         fakeResolver.resolveConnection = function (data, cb, lazyCb) {
           fakeResolver.on.getCall(1).args[1](fetchError);
           cb(null, fakeConnectionInfo);
@@ -999,7 +1103,7 @@ describe("lib/drivers/helenus.js", function () {
         var pool = getPoolStub(instance.config, true, null, {});
         pool.on = sinon.stub();
         pool.connect = sinon.stub().yieldsAsync(null, {});
-        sinon.stub(helenus, "ConnectionPool").returns(pool);
+        sinon.stub(helenus, 'ConnectionPool').returns(pool);
         instance.pools = {};
         var connectionOptionsErrorHandler = sinon.stub();
         instance.on('connectionOptionsError', connectionOptionsErrorHandler);
@@ -1007,54 +1111,54 @@ describe("lib/drivers/helenus.js", function () {
         // act
         instance.cql(cql, params, { consistency: consistency }, function (err, result) {
           // assert
-          assert.strictEqual(pool.storeConfig.username, fakeConnectionInfo.username, "username successfully updated");
-          assert.strictEqual(pool.storeConfig.password, fakeConnectionInfo.password, "password successfully updated");
-          assert.deepEqual(pool.storeConfig.hosts, fakeConnectionInfo.hosts, "hosts successfully updated");
+          assert.strictEqual(pool.storeConfig.username, fakeConnectionInfo.username, 'username successfully updated');
+          assert.strictEqual(pool.storeConfig.password, fakeConnectionInfo.password, 'password successfully updated');
+          assert.deepEqual(pool.storeConfig.hosts, fakeConnectionInfo.hosts, 'hosts successfully updated');
           expect(connectionOptionsErrorHandler).to.have.been.calledWith(fetchError);
           done();
         });
       });
 
-      it("returns data if connection resolver successfully performs a lazy fetch", function (done) {
+      it('returns data if connection resolver successfully performs a lazy fetch', function (done) {
         // arrange
-        var cql = "MyCqlStatement";
-        var params = ["param1", "param2", "param3"];
+        var cql = 'MyCqlStatement';
+        var params = ['param1', 'param2', 'param3'];
         var consistency = helenus.ConsistencyLevel.ONE;
         instance = getResolverInstance({ connectionResolver: fakeResolver });
         var fakeConnectionInfo = {
-          username: "myResolvedUsername",
-          password: "myResolvedPassword",
-          hosts: ["123.456.789.012:1234"]
+          username: 'myResolvedUsername',
+          password: 'myResolvedPassword',
+          hosts: ['123.456.789.012:1234']
         };
         fakeResolver.resolveConnection = function (data, cb, lazyCb) {
           cb(null, fakeConnectionInfo);
-          fakeResolver.on.getCall(1).args[1](null, { user: "someOtherInfo", password: "someOtherPassword" });
+          fakeResolver.on.getCall(1).args[1](null, { user: 'someOtherInfo', password: 'someOtherPassword' });
         };
         var pool = getPoolStub(instance.config, true, null, {});
         pool.on = sinon.stub();
         pool.connect = sinon.stub().yieldsAsync(null, {});
-        sinon.stub(helenus, "ConnectionPool").returns(pool);
+        sinon.stub(helenus, 'ConnectionPool').returns(pool);
         instance.pools = {};
 
         // act
         instance.cql(cql, params, { consistency: consistency }, function (err, result) {
           // assert
-          assert.strictEqual(pool.storeConfig.username, fakeConnectionInfo.username, "username successfully updated");
-          assert.strictEqual(pool.storeConfig.password, fakeConnectionInfo.password, "password successfully updated");
-          assert.deepEqual(pool.storeConfig.hosts, fakeConnectionInfo.hosts, "hosts successfully updated");
-          assert.notOk(logger.warn.called, "warn logger should not be called");
+          assert.strictEqual(pool.storeConfig.username, fakeConnectionInfo.username, 'username successfully updated');
+          assert.strictEqual(pool.storeConfig.password, fakeConnectionInfo.password, 'password successfully updated');
+          assert.deepEqual(pool.storeConfig.hosts, fakeConnectionInfo.hosts, 'hosts successfully updated');
+          assert.notOk(logger.warn.called, 'warn logger should not be called');
           done();
         });
       });
     });
   });
 
-  describe("crud wrappers", function () {
+  describe('crud wrappers', function () {
 
     var instance;
     beforeEach(function () {
       instance = getDefaultInstance();
-      sinon.stub(instance, "execCql").yields(null, {});
+      sinon.stub(instance, 'execCql').yields(null, {});
     });
 
     afterEach(function () {
@@ -1064,70 +1168,70 @@ describe("lib/drivers/helenus.js", function () {
     });
 
     function validateWrapperCall(method, consistencyLevel) {
-      describe("HelenusDriver#" + method + "()", function () {
-        it("normalizes the parameter list if it is an array", function (done) {
+      describe('HelenusDriver#' + method + '()', function () {
+        it('normalizes the parameter list if it is an array', function (done) {
           // arrange
           var dt = new Date();
           var buffer = new Buffer(4096);
-          var hinted = { value: "bar", hint: 1 };
-          buffer.write("This is a string buffer", "utf-8");
-          var params = [ 1, "myString", dt, [1, 2, 3, 4], { myObjectKey: "value"}, buffer, hinted ];
+          var hinted = { value: 'bar', hint: 1 };
+          buffer.write('This is a string buffer', 'utf-8');
+          var params = [ 1, 'myString', dt, [1, 2, 3, 4], { myObjectKey: 'value'}, buffer, hinted ];
 
           // act
-          instance[method]("cql", params, {}, function () {
+          instance[method]('cql', params, {}, function () {
             var call = instance.execCql.getCall(0);
             var normalized = call.args[1];
 
             // assert
-            assert.strictEqual(normalized[0], params[0], "1st parameter should be a number");
-            assert.strictEqual(normalized[1], params[1], "2nd parameter should be a string");
-            assert.strictEqual(normalized[2], dt.getTime(), "3rd parameter should be date converted to ticks");
-            assert.strictEqual(normalized[3], "[1,2,3,4]", "4th parameter should be array converted to JSON");
-            assert.strictEqual(normalized[4], "{\"myObjectKey\":\"value\"}", "5th parameter should be object converted to JSON");
-            assert.strictEqual(normalized[5], buffer.toString("hex"), "6th parameter should be buffer converted to hex");
-            assert.strictEqual(normalized[6], hinted.value, "7th parameter should be the hinted object value");
+            assert.strictEqual(normalized[0], params[0], '1st parameter should be a number');
+            assert.strictEqual(normalized[1], params[1], '2nd parameter should be a string');
+            assert.strictEqual(normalized[2], dt.getTime(), '3rd parameter should be date converted to ticks');
+            assert.strictEqual(normalized[3], '[1,2,3,4]', '4th parameter should be array converted to JSON');
+            assert.strictEqual(normalized[4], '{"myObjectKey":"value"}', '5th parameter should be object converted to JSON');
+            assert.strictEqual(normalized[5], buffer.toString('hex'), '6th parameter should be buffer converted to hex');
+            assert.strictEqual(normalized[6], hinted.value, '7th parameter should be the hinted object value');
 
             done();
           });
         });
 
-        it("leaves object parameter untouched", function (done) {
+        it('leaves object parameter untouched', function (done) {
           // arrange
           var dt = new Date();
-          var params = { foo: "bar" };
+          var params = { foo: 'bar' };
 
           // act
-          instance[method]("cql", params, {}, function () {
+          instance[method]('cql', params, {}, function () {
             var call = instance.execCql.getCall(0);
             var normalized = call.args[1];
 
             // assert
-            assert.strictEqual(normalized, params, "normalized params should match original");
+            assert.strictEqual(normalized, params, 'normalized params should match original');
 
             done();
           });
         });
 
-        it("turns empty parameter into empty array", function (done) {
+        it('turns empty parameter into empty array', function (done) {
           // arrange
           var dt = new Date();
           var params = null;
 
           // act
-          instance[method]("cql", params, {}, function () {
+          instance[method]('cql', params, {}, function () {
             var call = instance.execCql.getCall(0);
             var normalized = call.args[1];
 
             // assert
-            assert.deepEqual(normalized, [], "normalized params should be empty array");
+            assert.deepEqual(normalized, [], 'normalized params should be empty array');
 
             done();
           });
         });
 
-        it("skips debug log if 'suppressDebugLog' set to true", function (done) {
+        it('skips debug log if "suppressDebugLog" set to true', function (done) {
           // arrange
-          var cql = "SELECT * FROM users;";
+          var cql = 'SELECT * FROM users;';
           var params = [];
           var options = { suppressDebugLog: true };
 
@@ -1136,15 +1240,15 @@ describe("lib/drivers/helenus.js", function () {
             var call = instance.execCql.getCall(0);
 
             // assert
-            assert.notOk(instance.logger.debug.calledOnce, "cql is logged");
+            assert.notOk(instance.logger.debug.calledOnce, 'cql is logged');
 
             done();
           });
         });
 
-        it("executes cql with default ConsistencyLevel." + consistencyLevel + " if consistency not provided.", function (done) {
+        it('executes cql with default ConsistencyLevel.' + consistencyLevel + ' if consistency not provided.', function (done) {
           // arrange
-          var cql = "SELECT * FROM users;";
+          var cql = 'SELECT * FROM users;';
           var params = [];
           var options = {};
 
@@ -1153,19 +1257,19 @@ describe("lib/drivers/helenus.js", function () {
             var call = instance.execCql.getCall(0);
 
             // assert
-            assert.ok(instance.logger.debug.calledOnce, "cql is logged");
-            assert.equal(call.args[0], cql, "cql should be passed through");
-            assert.equal(call.args[1], params, "params should be passed through");
-            assert.isObject(call.args[2], "options should be populated");
-            assert.strictEqual(call.args[2].consistency, helenus.ConsistencyLevel[consistencyLevel], "options.consistency should be " + consistencyLevel);
+            assert.ok(instance.logger.debug.calledOnce, 'cql is logged');
+            assert.equal(call.args[0], cql, 'cql should be passed through');
+            assert.equal(call.args[1], params, 'params should be passed through');
+            assert.isObject(call.args[2], 'options should be populated');
+            assert.strictEqual(call.args[2].consistency, helenus.ConsistencyLevel[consistencyLevel], 'options.consistency should be ' + consistencyLevel);
 
             done();
           });
         });
 
-        it("executes cql with default ConsistencyLevel." + consistencyLevel + " if no options are provided.", function (done) {
+        it('executes cql with default ConsistencyLevel.' + consistencyLevel + ' if no options are provided.', function (done) {
           // arrange
-          var cql = "SELECT * FROM users;";
+          var cql = 'SELECT * FROM users;';
           var params = [];
           var options = null;
 
@@ -1174,18 +1278,18 @@ describe("lib/drivers/helenus.js", function () {
             var call = instance.execCql.getCall(0);
 
             // assert
-            assert.equal(call.args[0], cql, "cql should be passed through");
-            assert.equal(call.args[1], params, "params should be passed through");
-            assert.isObject(call.args[2], "options should be populated");
-            assert.strictEqual(call.args[2].consistency, helenus.ConsistencyLevel[consistencyLevel], "options.consistency should be " + consistencyLevel);
+            assert.equal(call.args[0], cql, 'cql should be passed through');
+            assert.equal(call.args[1], params, 'params should be passed through');
+            assert.isObject(call.args[2], 'options should be populated');
+            assert.strictEqual(call.args[2].consistency, helenus.ConsistencyLevel[consistencyLevel], 'options.consistency should be ' + consistencyLevel);
 
             done();
           });
         });
 
-        it("executes cql with default ConsistencyLevel." + consistencyLevel + " if options not provided.", function (done) {
+        it('executes cql with default ConsistencyLevel.' + consistencyLevel + ' if options not provided.', function (done) {
           // arrange
-          var cql = "SELECT * FROM users;";
+          var cql = 'SELECT * FROM users;';
           var params = [];
 
           // act
@@ -1193,18 +1297,18 @@ describe("lib/drivers/helenus.js", function () {
             var call = instance.execCql.getCall(0);
 
             // assert
-            assert.equal(call.args[0], cql, "cql should be passed through");
-            assert.equal(call.args[1], params, "params should be passed through");
-            assert.isObject(call.args[2], "options should be populated");
-            assert.strictEqual(call.args[2].consistency, helenus.ConsistencyLevel[consistencyLevel], "options.consistency should be " + consistencyLevel);
+            assert.equal(call.args[0], cql, 'cql should be passed through');
+            assert.equal(call.args[1], params, 'params should be passed through');
+            assert.isObject(call.args[2], 'options should be populated');
+            assert.strictEqual(call.args[2].consistency, helenus.ConsistencyLevel[consistencyLevel], 'options.consistency should be ' + consistencyLevel);
 
             done();
           });
         });
 
-        it("executes cql with provided consistency.", function (done) {
+        it('executes cql with provided consistency.', function (done) {
           // arrange
-          var cql = "SELECT * FROM users;";
+          var cql = 'SELECT * FROM users;';
           var params = [];
           var consistency = helenus.ConsistencyLevel.QUORUM;
           var options = { consistency: consistency };
@@ -1214,10 +1318,10 @@ describe("lib/drivers/helenus.js", function () {
             var call = instance.execCql.getCall(0);
 
             // assert
-            assert.equal(call.args[0], cql, "cql should be passed through");
-            assert.equal(call.args[1], params, "params should be passed through");
-            assert.isObject(call.args[2], "options should be populated");
-            assert.strictEqual(call.args[2].consistency, consistency, "options.consistency should be passed through");
+            assert.equal(call.args[0], cql, 'cql should be passed through');
+            assert.equal(call.args[1], params, 'params should be passed through');
+            assert.isObject(call.args[2], 'options should be populated');
+            assert.strictEqual(call.args[2].consistency, consistency, 'options.consistency should be passed through');
 
             done();
           });
@@ -1225,18 +1329,18 @@ describe("lib/drivers/helenus.js", function () {
       });
     }
 
-    validateWrapperCall("select", "ONE");
-    validateWrapperCall("insert", "LOCAL_QUORUM");
-    validateWrapperCall("update", "LOCAL_QUORUM");
-    validateWrapperCall("delete", "LOCAL_QUORUM");
+    validateWrapperCall('select', 'ONE');
+    validateWrapperCall('insert', 'LOCAL_QUORUM');
+    validateWrapperCall('update', 'LOCAL_QUORUM');
+    validateWrapperCall('delete', 'LOCAL_QUORUM');
   });
 
-  describe("HelenusDriver#beginQuery()", function () {
+  describe('HelenusDriver#beginQuery()', function () {
 
     var instance;
     beforeEach(function () {
       instance = getDefaultInstance();
-      sinon.stub(instance, "execCql").yields(null, {});
+      sinon.stub(instance, 'execCql').yields(null, {});
     });
 
     afterEach(function () {
@@ -1246,11 +1350,11 @@ describe("lib/drivers/helenus.js", function () {
     });
 
     function validateQueryCalls(asPromise) {
-      it("#execute() executes cq " +
-          (asPromise ? "with promise syntax" : "with callback syntax"),
+      it('#execute() executes cq ' +
+          (asPromise ? 'with promise syntax' : 'with callback syntax'),
         function (done) {
           // arrange
-          var cqlQuery = "SELECT * FROM users WHERE name = ?;";
+          var cqlQuery = 'SELECT * FROM users WHERE name = ?;';
 
           // act
           var query = instance
@@ -1275,9 +1379,9 @@ describe("lib/drivers/helenus.js", function () {
             var call = instance.execCql.getCall(0);
 
             // assert
-            assert.equal(call.args[0], cqlQuery, "cql should be passed through");
-            assert.equal(call.args[1], query.context.params, "params should be passed through");
-            assert.equal(call.args[2], query.context.options, "options should be passed through");
+            assert.equal(call.args[0], cqlQuery, 'cql should be passed through');
+            assert.equal(call.args[1], query.context.params, 'params should be passed through');
+            assert.equal(call.args[2], query.context.options, 'options should be passed through');
 
             done();
           }
@@ -1290,11 +1394,11 @@ describe("lib/drivers/helenus.js", function () {
 
   });
 
-  describe("HelenusDriver#namedQuery()", function () {
+  describe('HelenusDriver#namedQuery()', function () {
 
     var instance = getNamedQueryInstance();
     beforeEach(function () {
-      sinon.stub(instance, "execCql").yields(null, {});
+      sinon.stub(instance, 'execCql').yields(null, {});
     });
 
     afterEach(function () {
@@ -1305,16 +1409,16 @@ describe("lib/drivers/helenus.js", function () {
 
     function getNamedQueryInstance() {
       var config = getDefaultConfig();
-      config.queryDirectory = path.join(__dirname, "../../stubs/cql");
+      config.queryDirectory = path.join(__dirname, '../../stubs/cql');
       var instance = new Driver({
         config: config
       });
       return instance;
     }
 
-    it("executes the CQL specified by the named query", function (done) {
+    it('executes the CQL specified by the named query', function (done) {
       // arrange
-      var queryName = "myFakeCql";
+      var queryName = 'myFakeCql';
       var params = [];
       var consistency = helenus.ConsistencyLevel.ONE;
       var pool = getPoolStub(instance.config, true, null, {});
@@ -1325,16 +1429,16 @@ describe("lib/drivers/helenus.js", function () {
         var call = instance.execCql.getCall(0);
 
         // assert
-        assert.strictEqual(call.args[0], instance.queryCache.fileCache[queryName], "cql should be read from query cache");
-        assert.deepEqual(call.args[1], params, "params should be passed through");
+        assert.strictEqual(call.args[0], instance.queryCache.fileCache[queryName], 'cql should be read from query cache');
+        assert.deepEqual(call.args[1], params, 'params should be passed through');
 
         done();
       });
     });
 
-    it("allows callback to be optional to support fire-and-forget scenarios", function (done) {
+    it('allows callback to be optional to support fire-and-forget scenarios', function (done) {
       // arrange
-      var queryName = "myFakeCql";
+      var queryName = 'myFakeCql';
       var params = [];
       var consistency = helenus.ConsistencyLevel.ONE;
       var pool = getPoolStub(instance.config, true, null, {});
@@ -1348,25 +1452,25 @@ describe("lib/drivers/helenus.js", function () {
       done();
     });
 
-    it("yields error if named query does not exist", function (done) {
+    it('yields error if named query does not exist', function (done) {
       // arrange
-      var queryName = "idontexist";
+      var queryName = 'idontexist';
       var consistency = helenus.ConsistencyLevel.ONE;
 
       // act
       instance.namedQuery(queryName, [], function (error, returnData) {
         // assert
-        assert.instanceOf(error, Error, "error is populated");
-        assert.isUndefined(returnData, "returnData not defined");
+        assert.instanceOf(error, Error, 'error is populated');
+        assert.isUndefined(returnData, 'returnData not defined');
 
         done();
       });
     });
 
-    it("throws error if queryDirectory not provided in constructor", function (done) {
+    it('throws error if queryDirectory not provided in constructor', function (done) {
       // arrange
       var defInstance = getDefaultInstance();
-      var queryName = "myFakeCql";
+      var queryName = 'myFakeCql';
 
       // act
       expect(function () {

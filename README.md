@@ -36,26 +36,26 @@ Check the `example` folder for a more complete example. Start by running: `npm s
 ```javascript
 var path = require("path");
 var db = require("priam")({
-        config: {
-                cqlVersion: "3.0.0", /* optional, defaults to "3.0.0" */
-                timeout: 4000, /* optional, defaults to 4000 */
-                poolSize: 2, /* optional, defaults to 1 */
-                consistencyLevel: "one", /* optional, defaults to one. Will throw if not a valid Cassandra consistency level*/
-                driver: "helenus", /* optional, defaults to "node-cassandra-cql" */,
-                numRetries: 3, /* optional, defaults to 0. Retries occur on connection failures. */
-                retryDelay: 100, /* optional, defaults to 100ms. Used on error retry or consistency fallback retry */
-                enableConsistencyFailover: true, /* optional, defaults to true */
-                queryDirectory: path.join(__dirname, "path/to/your/cql/files"), /* optional, required to use #namedQuery() */
-                user: "<your_username>",
-                password: "<your_password>",
-                keyspace: "<your_keyspace>", /* Default keyspace. Can be overwritten via options passed into #cql(), etc. */
-                hosts: [ /* Ports are optional */
-                    "123.456.789.010:9042",
-                    "123.456.789.011:9042",
-                    "123.456.789.012:9042",
-                    "123.456.789.013:9042"
-                ]
-        }
+    config: {
+        cqlVersion: "3.0.0", /* optional, defaults to "3.0.0" */
+        timeout: 4000, /* optional, defaults to 4000 */
+        poolSize: 2, /* optional, defaults to 1 */
+        consistencyLevel: "one", /* optional, defaults to one. Will throw if not a valid Cassandra consistency level*/
+        driver: "helenus", /* optional, defaults to "node-cassandra-cql" */,
+        numRetries: 3, /* optional, defaults to 0. Retries occur on connection failures. */
+        retryDelay: 100, /* optional, defaults to 100ms. Used on error retry or consistency fallback retry */
+        enableConsistencyFailover: true, /* optional, defaults to true */
+        queryDirectory: path.join(__dirname, "path/to/your/cql/files"), /* optional, required to use #namedQuery() */
+        user: "<your_username>",
+        password: "<your_password>",
+        keyspace: "<your_keyspace>", /* Default keyspace. Can be overwritten via options passed into #cql(), etc. */
+        hosts: [ /* Ports are optional */
+            "123.456.789.010:9042",
+            "123.456.789.011:9042",
+            "123.456.789.012:9042",
+            "123.456.789.013:9042"
+        ]
+    }
 });
 ```
 
@@ -114,19 +114,19 @@ There is also a `param(value [object], type [string])` helper method for creatin
 #### Example ####
 ```javascript
 var db = require("priam")({
-        config: { /* ... options ... */ }
+    config: { /* ... options ... */ }
 });
 db.cql(
-        'SELECT "myCol1", "myCol2" FROM "myColumnFamily" WHERE "keyCol1" = ? AND "keyCol2" = ?',
-        [db.param("value_of_keyCol1", "ascii"), db.param("value_of_keyCol2", "ascii")],
-        { consistency: db.consistencyLevel.one, queryName: "myQuery", executeAsPrepared: true },
-        function (err, data) {
-                if (err) {
-                        console.log("ERROR: " + err);
-                        return;
-                }
-                console.log("Returned data: " + data);
+    'SELECT "myCol1", "myCol2" FROM "myColumnFamily" WHERE "keyCol1" = ? AND "keyCol2" = ?',
+    [db.param("value_of_keyCol1", "ascii"), db.param("value_of_keyCol2", "ascii")],
+    { consistency: db.consistencyLevel.one, queryName: "myQuery", executeAsPrepared: true },
+    function (err, data) {
+        if (err) {
+            console.log("ERROR: " + err);
+            return;
         }
+        console.log("Returned data: " + data);
+    }
 );
 ```
 
@@ -145,19 +145,19 @@ though the caller can override these options by providing them in the `options` 
 #### Example ####
 ```javascript
 var db = require("priam")({
-        config: { queryDirectory: path.join(__dirName, "cql") }
+    config: { queryDirectory: path.join(__dirName, "cql") }
 }); /* 'cql' folder will be scanned and all .cql files loaded into memory synchronously */
 db.namedQuery(
-        "myColumnFamilySelect", /* name of .cql file with contents: 'SELECT "myCol1", "myCol2" FROM "myColumnFamily" WHERE "keyCol1" = ? AND "keyCol2" = ?' */
-        ["value_of_keyCol1", "value_of_keyCol2"],
-        { consistency: db.consistencyLevel.ONE },
-        function (err, data) {
-                if (err) {
-                        console.log("ERROR: " + err);
-                        return;
-                }
-                console.log("Returned data: " + data);
+    "myColumnFamilySelect", /* name of .cql file with contents: 'SELECT "myCol1", "myCol2" FROM "myColumnFamily" WHERE "keyCol1" = ? AND "keyCol2" = ?' */
+    ["value_of_keyCol1", "value_of_keyCol2"],
+    { consistency: db.consistencyLevel.ONE },
+    function (err, data) {
+        if (err) {
+            console.log("ERROR: " + err);
+            return;
         }
+        console.log("Returned data: " + data);
+    }
 );
 ```
 
@@ -202,8 +202,8 @@ db
     .options({ executeAsPrepared: true })
     .execute(function (err, data) {
         if (err) {
-                console.log("ERROR: " + err);
-                return;
+            console.log("ERROR: " + err);
+            return;
         }
         console.log("Returned data: " + data);
     });
@@ -219,8 +219,8 @@ db
     .consistency("one")
     .execute(function (err, data) {
         if (err) {
-                console.log("ERROR: " + err);
-                return;
+            console.log("ERROR: " + err);
+            return;
         }
         console.log("Returned data: " + data);
     });
@@ -357,8 +357,8 @@ The driver supports passing a [winston](https://github.com/flatiron/winston) log
 
 ```javascript
 require("priam")({
-        config: { /* connection information */ },
-        logger: new (require("winston")).Logger({ /* logger options */ })
+    config: { /* connection information */ },
+    logger: new (require("winston")).Logger({ /* logger options */ })
 });
 ```
 Debug logging of CQL can be turned off for an individual query by passing the `suppressDebugLog = true` option in the
@@ -373,9 +373,9 @@ should have a method `#measurement(queryName [string], duration [number], unit [
 var logger = new (require("winston")).Logger({ /* logger options */ })
 var metrics = new MetricsClient();
 require("priam")({
-        config: { /* connection information */ },
-        logger: logger,
-        metrics: metrics
+    config: { /* connection information */ },
+    logger: logger,
+    metrics: metrics
 });
 ```
 
@@ -474,10 +474,10 @@ The `connectionResolver` option allows you to pass in a `connectionResolver` obj
 ```javascript
 var resolver = new MyConnectionResolver();
 var db = require("priam")({
-        config: {
-                /* ... connection options ... */
-        }
-        connectionResolver: resolver
+    config: {
+        /* ... connection options ... */
+    }
+    connectionResolver: resolver
 });
 ```
 
@@ -487,10 +487,10 @@ internal path.*
 
 ```javascript
 var db = require("priam")({
-        config: {
-                /* ... other connection options ... */
-                connectionResolverPath: "myResolverModule"
-        }
+    config: {
+        /* ... other connection options ... */
+        connectionResolverPath: "myResolverModule"
+    }
 });
 ```
 
@@ -516,13 +516,13 @@ wish to use, (e.g. You want to use binary port 9042, but resolver is returning T
 
 ```javascript
 var db = require("priam")({
-        config: {
-                /* ... other connection options, including Nimitz ... */
-                connectionResolverPortMap = {
-                    from: "9160",
-                    to: "9042"
-                }
+    config: {
+        /* ... other connection options, including Nimitz ... */
+        connectionResolverPortMap = {
+            from: "9160",
+            to: "9042"
         }
+    }
 });
 ```
 

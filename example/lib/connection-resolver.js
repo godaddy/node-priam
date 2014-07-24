@@ -1,10 +1,10 @@
-"use strict";
+'use strict';
 
-var EventEmitter = require("events").EventEmitter,
-  util = require("util"),
-  fs = require("fs"),
-  path = require("path"),
-  DEFAULT_POLL_INTERVAL = 30000; // 30 sec
+var EventEmitter = require('events').EventEmitter
+  , util = require('util')
+  , fs = require('fs')
+  , path = require('path')
+  , DEFAULT_POLL_INTERVAL = 30000; // 30 sec
 
 function SampleResolver() {
   if (!(this instanceof SampleResolver)) {
@@ -57,17 +57,17 @@ SampleResolver.prototype.fetch = function fetch(config, callback) {
   self.emit('fetching', config);
 
   /* Make some web service call or something similar here .. for demo purposes load from file */
-  fs.readFile(path.join(__dirname, "credentials.json"), self.resolveConnectionCallback.bind(self, callback));
+  fs.readFile(path.join(__dirname, 'credentials.json'), self.resolveConnectionCallback.bind(self, callback));
 };
 
 SampleResolver.prototype.resolveConnectionCallback = function resolveConnectionCallback(callback, err, record) {
   var self = this;
   if (!record && !err) {
-    err = new Error("no credential record returned from credential store");
+    err = new Error('no credential record returned from credential store');
   }
   if (err) {
     self.emit('fetch', err);
-    if (typeof callback === "function") {
+    if (typeof callback === 'function') {
       callback(err);
     }
     return;
@@ -76,7 +76,7 @@ SampleResolver.prototype.resolveConnectionCallback = function resolveConnectionC
   var parseError = null,
     configData;
   try {
-    configData = JSON.parse(record.toString("utf8"));
+    configData = JSON.parse(record.toString('utf8'));
     self.localCache.cache = configData;
   }
   catch (e) {
@@ -85,7 +85,7 @@ SampleResolver.prototype.resolveConnectionCallback = function resolveConnectionC
   }
 
   self.emit('fetch', parseError, configData);
-  if (typeof callback === "function") {
+  if (typeof callback === 'function') {
     callback(parseError, configData);
   }
 };

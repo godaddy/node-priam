@@ -1,18 +1,18 @@
-"use strict";
+'use strict';
 
-var logger = require("../../../lib/util/fake-logger"),
+var logger = require('../../../lib/util/fake-logger'),
   sinon = require('sinon'),
   chai = require('chai'),
   assert = chai.assert,
   expect = chai.expect;
 
-describe("lib/util/fake-logger.js", function () {
+describe('lib/util/fake-logger.js', function () {
 
   beforeEach(function () {
-    sinon.spy(console, "log");
-    sinon.spy(console, "info");
-    sinon.spy(console, "warn");
-    sinon.spy(console, "error");
+    sinon.spy(console, 'log');
+    sinon.spy(console, 'info');
+    sinon.spy(console, 'warn');
+    sinon.spy(console, 'error');
   });
 
   afterEach(function () {
@@ -22,8 +22,8 @@ describe("lib/util/fake-logger.js", function () {
     console.error.restore();
   });
 
-  describe("module export", function () {
-    it("returns required", function () {
+  describe('module export', function () {
+    it('returns required', function () {
       assert.isFunction(logger.info);
       assert.isFunction(logger.warn);
       assert.isFunction(logger.error);
@@ -31,39 +31,39 @@ describe("lib/util/fake-logger.js", function () {
       assert.isFunction(logger.critical);
     });
 
-    it("does nothing", function () {
-      logger.info("Test");
+    it('does nothing', function () {
+      logger.info('Test');
       assert.ok(console.info.notCalled);
-      logger.warn("Test");
+      logger.warn('Test');
       assert.ok(console.warn.notCalled);
-      logger.error("Test");
+      logger.error('Test');
       assert.ok(console.error.notCalled);
-      logger.debug("Test");
+      logger.debug('Test');
       assert.ok(console.log.notCalled);
-      logger.critical("Test");
+      logger.critical('Test');
       assert.ok(console.log.notCalled);
     });
   });
 
   function testLogLevel(level) {
-    describe("FakeLogger#" + level + "()", function () {
+    describe('FakeLogger#' + level + '()', function () {
 
-      it("does nothing if callback not provided", function (done) {
-        logger[level]("Test");
+      it('does nothing if callback not provided', function (done) {
+        logger[level]('Test');
         assert.ok(console.info.notCalled);
         done();
       });
 
-      it("calls callback if provided", function (done) {
-        logger[level]("Test", done);
+      it('calls callback if provided', function (done) {
+        logger[level]('Test', done);
       });
 
     });
   }
 
-  testLogLevel("debug");
-  testLogLevel("info");
-  testLogLevel("warn");
-  testLogLevel("error");
-  testLogLevel("critical");
+  testLogLevel('debug');
+  testLogLevel('info');
+  testLogLevel('warn');
+  testLogLevel('error');
+  testLogLevel('critical');
 });

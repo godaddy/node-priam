@@ -1,6 +1,6 @@
 "use strict";
 
-var sinon = require("sinon");
+var sinon = require('sinon');
 
 function FakeResolver() {
   if (!(this instanceof FakeResolver)) {
