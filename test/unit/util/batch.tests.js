@@ -130,6 +130,32 @@ describe('lib/util/batch.js', function () {
       done();
     });
 
+    it('does not add error if query is null', function (done) {
+      // arrange
+      var query = null;
+
+      // act
+      batch.add(query);
+
+      // assert
+      assert.strictEqual(batch.context.queries.length, 0, 'query is NOT added to list');
+      assert.strictEqual(batch.context.errors.length, 0, 'no error is generated');
+      done();
+    });
+
+    it('adds error if query is undefined', function (done) {
+      // arrange
+      var query;
+
+      // act
+      batch.add(query);
+
+      // assert
+      assert.strictEqual(batch.context.queries.length, 0, 'query is NOT added to list');
+      assert.strictEqual(batch.context.errors.length, 1, 'error is added to list');
+      done();
+    });
+
     it('returns self', function (done) {
       // arrange
       var query = new Query(db);
@@ -598,6 +624,48 @@ describe('lib/util/batch.js', function () {
           }
         });
 
+        it('yields empty result set if no query text is available', function (done) {
+          // arrange
+          var data = [
+            {}
+          ];
+          var query1 = new Query(db),
+            query2 = new Query(db);
+          query1.context.cql = '';
+          query2.context.cql = '';
+          batch.context.queries = [query1, query2];
+          db.cql = sinon.stub().yields(null, data);
+
+          // act
+          if (isPromise) {
+            var e = null,
+              result = null;
+            batch
+              .execute()
+              .catch(function (error) {
+                e = error;
+              })
+              .done(function (data) {
+                if (e) {
+                  asserts(e);
+                }
+                else {
+                  asserts(null, data);
+                }
+              });
+          }
+          else {
+            batch.execute(asserts);
+          }
+
+          // assert
+          function asserts(err, data) {
+            assert.notOk(err, 'error is not populated');
+            assert.deepEqual(data, [], 'data is populated with empty array');
+            done();
+          }
+        });
+
         it('yields data if db yields data', function (done) {
           // arrange
           var data = [
@@ -946,6 +1014,69 @@ describe('lib/util/batch.js', function () {
               var num = i + 1;
               assert.equal(queryParams[i].value, 'param' + num, 'query param ' + num + ' is populated');
             }
+            done();
+          }
+        });
+
+        it('joins empty nested batches correctly through multiple levels', function (done) {
+          // arrange
+          var data = [
+            {}
+          ];
+          var query1 = new Query(db)
+              .query('')
+              .consistency('localQuorum')
+              .param('param1', 'ascii')
+              .param('param2', 'ascii'),
+            query2 = new Query(db)
+              .query('')
+              .consistency('eachQuorum')
+              .param('param3', 'ascii')
+              .param('param4', 'ascii'),
+            query3 = new Query(db)
+              .query('')
+              .options({ suppressDebugLog: true })
+              .consistency('one')
+              .param('param5', 'ascii')
+              .param('param6', 'ascii'),
+            childBatch1 = new Batch(db),
+            childBatch2 = new Batch(db);
+
+          batch.addQuery(query1);
+          batch.addBatch(childBatch1);
+          childBatch1.addQuery(query2);
+          childBatch1.addQuery(query3);
+          childBatch2.addBatch(childBatch1);
+
+          db.cql = sinon.stub().yields(null, data);
+
+          // act
+          if (isPromise) {
+            var e = null,
+              result = null;
+            batch
+              .execute()
+              .catch(function (error) {
+                e = error;
+              })
+              .done(function (data) {
+                if (e) {
+                  asserts(e);
+                }
+                else {
+                  asserts(null, data);
+                }
+              });
+          }
+          else {
+            batch.execute(asserts);
+          }
+
+          // assert
+          function asserts(err, result) {
+            assert.notOk(db.cql.called, 'cql is NOT called');
+            assert.notOk(err, 'error is not populated');
+            assert.deepEqual(result, [], 'result is populated with empty array');
             done();
           }
         });
