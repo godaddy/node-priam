@@ -517,7 +517,7 @@ describe("lib/drivers/helenus.js", function () {
       var err = null;
       var data = [
         {
-          _map: { field1: true, field2: true, field3: true, field4: true, field5: true, field6: true },
+          _map: { field1: true, field2: true, field3: true, field4: true, field5: true, field6: true, field7: true},
           get: sinon.stub()
         }
       ];
@@ -526,7 +526,8 @@ describe("lib/drivers/helenus.js", function () {
       data[0].get.withArgs("field3").returns({ value: "{ \"subField1\": \"blah\" }" });
       data[0].get.withArgs("field4").returns({ value: "[ 4, 3, 2, 1]" });
       data[0].get.withArgs("field5").returns({ value: "{ some invalid json }" });
-      data[0].get.withArgs("field6").returns({ value: "{ \"jsonThat\": \"iDontWantToParse\" }" });
+      data[0].get.withArgs("field6").returns({ value: false });
+      data[0].get.withArgs("field7").returns({ value: "{ \"jsonThat\": \"iDontWantToParse\" }" });
 
       var pool = getPoolStub(instance.config, true, err, data);
       instance.pools = { default: pool };
@@ -539,8 +540,9 @@ describe("lib/drivers/helenus.js", function () {
           field2: instance.dataType.auto,
           field3: instance.dataType.objectAscii,
           field4: instance.dataType.objectText,
-          field5: instance.dataType.objectAscii
-          //field6 intentionally omitted
+          field5: instance.dataType.objectAscii,
+          field6: instance.dataType.auto
+          //field7 intentionally omitted
         }
       }, function (error, returnData) {
         var call = pool.cql.getCall(0);
@@ -554,7 +556,8 @@ describe("lib/drivers/helenus.js", function () {
         assert.deepEqual(returnData[0].field3, { subField1: 'blah' }, "third field should be an object");
         assert.deepEqual(returnData[0].field4, [ 4, 3, 2, 1], "fourth field should be an array");
         assert.deepEqual(returnData[0].field5, "{ some invalid json }", "fifth field should be a string");
-        assert.deepEqual(returnData[0].field6, "{ \"jsonThat\": \"iDontWantToParse\" }", "sixth field should be a string");
+        assert.strictEqual(returnData[0].field6, false, "sixth field should be false");
+        assert.deepEqual(returnData[0].field7, "{ \"jsonThat\": \"iDontWantToParse\" }", "seventh field should be a string");
 
         done();
       });
