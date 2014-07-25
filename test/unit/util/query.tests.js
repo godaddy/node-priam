@@ -557,9 +557,6 @@ describe('lib/util/query.js', function () {
           }
         });
 
-
-
-
         it('passes resultTransformers to the db through the options object', function (done) {
           // arrange
           query.context.cql = 'myCqlStatement';
@@ -596,11 +593,7 @@ describe('lib/util/query.js', function () {
           }
         });
 
-
-
-
-
-        it('yields first of data if db yields data and first is set', function (done) {
+        it('yields first of data if db yields data and first is enabled', function (done) {
           // arrange
           var first = {};
           var data = [first, {}];
@@ -638,7 +631,7 @@ describe('lib/util/query.js', function () {
           }
         });
 
-        it('yields first of data if db yields data and first is single', function (done) {
+        it('yields first of data if db yields data and single is enabled', function (done) {
           // arrange
           var first = {};
           var data = [first];
@@ -710,6 +703,80 @@ describe('lib/util/query.js', function () {
           function asserts(err, data) {
             assert.ok(err, 'error is populated');
             assert.notOk(data, 'data is not populated');
+            done();
+          }
+        });
+
+        it('yields null of data if db yields empty array and single is enabled', function (done) {
+          // arrange
+          var data = [];
+          query.context.cql = 'myCqlStatement';
+          query.single();
+          db.cql = sinon.stub().yields(null, data);
+
+          // act
+          if (isPromise) {
+            var e = null,
+              result = null;
+            query
+              .execute()
+              .catch(function (error) {
+                e = error;
+              })
+              .done(function (data) {
+                if (e) {
+                  asserts(e);
+                }
+                else {
+                  asserts(null, data);
+                }
+              });
+          }
+          else {
+            query.execute(asserts);
+          }
+
+          // assert
+          function asserts(err, data) {
+            assert.notOk(err, 'error is not populated');
+            assert.isNull(data);
+            done();
+          }
+        });
+
+        it('yields null of data if db yields empty array and first is enabled', function (done) {
+          // arrange
+          var data = [];
+          query.context.cql = 'myCqlStatement';
+          query.first();
+          db.cql = sinon.stub().yields(null, data);
+
+          // act
+          if (isPromise) {
+            var e = null,
+              result = null;
+            query
+              .execute()
+              .catch(function (error) {
+                e = error;
+              })
+              .done(function (data) {
+                if (e) {
+                  asserts(e);
+                }
+                else {
+                  asserts(null, data);
+                }
+              });
+          }
+          else {
+            query.execute(asserts);
+          }
+
+          // assert
+          function asserts(err, data) {
+            assert.notOk(err, 'error is not populated');
+            assert.isNull(data);
             done();
           }
         });

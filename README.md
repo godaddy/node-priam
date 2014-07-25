@@ -528,6 +528,7 @@ var db = require("priam")({
 
 Release Notes
 -------------
+ - `0.8.8`: Fixed bug where `Query.single()` and `Query.first()` would return empty array instead of null on empty result sets.
  - `0.8.7`: Fixed bug which caused boolean values to not be returned when their value is false
  - `0.8.6`: Fixed bug which caused resultTransformers to not execute
  - `0.8.5`: Changed config to look up consistency level enum if given a string
