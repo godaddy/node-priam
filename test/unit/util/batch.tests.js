@@ -17,6 +17,7 @@ describe('lib/util/batch.js', function () {
   beforeEach(function () {
     db = {
       poolConfig: {},
+      config: { cqlVersion: '3.1.0' },
       param: function (value, hint) {
         return { value: value, hint: hint};
       },
@@ -1235,6 +1236,83 @@ describe('lib/util/batch.js', function () {
             done();
           }
         });
+
+        it('sets nested batch timestamps correctly for CQL versions that don\'t support DML timestamps inside of a batch', function (done) {
+          // arrange
+          var data = [
+            {}
+          ];
+          var query1 = new Query(db)
+              .query('myCqlQuery1')
+              .consistency('localQuorum')
+              .param('param1', 'ascii')
+              .param('param2', 'ascii'),
+            query2 = new Query(db)
+              .query('myCqlQuery2;\n')
+              .consistency('eachQuorum')
+              .param('param3', 'ascii')
+              .param('param4', 'ascii'),
+            query3 = new Query(db)
+              .query('myCqlQuery3')
+              .options({ suppressDebugLog: true })
+              .consistency('one')
+              .param('param5', 'ascii')
+              .param('param6', 'ascii'),
+            childBatch = new Batch(db);
+
+          childBatch.addQuery(query2);
+          childBatch.addQuery(query3);
+          childBatch.timestamp(1234567);
+          batch.addQuery(query1);
+          batch.addBatch(childBatch);
+          batch.timestamp(7654321);
+
+          db.config.cqlVersion = '3.0.0';
+          db.cql = sinon.stub().yields(null, data);
+
+          // act
+          if (isPromise) {
+            var e = null,
+              result = null;
+            batch
+              .execute()
+              .catch(function (error) {
+                e = error;
+              })
+              .done(function (data) {
+                if (e) {
+                  asserts(e);
+                }
+                else {
+                  asserts(null, data);
+                }
+              });
+          }
+          else {
+            batch.execute(asserts);
+          }
+
+          // assert
+          function asserts(err, result) {
+            assert.strictEqual(db.cql.callCount, 1, 'cql is only called once');
+            var callArgs = db.cql.getCall(0).args;
+            assert.strictEqual(callArgs[0], 'BEGIN BATCH\nUSING TIMESTAMP ?\nmyCqlQuery1;\nmyCqlQuery2;\nmyCqlQuery3;\nAPPLY BATCH;\n', 'Query text is joined');
+            var queryParams = callArgs[1];
+            assert.strictEqual(queryParams.length, 7, 'Query params are joined with timestamps');
+            assert.strictEqual(callArgs[2].consistency, db.consistencyLevel.eachQuorum, 'Strictest consistency is set');
+            assert.strictEqual(callArgs[2].suppressDebugLog, true, 'Debug log is suppressed');
+            assert.notOk(err, 'error is not populated');
+            assert.equal(result, data, 'result is populated');
+            assert.equal(queryParams[0].value, 7654321, 'query timestamp is populated');
+            assert.equal(queryParams[1].value, 'param1', 'query param 1 is populated');
+            assert.equal(queryParams[2].value, 'param2', 'query param 2 is populated');
+            assert.equal(queryParams[3].value, 'param3', 'query param 3 is populated');
+            assert.equal(queryParams[4].value, 'param4', 'query param 4 is populated');
+            assert.equal(queryParams[5].value, 'param5', 'query param 5 is populated');
+            assert.equal(queryParams[6].value, 'param6', 'query param 6 is populated');
+            done();
+          }
+        });
       });
     }
 
@@ -1252,7 +1330,6 @@ describe('lib/util/batch.js', function () {
       });
 
       // NOTE: Fake timers break Promises, so can only test coverage on this for standard execute.
-
 
       it('and propagates to child batches appropriately', function (done) {
         // arrange

@@ -34,28 +34,28 @@ Check the `example` folder for a more complete example. Start by running: `npm s
 
 ### Using Known Connection Information ###
 ```javascript
-var path = require("path");
-var db = require("priam")({
-    config: {
-        cqlVersion: "3.0.0", /* optional, defaults to "3.0.0" */
-        timeout: 4000, /* optional, defaults to 4000 */
-        poolSize: 2, /* optional, defaults to 1 */
-        consistencyLevel: "one", /* optional, defaults to one. Will throw if not a valid Cassandra consistency level*/
-        driver: "helenus", /* optional, defaults to "node-cassandra-cql" */,
-        numRetries: 3, /* optional, defaults to 0. Retries occur on connection failures. */
-        retryDelay: 100, /* optional, defaults to 100ms. Used on error retry or consistency fallback retry */
-        enableConsistencyFailover: true, /* optional, defaults to true */
-        queryDirectory: path.join(__dirname, "path/to/your/cql/files"), /* optional, required to use #namedQuery() */
-        user: "<your_username>",
-        password: "<your_password>",
-        keyspace: "<your_keyspace>", /* Default keyspace. Can be overwritten via options passed into #cql(), etc. */
-        hosts: [ /* Ports are optional */
-            "123.456.789.010:9042",
-            "123.456.789.011:9042",
-            "123.456.789.012:9042",
-            "123.456.789.013:9042"
-        ]
-    }
+var path = require('path');
+var db = require('priam')({
+  config: {
+    cqlVersion: '3.0.0', /* optional, defaults to '3.1.0' */
+    timeout: 4000, /* optional, defaults to 4000 */
+    poolSize: 2, /* optional, defaults to 1 */
+    consistencyLevel: 'one', /* optional, defaults to one. Will throw if not a valid Cassandra consistency level*/
+    driver: 'thrift', /* optional, defaults to 'node-cassandra-cql' */,
+    numRetries: 3, /* optional, defaults to 0. Retries occur on connection failures. */
+    retryDelay: 100, /* optional, defaults to 100ms. Used on error retry or consistency fallback retry */
+    enableConsistencyFailover: true, /* optional, defaults to true */
+    queryDirectory: path.join(__dirname, 'path/to/your/cql/files'), /* optional, required to use #namedQuery() */
+    user: '<your_username>',
+    password: '<your_password>',
+    keyspace: '<your_keyspace>', /* Default keyspace. Can be overwritten via options passed into #cql(), etc. */
+    hosts: [ /* Ports are optional */
+      '123.456.789.010:9042',
+      '123.456.789.011:9042',
+      '123.456.789.012:9042',
+      '123.456.789.013:9042'
+    ]
+  }
 });
 ```
 
@@ -79,7 +79,7 @@ stringified prior to being sent to [Cassandra](http://cassandra.apache.org/), wh
 
 The `executeAsPrepared` option informs the [node-cassandra-cql](https://github.com/jorgebay/node-cassandra-cql) driver
 to execute the given CQL as a prepared statement, which will boost performance if the query is executed multiple times.
-*This option is currently ignored if using the [helenus](https://github.com/simplereach/helenus) driver.*
+*This option is currently ignored if using the [helenus](https://github.com/simplereach/helenus) thrift driver.*
 
 The `queryName` option allows metrics to be captured for the given query, assuming a `metrics` object was passed into
 the constructor. See the [Monitoring / Instrumentation](#monitoring--instrumentation) section for more information.
@@ -113,20 +113,20 @@ There is also a `param(value [object], type [string])` helper method for creatin
 
 #### Example ####
 ```javascript
-var db = require("priam")({
+var db = require('priam')({
     config: { /* ... options ... */ }
 });
 db.cql(
-    'SELECT "myCol1", "myCol2" FROM "myColumnFamily" WHERE "keyCol1" = ? AND "keyCol2" = ?',
-    [db.param("value_of_keyCol1", "ascii"), db.param("value_of_keyCol2", "ascii")],
-    { consistency: db.consistencyLevel.one, queryName: "myQuery", executeAsPrepared: true },
-    function (err, data) {
-        if (err) {
-            console.log("ERROR: " + err);
-            return;
-        }
-        console.log("Returned data: " + data);
+  'SELECT "myCol1", "myCol2" FROM "myColumnFamily" WHERE "keyCol1" = ? AND "keyCol2" = ?',
+  [db.param('value_of_keyCol1', 'ascii'), db.param('value_of_keyCol2', 'ascii')],
+  { consistency: db.consistencyLevel.one, queryName: 'myQuery', executeAsPrepared: true },
+  function (err, data) {
+    if (err) {
+      console.log('ERROR: ' + err);
+      return;
     }
+    console.log('Returned data: ' + data);
+  }
 );
 ```
 
@@ -144,20 +144,20 @@ though the caller can override these options by providing them in the `options` 
 
 #### Example ####
 ```javascript
-var db = require("priam")({
-    config: { queryDirectory: path.join(__dirName, "cql") }
+var db = require('priam')({
+    config: { queryDirectory: path.join(__dirName, 'cql') }
 }); /* 'cql' folder will be scanned and all .cql files loaded into memory synchronously */
 db.namedQuery(
-    "myColumnFamilySelect", /* name of .cql file with contents: 'SELECT "myCol1", "myCol2" FROM "myColumnFamily" WHERE "keyCol1" = ? AND "keyCol2" = ?' */
-    ["value_of_keyCol1", "value_of_keyCol2"],
-    { consistency: db.consistencyLevel.ONE },
-    function (err, data) {
-        if (err) {
-            console.log("ERROR: " + err);
-            return;
-        }
-        console.log("Returned data: " + data);
+  'myColumnFamilySelect', /* name of .cql file with contents: 'SELECT "myCol1", "myCol2" FROM "myColumnFamily" WHERE "keyCol1" = ? AND "keyCol2" = ?' */
+  ['value_of_keyCol1', 'value_of_keyCol2'],
+  { consistency: db.consistencyLevel.ONE },
+  function (err, data) {
+    if (err) {
+      console.log('ERROR: ' + err);
+      return;
     }
+    console.log('Returned data: ' + data);
+  }
 );
 ```
 
@@ -193,54 +193,54 @@ Calling `#beginQuery()` returns a `Query` object with the following chainable fu
 
 ```javascript
 db
-    .beginQuery()
-    .query('SELECT "myCol1", "myCol2" FROM "myColumnFamily" WHERE "keyCol1" = ? AND "keyCol2" = ?')
-    .param("value_of_keyCol1", "ascii")
-    .param("value_of_keyCol2", "ascii")
-    .consistency("one")
-    .options({ queryName: "myColumnFamilySelect" })
-    .options({ executeAsPrepared: true })
-    .execute(function (err, data) {
-        if (err) {
-            console.log("ERROR: " + err);
-            return;
-        }
-        console.log("Returned data: " + data);
-    });
+  .beginQuery()
+  .query('SELECT "myCol1", "myCol2" FROM "myColumnFamily" WHERE "keyCol1" = ? AND "keyCol2" = ?')
+  .param('value_of_keyCol1', 'ascii')
+  .param('value_of_keyCol2', 'ascii')
+  .consistency("one")
+  .options({ queryName: 'myColumnFamilySelect' })
+  .options({ executeAsPrepared: true })
+  .execute(function (err, data) {
+    if (err) {
+      console.log('ERROR: ' + err);
+      return;
+    }
+    console.log('Returned data: ' + data);
+  });
 ```
 
 Similarly, fluent syntax can be used for named queries.
 ```javascript
 db
-    .beginQuery()
-    .namedQuery("myColumnFamilySelect") /* name of .cql file with contents: 'SELECT "myCol1", "myCol2" FROM "myColumnFamily" WHERE "keyCol1" = ? AND "keyCol2" = ?' */
-    .param("value_of_keyCol1", "ascii")
-    .param("value_of_keyCol2", "ascii")
-    .consistency("one")
-    .execute(function (err, data) {
-        if (err) {
-            console.log("ERROR: " + err);
-            return;
-        }
-        console.log("Returned data: " + data);
-    });
+  .beginQuery()
+  .namedQuery('myColumnFamilySelect') /* name of .cql file with contents: 'SELECT "myCol1", "myCol2" FROM "myColumnFamily" WHERE "keyCol1" = ? AND "keyCol2" = ?' */
+  .param('value_of_keyCol1', 'ascii')
+  .param('value_of_keyCol2', 'ascii')
+  .consistency('one')
+  .execute(function (err, data) {
+    if (err) {
+      console.log('ERROR: ' + err);
+      return;
+    }
+    console.log('Returned data: ' + data);
+  });
 ```
 
 The fluent syntax also supports promises, if a callback is not supplied to the `#execute()` function.
 ```javascript
 db
-    .beginQuery()
-    .namedQuery("myColumnFamilySelect") /* name of .cql file with contents: 'SELECT "myCol1", "myCol2" FROM "myColumnFamily" WHERE "keyCol1" = ? AND "keyCol2" = ?' */
-    .param("value_of_keyCol1", "ascii")
-    .param("value_of_keyCol2", "ascii")
-    .consistency("one")
-    .execute()
-    .fail(function (err) {
-        console.log("ERROR: " + err);
-    })
-    .done(function (data) {
-        console.log("Returned data: " + data);
-    });
+  .beginQuery()
+  .namedQuery('myColumnFamilySelect') /* name of .cql file with contents: 'SELECT "myCol1", "myCol2" FROM "myColumnFamily" WHERE "keyCol1" = ? AND "keyCol2" = ?' */
+  .param('value_of_keyCol1', 'ascii')
+  .param('value_of_keyCol2', 'ascii')
+  .consistency('one')
+  .execute()
+  .fail(function (err) {
+    console.log('ERROR: ' + err);
+  })
+  .done(function (data) {
+    console.log('Returned data: ' + data);
+  });
 ```
 
 ### Batching Queries ###
@@ -258,12 +258,20 @@ added, the query will yield a runtime error.
 For more information on batching, see the
 [CQL 3.0 reference](http://www.datastax.com/documentation/cql/3.0/cql/cql_reference/batch_r.html).
 
+If using [CQL 3.1](http://www.datastax.com/documentation/cql/3.1/cql/cql_reference/batch_r.html), batches can be nested
+and timestamps will be applied at the query level instead of the batch level. If using
+[CQL 3.0](http://www.datastax.com/documentation/cql/3.0/cql/cql_reference/batch_r.html), only timestamps at the outermost
+batch level will be applied. Any others will be ignored.
+
 Calling `#beginBatch()` returns a `Query` object with the following chainable functions:
 
  - `#addQuery(query [Query])`: Adds a query to the batch to execute. The query should be created by `db.beginQuery()`.
 
  - `#addBatch(batch [Batch])`: Adds the queries contained within the `batch` parameter to the current batch.. The batch
     should be created by `db.beginBatch()`.
+
+ - `#add(batchOrQuery [Batch or Query])`: Allows `null`, `Query`, or `Batch` objects. See `#addQuery()` and `#addBatch()`
+    above. 
 
  - `#options(optionsDictionary [object])`: Extends the batch. See
     [Executing CQL](https://github.com/godaddy/node-priam/blob/master/README.md#executing-cql) for valid options.
@@ -273,7 +281,7 @@ Calling `#beginBatch()` returns a `Query` object with the following chainable fu
 
  - `#type(batchTypeName [string])`: Specifies the type of batch that will be used. Available types are `'standard'`,
     `'counter'` and `'unlogged'`. Defaults to `'standard'`. See
-    [CQL 3.0 reference](http://www.datastax.com/documentation/cql/3.0/cql/cql_reference/batch_r.html) for more details
+    [CQL 3.1 reference](http://www.datastax.com/documentation/cql/3.0/cql/cql_reference/batch_r.html) for more details
     on batch types.
 
  - `#consistency(consistencyLevelName [string])`: Sets consistency level for the batch. Alias for
@@ -285,29 +293,29 @@ Calling `#beginBatch()` returns a `Query` object with the following chainable fu
 
 ```javascript
 db
-    .beginBatch()
-    .addQuery(db.beginQuery(
-        .query('UPDATE "myColumnFamily" SET "myCol1" = ?, "myCol2" = ? WHERE "keyCol1" = ? AND "keyCol2" = ?')
-        .param("value_of_myCol1", "ascii")
-        .param("value_of_myCol2", "ascii")
-        .param("value_of_keyCol1", "ascii")
-        .param("value_of_keyCol2", "ascii")
-    )
-    .addQuery(db.beginQuery(
-        .query('UPDATE "myOtherColumnFamily" SET "myCol" = ? WHERE "keyCol" = ?')
-        .param("value_of_myCol", "ascii")
-        .param("value_of_keyCol", "ascii")
-    )
-    .consistency("quorum")
-    .type('counter')
-    .timestamp()
-    .execute()
-    .fail(function (err) {
-        console.log("ERROR: " + err);
-    })
-    .done(function (data) {
-        console.log("Returned data: " + data);
-    });
+  .beginBatch()
+  .add(db.beginQuery(
+    .query('UPDATE "myColumnFamily" SET "myCol1" = ?, "myCol2" = ? WHERE "keyCol1" = ? AND "keyCol2" = ?')
+    .param('value_of_myCol1', 'ascii')
+    .param('value_of_myCol2', 'ascii')
+    .param('value_of_keyCol1', 'ascii')
+    .param('value_of_keyCol2', 'ascii')
+  )
+  .add(db.beginQuery(
+    .query('UPDATE "myOtherColumnFamily" SET "myCol" = ? WHERE "keyCol" = ?')
+    .param('value_of_myCol', 'ascii')
+    .param('value_of_keyCol', 'ascii')
+  )
+  .consistency('quorum')
+  .type('counter')
+  .timestamp()
+  .execute()
+  .fail(function (err) {
+    console.log('ERROR: ' + err);
+  })
+  .done(function (data) {
+    console.log('Returned data: ' + data);
+  });
 ```
 
 ### Helper Functions ###
@@ -356,9 +364,9 @@ The following retry options are supported in the driver constructor:
 The driver supports passing a [winston](https://github.com/flatiron/winston) logger inside of the options.
 
 ```javascript
-require("priam")({
-    config: { /* connection information */ },
-    logger: new (require("winston")).Logger({ /* logger options */ })
+require('priam')({
+  config: { /* connection information */ },
+  logger: new (require('winston')).Logger({ /* logger options */ })
 });
 ```
 Debug logging of CQL can be turned off for an individual query by passing the `suppressDebugLog = true` option in the
@@ -370,12 +378,12 @@ Instrumentation is supported via an optional `metrics` object passed into the dr
 should have a method `#measurement(queryName [string], duration [number], unit [string])`.
 
 ```javascript
-var logger = new (require("winston")).Logger({ /* logger options */ })
+var logger = new (require('winston')).Logger({ /* logger options */ })
 var metrics = new MetricsClient();
-require("priam")({
-    config: { /* connection information */ },
-    logger: logger,
-    metrics: metrics
+require('priam')({
+  config: { /* connection information */ },
+  logger: logger,
+  metrics: metrics
 });
 ```
 
@@ -473,11 +481,11 @@ The `connectionResolver` option allows you to pass in a `connectionResolver` obj
 
 ```javascript
 var resolver = new MyConnectionResolver();
-var db = require("priam")({
-    config: {
-        /* ... connection options ... */
-    }
-    connectionResolver: resolver
+var db = require('priam')({
+  config: {
+    /* ... connection options ... */
+  }
+  connectionResolver: resolver
 });
 ```
 
@@ -486,11 +494,11 @@ it is recommended to supply a resolver this way via a node module, as paths to s
 internal path.*
 
 ```javascript
-var db = require("priam")({
-    config: {
-        /* ... other connection options ... */
-        connectionResolverPath: "myResolverModule"
-    }
+var db = require('priam')({
+  config: {
+    /* ... other connection options ... */
+    connectionResolverPath: 'myResolverModule'
+  }
 });
 ```
 
@@ -515,14 +523,14 @@ wish to use, (e.g. You want to use binary port 9042, but resolver is returning T
 `connectionResolverPortMap` option to perform the mapping.
 
 ```javascript
-var db = require("priam")({
-    config: {
-        /* ... other connection options, including Nimitz ... */
-        connectionResolverPortMap = {
-            from: "9160",
-            to: "9042"
-        }
+var db = require('priam')({
+  config: {
+    /* ... other connection options, including Nimitz ... */
+    connectionResolverPortMap = {
+      from: '9160',
+      to: '9042'
     }
+  }
 });
 ```
 
