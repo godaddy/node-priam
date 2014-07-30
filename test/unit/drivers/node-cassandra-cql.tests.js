@@ -1308,6 +1308,38 @@ describe('lib/drivers/node-cassandra-cql.js', function () {
           });
         });
 
+        it('normalizes the timestamp parameters appropriately', function (done) {
+          // arrange
+          var timeStampType = 11;
+          var hintedDateTimestamp = { value: new Date(8675309), hint: timeStampType };
+          var hintedNumberTimestamp = { value: 8675309, hint: timeStampType };
+          var hintedNumberStringTimestamp = { value: '8675309', hint: timeStampType };
+          var hintedIsoStringTimestamp = { value: '1970-01-01T02:24:35.309Z', hint: timeStampType };
+          var hintedNullTimestamp = { value: null, hint: timeStampType };
+          var params = [
+            hintedDateTimestamp,
+            hintedNumberTimestamp,
+            hintedNumberStringTimestamp,
+            hintedIsoStringTimestamp,
+            hintedNullTimestamp
+          ];
+
+          // act
+          instance[method]('cql', params, {}, function () {
+            var call = instance.execCql.getCall(0);
+            var normalized = call.args[1];
+
+            // assert
+            assert.deepEqual(normalized[0], hintedDateTimestamp, 'Date parameter should remain hinted Date parameter');
+            assert.deepEqual(normalized[1], hintedDateTimestamp, 'Number parameter should be converted to hinted Date parameter');
+            assert.deepEqual(normalized[2], hintedDateTimestamp, 'Numeric String parameter should be converted to hinted Date parameter');
+            assert.deepEqual(normalized[3], hintedDateTimestamp, 'ISO Date String parameter should be converted to hinted Date parameter');
+            assert.deepEqual(normalized[4], hintedNullTimestamp, 'Null parameter should remain hinted Null parameter');
+
+            done();
+          });
+        });
+
         it('leaves object parameter untouched', function (done) {
           // arrange
           var params = { foo: 'bar' };
