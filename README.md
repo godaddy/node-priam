@@ -536,6 +536,7 @@ var db = require('priam')({
 
 Release Notes
 -------------
+ - `0.8.11`: Coerce `timestamp` hinted parameters for `node-cassandra-cql` to `Date` objects from `string` or `number`.
  - `0.8.10`: `Batch.add()` can now take an `Array` argument.
  - `0.8.9`: Fix usage of `Batch.addBatch()` in pre-2.0 Cassandra environments that do not support DML-level timestamps.  
  - `0.8.8`: Fixed bug where `Query.single()` and `Query.first()` would return empty array instead of null on empty result sets.
