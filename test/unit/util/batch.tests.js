@@ -90,6 +90,24 @@ describe('lib/util/batch.js', function () {
   });
 
   describe('#add()', function () {
+
+    it('iterates an array', function () {
+      // arrange
+      var query1 = new Query(db);
+      var query2 = new Query(db);
+      var batch1 = new Batch(db);
+
+      // act
+      batch.add([query1, query2, batch1]);
+
+      // assert
+      assert.strictEqual(batch.context.queries.length, 3, 'queries are added to list');
+      assert.strictEqual(batch.context.queries[0], query1, 'query1 is added to list');
+      assert.strictEqual(batch.context.queries[1], query2, 'query2 is added to list');
+      assert.strictEqual(batch.context.queries[2], batch1, 'batch1 is added to list of queries');
+      assert.strictEqual(batch.context.errors.length, 0, 'no error is generated');
+    });
+
     it('adds the query to the query list', function (done) {
       // arrange
       var query = new Query(db);
@@ -285,8 +303,8 @@ describe('lib/util/batch.js', function () {
 
     it('adds error if the added batch is already in the tree (nseted)', function (done) {
       // arrange
-      var newBatch1= new Batch(db);
-      var newBatch2= new Batch(db);
+      var newBatch1 = new Batch(db);
+      var newBatch2 = new Batch(db);
       newBatch1.addBatch(newBatch2);
       batch.addBatch(newBatch1);
 
@@ -1387,7 +1405,7 @@ describe('lib/util/batch.js', function () {
           assert.equal(queryParams[5].value, nowTs, 'query timestamp 2 is populated');
           assert.equal(queryParams[6].value, 'param5', 'query param 5 is populated');
           assert.equal(queryParams[7].value, 'param6', 'query param 6 is populated');
-          assert.equal(queryParams[8].value, nowTs+1, 'query timestamp 3 is populated');
+          assert.equal(queryParams[8].value, nowTs + 1, 'query timestamp 3 is populated');
           done();
         }
       });
