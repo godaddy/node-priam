@@ -16,7 +16,8 @@ By default, the driver uses [node-cassandra-cql](https://github.com/jorgebay/nod
 If a Thrift connection is desired, simply specify the [helenus](https://github.com/simplereach/helenus) driver option
 in config. [Priam](https://github.com/godaddy/node-priam) uses internal aliases to map
 [helenus](https://github.com/simplereach/helenus) and [node-cassandra-cql](https://github.com/jorgebay/node-cassandra-cql)
-options to facilitate easily switching between the two drivers.
+options to facilitate easily switching between the two drivers. Specifying the appropriate `cqlVersion` for your database
+will ensure that the appropriate driver is selected.
 
 [Priam](https://github.com/godaddy/node-priam) is designed to be used as a single instance in order to preserve the
 connection pools. As an example, in an [Express](http://expressjs.com/) application,
@@ -186,7 +187,7 @@ Calling `#beginQuery()` returns a `Query` object with the following chainable fu
  - `#single()`: Similar to first, will return first result however will yield an error if more than one record found.
 
  - `#execute(callback [optional, function])`: Executes the query. If a callback is not supplied, this will return a Promise.
- 
+
 
 
 #### Fluent Syntax Examples ####
@@ -271,7 +272,7 @@ Calling `#beginBatch()` returns a `Query` object with the following chainable fu
     should be created by `db.beginBatch()`.
 
  - `#add(batchOrQuery [Batch or Query])`: Allows `null`, `Query`, or `Batch` objects. See `#addQuery()` and `#addBatch()`
-    above. 
+    above.
 
  - `#options(optionsDictionary [object])`: Extends the batch. See
     [Executing CQL](https://github.com/godaddy/node-priam/blob/master/README.md#executing-cql) for valid options.
@@ -536,9 +537,10 @@ var db = require('priam')({
 
 Release Notes
 -------------
+ - `0.8.12`: Remove github dependency via `priam-connection-cql` module. Added versioning logic around `cqlVersion` to use the appropriate driver.
  - `0.8.11`: Coerce `timestamp` hinted parameters for `node-cassandra-cql` to `Date` objects from `string` or `number`.
  - `0.8.10`: `Batch.add()` can now take an `Array` argument.
- - `0.8.9`: Fix usage of `Batch.addBatch()` in pre-2.0 Cassandra environments that do not support DML-level timestamps.  
+ - `0.8.9`: Fix usage of `Batch.addBatch()` in pre-2.0 Cassandra environments that do not support DML-level timestamps.
  - `0.8.8`: Fixed bug where `Query.single()` and `Query.first()` would return empty array instead of null on empty result sets.
  - `0.8.7`: Fixed bug which caused boolean values to not be returned when their value is false
  - `0.8.6`: Fixed bug which caused resultTransformers to not execute

@@ -11,12 +11,14 @@ var sinon = require('sinon')
 chai.use(require('sinon-chai'));
 
 var cql = require('node-cassandra-cql');
+var priamCql = require('priam-cassandra-cql');
 var Driver = require('../../../lib/drivers/node-cassandra-cql');
 
 describe('lib/drivers/node-cassandra-cql.js', function () {
 
   function getDefaultConfig() {
     return {
+      cqlVersion: '3.1.0',
       hosts: ['123.456.789.012:9042'],
       keyspace: 'myKeySpace',
       timeout: 12345
@@ -97,11 +99,43 @@ describe('lib/drivers/node-cassandra-cql.js', function () {
         new Driver({ });
       }).to.throw(Error, /missing context.config /i);
     });
+
+    it('should throw exception if config is missing from context', function () {
+      // arrange
+      // act, assert
+      expect(function () {
+        new Driver({ });
+      }).to.throw(Error, /missing context.config /i);
+    });
+
+    it('should instantiate the node-cassandra-cql driver when requested', function () {
+      // arrange
+      var config = _.extend({ }, getDefaultConfig());
+      config.driver = 'node-cassandra-cql';
+
+      // act
+      var instance = new Driver({ config: config });
+
+      // assert
+      assert.equal(instance.cqlDriver, cql);
+    });
+
+    it('should instantiate the priam-cassandra-cql driver when requested', function () {
+      // arrange
+      var config = _.extend({ }, getDefaultConfig());
+      config.driver = 'priam-cassandra-cql';
+
+      // act
+      var instance = new Driver({ config: config });
+
+      // assert
+      assert.equal(instance.cqlDriver, priamCql);
+    });
+
     it('sets default pool configuration', function () {
       // arrange
       var config = _.extend({ }, getDefaultConfig());
       var configCopy = _.extend({ }, config);
-      var cqlVersion = '3.0.0';
       var consistencyLevel = cql.types.consistencies.one;
 
       // act
@@ -111,7 +145,7 @@ describe('lib/drivers/node-cassandra-cql.js', function () {
       assert.deepEqual(instance.poolConfig.hosts, configCopy.hosts, 'hosts should be passed through');
       assert.strictEqual(instance.poolConfig.keyspace, configCopy.keyspace, 'keyspace should be passed through');
       assert.strictEqual(instance.poolConfig.getAConnectionTimeout, configCopy.timeout, 'timeout should be passed through');
-      assert.strictEqual(instance.poolConfig.version, cqlVersion, 'version should default to 3.0.0');
+      assert.strictEqual(instance.poolConfig.version, configCopy.cqlVersion, 'cqlVersion should be passed through');
       assert.strictEqual(instance.poolConfig.consistencyLevel, consistencyLevel, 'consistencyLevel should default to ONE');
     });
 
