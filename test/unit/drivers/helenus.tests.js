@@ -27,6 +27,7 @@ describe('lib/drivers/helenus.js', function () {
 
   function getDefaultConfig() {
     return {
+      cqlVersion: '3.0.0',
       hosts: ['123.456.789.012:9160'],
       keyspace: 'myKeySpace',
       timeout: 12345
@@ -105,7 +106,6 @@ describe('lib/drivers/helenus.js', function () {
     it('sets default pool configuration', function () {
       // arrange
       var config = _.extend({ }, getDefaultConfig());
-      var cqlVersion = '3.0.0';
       var consistencyLevel = helenus.ConsistencyLevel.ONE;
 
       // act
@@ -115,7 +115,7 @@ describe('lib/drivers/helenus.js', function () {
       assert.deepEqual(instance.poolConfig.hosts, config.hosts, 'hosts should be passed through');
       assert.strictEqual(instance.poolConfig.keyspace, config.keyspace, 'keyspace should be passed through');
       assert.strictEqual(instance.poolConfig.timeout, config.timeout, 'timeout should be passed through');
-      assert.strictEqual(instance.poolConfig.cqlVersion, cqlVersion, 'cqlVersion should default to 3.0.0');
+      assert.strictEqual(instance.poolConfig.cqlVersion, config.cqlVersion, 'cqlVersion should be passed through');
       assert.strictEqual(instance.poolConfig.consistencyLevel, consistencyLevel, 'consistencyLevel should default to ONE');
     });
 

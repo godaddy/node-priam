@@ -17,7 +17,7 @@ describe('lib/util/batch.js', function () {
   beforeEach(function () {
     db = {
       poolConfig: {},
-      config: { cqlVersion: '3.1.0' },
+      config: { parsedCqlVersion: { major: 3, minor: 1, patch: 0 } },
       param: function (value, hint) {
         return { value: value, hint: hint};
       },
@@ -1285,7 +1285,7 @@ describe('lib/util/batch.js', function () {
           batch.addBatch(childBatch);
           batch.timestamp(7654321);
 
-          db.config.cqlVersion = '3.0.0';
+          db.config.parsedCqlVersion = {major: 3, minor: 0, patch: 0};
           db.cql = sinon.stub().yields(null, data);
 
           // act
