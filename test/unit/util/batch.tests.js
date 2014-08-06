@@ -795,6 +795,174 @@ describe('lib/util/batch.js', function () {
           }
         });
 
+        it('can join a query with an empty batch', function (done) {
+          // arrange
+          var data = [
+            {}
+          ];
+          var query = new Query(db)
+              .query('myCqlQuery1')
+              .consistency('localQuorum')
+              .param('param1', 'ascii')
+              .param('param2', 'ascii');
+
+          batch.add(query);
+          batch.add(new Batch(db));
+          batch.timestamp(1234567);
+
+          db.cql = sinon.stub().yields(null, data);
+
+          // act
+          if (isPromise) {
+            var e = null,
+              result = null;
+            batch
+              .execute()
+              .catch(function (error) {
+                e = error;
+              })
+              .done(function (data) {
+                if (e) {
+                  asserts(e);
+                }
+                else {
+                  asserts(null, data);
+                }
+              });
+          }
+          else {
+            batch.execute(asserts);
+          }
+
+          // assert
+          function asserts(err, result) {
+            assert.strictEqual(db.cql.callCount, 1, 'cql is only called once');
+            var callArgs = db.cql.getCall(0).args;
+            assert.strictEqual(callArgs[0], 'BEGIN BATCH\nmyCqlQuery1\nUSING TIMESTAMP ?;\nAPPLY BATCH;\n', 'Query text is joined');
+            var queryParams = callArgs[1];
+            assert.strictEqual(queryParams.length, 3, 'Query params are joined with timestamp');
+            assert.notOk(err, 'error is not populated');
+            assert.equal(data, result, 'result is populated');
+            assert.equal(queryParams[2].value, 1234567, 'timestamp param is populated');
+            for (var i = 0; i < queryParams.length - 1; i++) {
+              assert.equal(queryParams[i].value, 'param' + (i+1), 'query param ' + (i+1) + ' is populated');
+            }
+            done();
+          }
+        });
+
+        it('can join a query with an empty query', function (done) {
+          // arrange
+          var data = [
+            {}
+          ];
+          var query = new Query(db)
+            .query('myCqlQuery1')
+            .consistency('localQuorum')
+            .param('param1', 'ascii')
+            .param('param2', 'ascii');
+
+          batch.add(query);
+          batch.add(new Query(db));
+          batch.timestamp(1234567);
+
+          db.cql = sinon.stub().yields(null, data);
+
+          // act
+          if (isPromise) {
+            var e = null,
+              result = null;
+            batch
+              .execute()
+              .catch(function (error) {
+                e = error;
+              })
+              .done(function (data) {
+                if (e) {
+                  asserts(e);
+                }
+                else {
+                  asserts(null, data);
+                }
+              });
+          }
+          else {
+            batch.execute(asserts);
+          }
+
+          // assert
+          function asserts(err, result) {
+            assert.strictEqual(db.cql.callCount, 1, 'cql is only called once');
+            var callArgs = db.cql.getCall(0).args;
+            assert.strictEqual(callArgs[0], 'BEGIN BATCH\nUSING TIMESTAMP ?\nmyCqlQuery1;\nAPPLY BATCH;\n', 'Query text is joined');
+            var queryParams = callArgs[1];
+            assert.strictEqual(queryParams.length, 3, 'Query params are joined with timestamp');
+            assert.notOk(err, 'error is not populated');
+            assert.equal(data, result, 'result is populated');
+            assert.equal(queryParams[0].value, 1234567, 'timestamp param is populated');
+            for (var i = 1; i < queryParams.length; i++) {
+              assert.equal(queryParams[i].value, 'param' + i, 'query param ' + i + ' is populated');
+            }
+            done();
+          }
+        });
+
+        it('can join a query with an empty string query', function (done) {
+          // arrange
+          var data = [
+            {}
+          ];
+          var query = new Query(db)
+            .query('myCqlQuery1')
+            .consistency('localQuorum')
+            .param('param1', 'ascii')
+            .param('param2', 'ascii');
+
+          batch.add(query);
+          batch.add(new Query(db).query(''));
+          batch.timestamp(1234567);
+
+          db.cql = sinon.stub().yields(null, data);
+
+          // act
+          if (isPromise) {
+            var e = null,
+              result = null;
+            batch
+              .execute()
+              .catch(function (error) {
+                e = error;
+              })
+              .done(function (data) {
+                if (e) {
+                  asserts(e);
+                }
+                else {
+                  asserts(null, data);
+                }
+              });
+          }
+          else {
+            batch.execute(asserts);
+          }
+
+          // assert
+          function asserts(err, result) {
+            assert.strictEqual(db.cql.callCount, 1, 'cql is only called once');
+            var callArgs = db.cql.getCall(0).args;
+            assert.strictEqual(callArgs[0], 'BEGIN BATCH\nUSING TIMESTAMP ?\nmyCqlQuery1;\nAPPLY BATCH;\n', 'Query text is joined');
+            var queryParams = callArgs[1];
+            assert.strictEqual(queryParams.length, 3, 'Query params are joined with timestamp');
+            assert.notOk(err, 'error is not populated');
+            assert.equal(data, result, 'result is populated');
+            assert.equal(queryParams[0].value, 1234567, 'timestamp param is populated');
+            for (var i = 1; i < queryParams.length; i++) {
+              assert.equal(queryParams[i].value, 'param' + i, 'query param ' + i + ' is populated');
+            }
+            done();
+          }
+        });
+
         it('sets batch type appropriately', function (done) {
           // arrange
           var data = [
@@ -1037,6 +1205,81 @@ describe('lib/util/batch.js', function () {
           }
         });
 
+        it('joins nested batches correctly with empty batches through multiple levels', function (done) {
+          // arrange
+          var data = [
+            {}
+          ];
+          var query1 = new Query(db)
+              .query('myCqlQuery1')
+              .consistency('localQuorum')
+              .param('param1', 'ascii')
+              .param('param2', 'ascii'),
+            query2 = new Query(db)
+              .query('myCqlQuery2;\n')
+              .consistency('eachQuorum')
+              .param('param3', 'ascii')
+              .param('param4', 'ascii'),
+            query3 = new Query(db)
+              .query('myCqlQuery3')
+              .options({ suppressDebugLog: true })
+              .consistency('one')
+              .param('param5', 'ascii')
+              .param('param6', 'ascii'),
+            childBatch1 = new Batch(db),
+            childBatch2 = new Batch(db);
+
+          batch.addQuery(query1);
+          batch.addBatch(childBatch1);
+          batch.addBatch(new Batch(db));
+          childBatch1.addBatch(new Batch(db));
+          childBatch1.addQuery(query2);
+          childBatch1.addBatch(childBatch2);
+          childBatch2.addQuery(query3);
+
+          db.cql = sinon.stub().yields(null, data);
+
+          // act
+          if (isPromise) {
+            var e = null,
+              result = null;
+            batch
+              .execute()
+              .catch(function (error) {
+                e = error;
+              })
+              .done(function (data) {
+                if (e) {
+                  asserts(e);
+                }
+                else {
+                  asserts(null, data);
+                }
+              });
+          }
+          else {
+            batch.execute(asserts);
+          }
+
+          // assert
+          function asserts(err, result) {
+            assert.strictEqual(db.cql.callCount, 1, 'cql is only called once');
+            var callArgs = db.cql.getCall(0).args;
+            assert.strictEqual(callArgs[0], 'BEGIN BATCH\nmyCqlQuery1;\nmyCqlQuery2;\nmyCqlQuery3;\nAPPLY BATCH;\n', 'Query text is joined');
+            var queryParams = callArgs[1];
+            assert.strictEqual(queryParams.length, 6, 'Query params are joined');
+            assert.strictEqual(callArgs[2].consistency, db.consistencyLevel.eachQuorum, 'Strictest consistency is set');
+            assert.strictEqual(callArgs[2].suppressDebugLog, true, 'Debug log is suppressed');
+            assert.notOk(err, 'error is not populated');
+            assert.equal(result, data, 'result is populated');
+            for (var i = 0; i < queryParams.length; i++) {
+              var num = i + 1;
+              assert.equal(queryParams[i].value, 'param' + num, 'query param ' + num + ' is populated');
+            }
+            done();
+          }
+        });
+
         it('joins empty nested batches correctly through multiple levels', function (done) {
           // arrange
           var data = [
@@ -1062,7 +1305,7 @@ describe('lib/util/batch.js', function () {
             childBatch2 = new Batch(db);
 
           batch.addQuery(query1);
-          batch.addBatch(childBatch1);
+          batch.addBatch(childBatch2);
           childBatch1.addQuery(query2);
           childBatch1.addQuery(query3);
           childBatch2.addBatch(childBatch1);
