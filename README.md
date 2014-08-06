@@ -537,6 +537,7 @@ var db = require('priam')({
 
 Release Notes
 -------------
+ - `0.8.13`: Fix `Batch.add()` when given empty `Batch` or `Query` objects.
  - `0.8.12`: Remove github dependency via `priam-connection-cql` module. Added versioning logic around `cqlVersion` to use the appropriate driver.
  - `0.8.11`: Coerce `timestamp` hinted parameters for `node-cassandra-cql` to `Date` objects from `string` or `number`.
  - `0.8.10`: `Batch.add()` can now take an `Array` argument.
