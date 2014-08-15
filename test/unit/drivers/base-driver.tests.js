@@ -189,6 +189,53 @@ describe('lib/drivers/base-driver.js', function () {
     });
   });
 
+  describe('BaseDriver#cql()', function(){
+
+    it('is expected function', function(){
+      var driver = getDefaultInstance();
+      assert.isFunction(driver.cql);
+      assert.equal(driver.cql.length, 4);
+    });
+
+    describe('resultTransformers', function(){
+
+      function testTransformers(transformers, results, cb){
+        var driver = getDefaultInstance();
+        driver.execCql = sinon.stub().yields(null, results);
+        driver.cql('test', [], {
+          resultTransformers: transformers
+        }, cb);
+      }
+
+      it('called if results', function(done){
+        var transformer = sinon.stub(),
+          results = [{test:true}];
+        testTransformers([transformer], results, function(err, results){
+          assert.ok(transformer.calledOnce);
+          done();
+        });
+      });
+
+      it('does not call unless results', function(done){
+        var transformer = sinon.stub(),
+          results;
+        testTransformers([transformer], results, function(err, results){
+          assert.notOk(transformer.called);
+          done();
+        });
+      });
+
+      it('does not call unless results.length', function(done){
+        var transformer = sinon.stub(),
+          results = [];
+        testTransformers([transformer], results, function(err, results){
+          assert.notOk(transformer.called);
+          done();
+        });
+      });
+    });
+  });
+
   // NOTE: All of the functions below are stubs for functionality that should be
   //       provided by the inheriting driver classes. These tests are present solely for
   //       code coverage purposes
