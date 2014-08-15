@@ -81,6 +81,7 @@ http.createServer(function (req, res) {
       .namedQuery('update-world')
     )
     .timestamp()
+    .options({ queryName: 'hello-world-writes'})
     .execute() // This will execute the two inserts above in a single batch
     .fail(errorHandler)
     .done(
