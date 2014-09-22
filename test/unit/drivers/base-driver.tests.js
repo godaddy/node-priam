@@ -377,4 +377,68 @@ describe('lib/drivers/base-driver.js', function () {
       expect(type).to.equal(driver.dataType.text);
     });
   });
+
+  describe('isBatch', function(){
+    var driver;
+
+    beforeEach(function () {
+      driver = new getDefaultInstance();
+    });
+
+    it('returns true if passed a batch', function(){
+      var batch = driver.beginBatch();
+      expect(driver.isBatch(batch)).to.be.true;
+    });
+
+    it('returns false if passed a non-batch', function(){
+      var notBatch = {
+        add: function(){},
+        foo: 'bar'
+      };
+      expect(driver.isBatch(notBatch)).to.be.false;
+      expect(driver.isBatch(new Query(driver))).to.be.false;
+    });
+
+    it('handles weird values', function(){
+      expect(driver.isBatch()).to.be.false;
+      expect(driver.isBatch(null)).to.be.false;
+      expect(driver.isBatch(undefined)).to.be.false;
+      expect(driver.isBatch({})).to.be.false;
+      expect(driver.isBatch(true)).to.be.false;
+      expect(driver.isBatch(false)).to.be.false;
+      expect(driver.isBatch([])).to.be.false;
+    });
+  });
+
+  describe('isQuery', function(){
+    var driver;
+
+    beforeEach(function () {
+      driver = new getDefaultInstance();
+    });
+
+    it('returns true if passed a query', function(){
+      expect(driver.isQuery(new Query(driver))).to.be.true;
+    });
+
+    it('returns false if passed a non-query', function(){
+      var notQuery = {
+        execute: function(){},
+        foo: 'bar'
+      };
+      expect(driver.isQuery(notQuery)).to.be.false;
+      expect(driver.isQuery(driver.beginBatch())).to.be.false;
+    });
+
+    it('handles weird values', function(){
+      expect(driver.isQuery()).to.be.false;
+      expect(driver.isQuery(null)).to.be.false;
+      expect(driver.isQuery(undefined)).to.be.false;
+      expect(driver.isQuery({})).to.be.false;
+      expect(driver.isQuery(true)).to.be.false;
+      expect(driver.isQuery(false)).to.be.false;
+      expect(driver.isQuery([])).to.be.false;
+    });
+  });
+
 });
