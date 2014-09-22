@@ -377,4 +377,36 @@ describe('lib/drivers/base-driver.js', function () {
       expect(type).to.equal(driver.dataType.text);
     });
   });
+
+  describe('isBatch', function(){
+    var driver;
+
+    beforeEach(function () {
+      driver = new getDefaultInstance();
+    });
+
+    it('returns true if passed a batch', function(){
+      var batch = driver.beginBatch();
+      expect(driver.isBatch(batch)).to.be.true;
+    });
+
+    it('returns false if passed a non-batch', function(){
+      var notBatch = {
+        add: function(){},
+        foo: 'bar'
+      };
+      expect(driver.isBatch(notBatch)).to.be.false;
+    });
+
+    it('handles weird values', function(){
+      expect(driver.isBatch()).to.be.false;
+      expect(driver.isBatch(null)).to.be.false;
+      expect(driver.isBatch(undefined)).to.be.false;
+      expect(driver.isBatch({})).to.be.false;
+      expect(driver.isBatch(true)).to.be.false;
+      expect(driver.isBatch(false)).to.be.false;
+      expect(driver.isBatch([])).to.be.false;
+    });
+
+  });
 });
