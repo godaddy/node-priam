@@ -537,7 +537,7 @@ var db = require('priam')({
 
 Release Notes
 -------------
- - `0.8.15`: Add isBatch method to base driver to check if an object is a Priam batch.
+ - `0.8.15`: Add isBatch and isQuery methods to base driver.
  - `0.8.14`: Fix `resultTransformer` bug when query generates an error.
  - `0.8.13`: Fix `Batch.add()` when given empty `Batch` or `Query` objects.
  - `0.8.12`: Remove github dependency via `priam-connection-cql` module. Added versioning logic around `cqlVersion` to use the appropriate driver.
