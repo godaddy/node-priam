@@ -659,10 +659,12 @@ describe('lib/drivers/node-cassandra-cql.js', function () {
       var data = {
         rows: [
           {
-            columns: [
-              { name: 'field1', types: [1, null] }
-            ],
-            field1: 'value1' }
+            field1: '12345'
+          }, {
+            field1: null
+          }, {
+            field1: undefined
+          }
         ]
       };
       var pool = getPoolStub(instance.config, true, err, data);
@@ -679,7 +681,7 @@ describe('lib/drivers/node-cassandra-cql.js', function () {
         assert.deepEqual(call.args[1], params, 'params should be passed through');
         assert.isNull(error, 'error should be null');
         assert.deepEqual(returnData, [
-          { field1: 'value1' }
+          { field1: '12345' }, { field1: null }, { field1: undefined }
         ], 'data should match normalized cql output');
         expect(completedHandler).to.have.been.called;
 
