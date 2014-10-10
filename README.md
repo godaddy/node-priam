@@ -537,6 +537,7 @@ var db = require('priam')({
 
 Release Notes
 -------------
+ - `0.8.16`: Simplified result set transformation for `node-cassandra-cql` drivers.
  - `0.8.15`: Add isBatch and isQuery methods to base driver.
  - `0.8.14`: Fix `resultTransformer` bug when query generates an error.
  - `0.8.13`: Fix `Batch.add()` when given empty `Batch` or `Query` objects.
