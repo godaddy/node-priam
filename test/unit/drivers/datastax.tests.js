@@ -10,18 +10,18 @@ var sinon = require('sinon')
   , path = require('path');
 chai.use(require('sinon-chai'));
 
-var cql = require('node-cassandra-cql');
-var priamCql = require('priam-cassandra-cql');
-var Driver = require('../../../lib/drivers/node-cassandra-cql');
+var cql = require('cassandra-driver');
+var Driver = require('../../../lib/drivers/datastax');
 
-describe('lib/drivers/node-cassandra-cql.js', function () {
+describe('lib/drivers/datastax.js', function () {
 
   function getDefaultConfig() {
     return {
       cqlVersion: '3.1.0',
       hosts: ['123.456.789.012:9042'],
       keyspace: 'myKeySpace',
-      timeout: 12345
+      timeout: 12345,
+      limit: 5000
     };
   }
 
@@ -83,7 +83,7 @@ describe('lib/drivers/node-cassandra-cql.js', function () {
     });
   });
 
-  describe('NodeCassandraDriver#constructor', function () {
+  describe('DatastaxDriver#constructor', function () {
     it('should throw exception if context is missing', function () {
       // arrange
       // act, assert
@@ -108,30 +108,6 @@ describe('lib/drivers/node-cassandra-cql.js', function () {
       }).to.throw(Error, /missing context.config /i);
     });
 
-    it('should instantiate the node-cassandra-cql driver when requested', function () {
-      // arrange
-      var config = _.extend({ }, getDefaultConfig());
-      config.driver = 'node-cassandra-cql';
-
-      // act
-      var instance = new Driver({ config: config });
-
-      // assert
-      assert.equal(instance.cqlDriver, cql);
-    });
-
-    it('should instantiate the priam-cassandra-cql driver when requested', function () {
-      // arrange
-      var config = _.extend({ }, getDefaultConfig());
-      config.driver = 'priam-cassandra-cql';
-
-      // act
-      var instance = new Driver({ config: config });
-
-      // assert
-      assert.equal(instance.cqlDriver, priamCql);
-    });
-
     it('sets default pool configuration', function () {
       // arrange
       var config = _.extend({ }, getDefaultConfig());
@@ -142,10 +118,11 @@ describe('lib/drivers/node-cassandra-cql.js', function () {
       var instance = new Driver({ config: config });
 
       // assert
-      assert.deepEqual(instance.poolConfig.hosts, configCopy.hosts, 'hosts should be passed through');
+      assert.deepEqual(instance.poolConfig.contactPoints, configCopy.hosts, 'hosts should be passed through');
       assert.strictEqual(instance.poolConfig.keyspace, configCopy.keyspace, 'keyspace should be passed through');
       assert.strictEqual(instance.poolConfig.getAConnectionTimeout, configCopy.timeout, 'timeout should be passed through');
       assert.strictEqual(instance.poolConfig.version, configCopy.cqlVersion, 'cqlVersion should be passed through');
+      assert.strictEqual(instance.poolConfig.limit, configCopy.limit, 'limit should be passed through');
       assert.strictEqual(instance.poolConfig.consistencyLevel, consistencyLevel, 'consistencyLevel should default to ONE');
     });
 
@@ -155,27 +132,31 @@ describe('lib/drivers/node-cassandra-cql.js', function () {
       var configCopy = _.extend({ }, config);
       var cqlVersion = '2.0.0';
       var consistencyLevel = cql.types.consistencies.any;
+      var limit = 300;
       config.cqlVersion = cqlVersion;
       config.consistencyLevel = consistencyLevel;
+      config.limit = limit;
 
       // act
       var instance = new Driver({ config: config });
 
       // assert
-      assert.deepEqual(instance.poolConfig.hosts, configCopy.hosts, 'hosts should be passed through');
+      assert.deepEqual(instance.poolConfig.contactPoints, configCopy.hosts, 'hosts should be passed through');
       assert.strictEqual(instance.poolConfig.keyspace, configCopy.keyspace, 'keyspace should be passed through');
       assert.strictEqual(instance.poolConfig.getAConnectionTimeout, configCopy.timeout, 'timeout should be passed through');
       assert.strictEqual(instance.poolConfig.version, cqlVersion, 'cqlVersion should be overridden');
+      assert.strictEqual(instance.poolConfig.limit, limit, 'limit should be overridden');
       assert.strictEqual(instance.poolConfig.consistencyLevel, consistencyLevel, 'consistencyLevel should be overridden');
     });
   });
 
   function getPoolStub(config, isReady, err, data) {
+    var storeConfig = _.extend({ consistencyLevel: 1, version: '3.1.0'}, config);
+    Driver.DatastaxDriver.prototype.remapConnectionOptions(storeConfig);
     return {
-      storeConfig: _.extend({ consistencyLevel: 1, version: '3.0.0'}, config),
+      storeConfig: storeConfig,
       isReady: isReady,
       execute: sinon.stub().yields(err, data),
-      executeAsPrepared: sinon.stub().yields(err, data),
       shutdown: sinon.spy(function (callback) {
         if (callback) {
           process.nextTick(function () {
@@ -186,7 +167,7 @@ describe('lib/drivers/node-cassandra-cql.js', function () {
     };
   }
 
-  describe('NodeCassandraDriver#connect()', function () {
+  describe('DatastaxDriver#connect()', function () {
 
     var instance;
 
@@ -238,7 +219,7 @@ describe('lib/drivers/node-cassandra-cql.js', function () {
 
   });
 
-  describe('NodeCassandraDriver#createConnectionPool()', function () {
+  describe('DatastaxDriver#createConnectionPool()', function () {
 
     var instance;
 
@@ -270,7 +251,7 @@ describe('lib/drivers/node-cassandra-cql.js', function () {
       });
     });
 
-    it('returns the connection pool immediately "waitForConnect" is false', function (done) {
+    it('returns the connection pool immediately if "waitForConnect" is false', function (done) {
       // arrange
       var pool = getPoolStub(instance.config, false, null, {});
       pool.on = sinon.stub();
@@ -290,25 +271,43 @@ describe('lib/drivers/node-cassandra-cql.js', function () {
 
   });
 
-  describe('NodeCassandraDriver#close()', function () {
+  describe('DatastaxDriver#close()', function () {
 
-    var instance = getDefaultInstance();
+    var pool, instance;
+    beforeEach(function() {
+      instance = getDefaultInstance();
+      pool = getPoolStub(instance.config, true, null, {});
+      instance.pools = { default: pool };
+      instance.getConnectionPool = sinon.stub().yields(null, {});
+    });
 
     it('closes the connection pool if it exists', function (done) {
       // arrange
-      var pool = getPoolStub(instance.config, true, null, {});
-      instance.pools = { default: pool };
-      var closedHandler = sinon.stub();
-      instance.on('connectionClosed', closedHandler);
+      instance.on('connectionClosed', setTimeout.bind(null, done, 4));
+      pool.isReady = true;
+      pool.isClosed = false;
 
       // act
       instance.close(function () {
         // assert
         assert.strictEqual(pool.isClosed, true, 'pool should be set to closed');
+        assert.strictEqual(pool.isReady, false, 'pool should not be marked ready');
         assert.ok(pool.shutdown.called, 'pool shutdown should be called');
-        expect(closedHandler).to.have.been.called;
+      });
+    });
 
-        done();
+    it('skips closing the pool if it is already closed', function (done) {
+      // arrange
+      instance.on('connectionClosed', setTimeout.bind(null, done, 4));
+      pool.isReady = true;
+      pool.isClosed = true;
+
+      // act
+      instance.close(function () {
+        // assert
+        assert.strictEqual(pool.isClosed, true, 'pool should be set to closed');
+        assert.strictEqual(pool.isReady, false, 'pool should not be marked ready');
+        assert.notOk(pool.shutdown.called, 'pool shutdown should not be called');
       });
     });
 
@@ -316,20 +315,14 @@ describe('lib/drivers/node-cassandra-cql.js', function () {
       // arrange
       instance.pools = {};
       var closedHandler = sinon.stub();
-      instance.on('connectionClosed', closedHandler);
 
       // act
-      instance.close(function () {
-        // assert
-        expect(closedHandler).to.have.not.been.called;
-
-        done();
-      });
+      instance.close(done);
     });
 
   });
 
-  describe('NodeCassandraDriver#cql()', function () {
+  describe('DatastaxDriver#cql()', function () {
 
     var instance = null,
       fakeResolver = null;
@@ -348,7 +341,6 @@ describe('lib/drivers/node-cassandra-cql.js', function () {
     it('emits a connectionRequested event at the beginning of a query', function () {
       var eventHandler = sinon.stub();
       instance.on('connectionRequested', eventHandler);
-
       instance.cql('select foo from bar');
 
       expect(eventHandler).to.have.been.called;
@@ -538,24 +530,20 @@ describe('lib/drivers/node-cassandra-cql.js', function () {
       done();
     }
 
-    it('sets up a global trace handler for the connection pool - ignores debug level', function (done) {
-      testLogEvent('debug', null, done);
+    it('sets up a global trace handler for the connection pool - logs debug level as debug', function (done) {
+      testLogEvent('verbose', 'debug', done);
     });
 
-    it('sets up a global trace handler for the connection pool - ignores info level', function (done) {
-      testLogEvent('info', null, done);
+    it('sets up a global trace handler for the connection pool - logs info level as debug', function (done) {
+      testLogEvent('info', 'debug', done);
     });
 
-    it('sets up a global error handler for the connection pool - logs warn as warn', function (done) {
-      testLogEvent('warn', 'warn', done);
+    it('sets up a global error handler for the connection pool - logs warning as warn', function (done) {
+      testLogEvent('warning', 'warn', done);
     });
 
     it('sets up a global error handler for the connection pool - logs error as warn', function (done) {
       testLogEvent('error', 'warn', done);
-    });
-
-    it('sets up a global error handler for the connection pool - logs critical as critical', function (done) {
-      testLogEvent('critical', 'critical', done);
     });
 
     it('sets up an error handler for pool.connect', function (done) {
@@ -654,7 +642,7 @@ describe('lib/drivers/node-cassandra-cql.js', function () {
       // arrange
       var cqlQuery = 'MyCqlStatement';
       var params = ['param1', 'param2', 'param3', new Buffer('param4')];
-      var consistency = cql.types.consistencies.one;
+      var consistency = cql.types.consistencies.quorum;
       var err = null;
       var data = {
         rows: [
@@ -679,6 +667,8 @@ describe('lib/drivers/node-cassandra-cql.js', function () {
         // assert
         assert.strictEqual(call.args[0], cqlQuery, 'cql should be passed through');
         assert.deepEqual(call.args[1], params, 'params should be passed through');
+        assert.strictEqual(call.args[2].prepare, false, 'prepare option should be false');
+        assert.strictEqual(call.args[2].consistency, consistency, 'consistency should be passed through');
         assert.isNull(error, 'error should be null');
         assert.deepEqual(returnData, [
           { field1: '12345' }, { field1: null }, { field1: undefined }
@@ -709,7 +699,7 @@ describe('lib/drivers/node-cassandra-cql.js', function () {
       // arrange
       var cqlQuery = 'MyCqlStatement';
       var params = ['param1', 'param2', 'param3', new Buffer('param4')];
-      var consistency = cql.types.consistencies.one;
+      var consistency = cql.types.consistencies.quorum;
       var err = null;
       var data = {
         rows: [
@@ -725,11 +715,61 @@ describe('lib/drivers/node-cassandra-cql.js', function () {
 
       // act
       instance.cql(cqlQuery, params, { consistency: consistency, executeAsPrepared: true }, function (error, returnData) {
-        var call = pool.executeAsPrepared.getCall(0);
+        var call = pool.execute.getCall(0);
 
         // assert
         assert.strictEqual(call.args[0], cqlQuery, 'cql should be passed through');
         assert.deepEqual(call.args[1], params, 'params should be passed through');
+        assert.strictEqual(call.args[2].prepare, true, 'prepare option should be true');
+        assert.strictEqual(call.args[2].consistency, consistency, 'consistency should be passed through');
+        assert.isNull(error, 'error should be null');
+        assert.deepEqual(returnData, [
+          { field1: 'value1' }
+        ], 'data should match normalized cql output');
+
+        done();
+      });
+    });
+
+    it('executes CQL with hint options if parameters provide type hints', function (done) {
+      // arrange
+      var cqlQuery = 'MyCqlStatement';
+      var params = [
+        'param1',
+        { value: 'param2', hint: null },
+        { value: 'param3', hint: instance.dataType.ascii },
+        new Buffer('param4')];
+      var consistency = cql.types.consistencies.quorum;
+      var err = null;
+      var data = {
+        rows: [
+          {
+            columns: [
+              { name: 'field1', types: [1, null] }
+            ],
+            field1: 'value1' }
+        ]
+      };
+      var pool = getPoolStub(instance.config, true, err, data);
+      instance.pools = { default: pool };
+
+      // act
+      instance.cql(cqlQuery, params, { consistency: consistency, executeAsPrepared: true }, function (error, returnData) {
+        var call = pool.execute.getCall(0);
+
+        // assert
+        assert.strictEqual(call.args[0], cqlQuery, 'cql should be passed through');
+        assert.deepEqual(call.args[1], [
+          params[0],
+          params[1].value,
+          params[2].value,
+          params[3]
+        ], 'param values should be passed through');
+        assert.strictEqual(call.args[2].prepare, true, 'prepare option should be true');
+        assert.strictEqual(call.args[2].consistency, consistency, 'consistency should be passed through');
+        var expectedHints = [];
+        expectedHints[2] = instance.dataType.ascii;
+        assert.deepEqual(call.args[2].hints, expectedHints, 'hints should be passed through');
         assert.isNull(error, 'error should be null');
         assert.deepEqual(returnData, [
           { field1: 'value1' }
@@ -850,64 +890,6 @@ describe('lib/drivers/node-cassandra-cql.js', function () {
         done();
       });
     });
-
-    function testErrorRetry(errorName, errorCode, numRetries, shouldRetry) {
-      it((shouldRetry ? 'adds' : 'does not add') + ' error retry if error is "' + errorName + '", code "' + errorCode + '", and retries ' + numRetries, function (done) {
-        // arrange
-        var cqlQuery = 'MyCqlStatement';
-        var params = ['param1', 'param2', 'param3'];
-        var consistency = cql.types.consistencies.one;
-        var pool = getPoolStub(instance.config, true, null, {});
-        var data = [];
-        var callCount = 0;
-        var queryRetriedHandler = sinon.stub();
-        instance.on('queryRetried', queryRetriedHandler);
-        pool.execute = sinon.spy(function (c, d, con, cb) {
-          callCount++;
-          if (callCount === 1) {
-            var e = new Error('some connection error');
-            e.name = errorName;
-            e.code = errorCode;
-            cb(e);
-          }
-          else {
-            cb(null, data);
-          }
-        });
-        instance.pools = { default: pool };
-        instance.config.numRetries = numRetries;
-        instance.config.retryDelay = 1;
-
-        // act
-        instance.cql(cqlQuery, params, { consistency: consistency }, function (error, returnData) {
-          // assert
-          if (shouldRetry) {
-            var call1 = pool.execute.getCall(0);
-            var call2 = pool.execute.getCall(1);
-            assert.strictEqual(pool.execute.callCount, 2, 'cql should be called twice');
-            assert.notEqual(call1.args[1], call2.args[1], 'parameters should be cloned');
-            assert.deepEqual(call1.args[1], call2.args[1], 'parameters should be cloned');
-            assert.deepEqual(returnData, data, 'data should match cql output');
-            expect(queryRetriedHandler.getCalls()).to.have.lengthOf(numRetries);
-          }
-          else {
-            assert.strictEqual(pool.execute.callCount, 1, 'cql should be called once');
-            expect(queryRetriedHandler).to.have.not.been.called;
-          }
-
-          done();
-        });
-      });
-    }
-
-    testErrorRetry('DriverError', null, 0, false);
-    testErrorRetry('DriverError', null, 1, true);
-    testErrorRetry('PoolConnectionError', null, 1, true);
-    testErrorRetry('ResponseError', null, 1, false);
-    testErrorRetry('Error', 'ECONNRESET', 1, true);
-    testErrorRetry('Error', 'ECONNREFUSED', 1, true);
-    testErrorRetry('Error', 'ENOTFOUND', 1, true);
-    testErrorRetry('Error', 'SomethingElse', 1, false);
 
     it('does not add error retry at consistency QUORUM when original consistency is ALL and enableConsistencyFailover is false', function (done) {
       // arrange
@@ -1113,7 +1095,7 @@ describe('lib/drivers/node-cassandra-cql.js', function () {
           password: 'myResolvedPassword',
           hosts: ['123.456.789.012:1234']
         };
-        instance.connectionResolver.resolveConnection = sinon.stub().yieldsAsync(null, fakeConnectionInfo);
+        instance.connectionResolver.resolveConnection = sinon.stub().yieldsAsync(null, _.cloneDeep(fakeConnectionInfo));
         var pool = getPoolStub(instance.config, true, null, {});
         pool.on = sinon.stub();
         pool.connect = sinon.stub().yieldsAsync(null, {});
@@ -1125,7 +1107,7 @@ describe('lib/drivers/node-cassandra-cql.js', function () {
           // assert
           assert.strictEqual(pool.storeConfig.username, userName);
           assert.strictEqual(pool.storeConfig.password, fakeConnectionInfo.password);
-          assert.deepEqual(pool.storeConfig.hosts, fakeConnectionInfo.hosts);
+          assert.deepEqual(pool.storeConfig.contactPoints, fakeConnectionInfo.hosts);
 
           done();
         });
@@ -1148,7 +1130,7 @@ describe('lib/drivers/node-cassandra-cql.js', function () {
           password: 'myResolvedPassword',
           hosts: ['123.456.789.012:1234', '234.567.890.123']
         };
-        instance.connectionResolver.resolveConnection = sinon.stub().yieldsAsync(null, fakeConnectionInfo);
+        instance.connectionResolver.resolveConnection = sinon.stub().yieldsAsync(null, _.cloneDeep(fakeConnectionInfo));
         var pool = getPoolStub(instance.config, true, null, {});
         pool.on = sinon.stub();
         pool.connect = sinon.stub().yieldsAsync(null, {});
@@ -1160,7 +1142,7 @@ describe('lib/drivers/node-cassandra-cql.js', function () {
           // assert
           assert.strictEqual(pool.storeConfig.username, userName);
           assert.strictEqual(pool.storeConfig.password, fakeConnectionInfo.password);
-          assert.deepEqual(pool.storeConfig.hosts, ['123.456.789.012:2345', '234.567.890.123'], 'hosts were applied with remapped ports');
+          assert.deepEqual(pool.storeConfig.contactPoints, ['123.456.789.012:2345', '234.567.890.123'], 'hosts were applied with remapped ports');
 
           done();
         });
@@ -1310,14 +1292,16 @@ describe('lib/drivers/node-cassandra-cql.js', function () {
     beforeEach(function () {
       instance = getDefaultInstance();
       sinon.stub(instance, 'execCql').yields(null, {});
+      sinon.stub(cql, 'Client').returns({});
     });
 
     afterEach(function () {
       instance.execCql.restore();
+      cql.Client.restore();
     });
 
     function validateWrapperCall(method, consistencyLevel) {
-      describe('NodeCassandraDriver#' + method + '()', function () {
+      describe('DatastaxDriver#' + method + '()', function () {
         it('normalizes the parameter list if it is an array', function (done) {
           // arrange
           var dt = new Date();
@@ -1513,18 +1497,15 @@ describe('lib/drivers/node-cassandra-cql.js', function () {
 
   });
 
-  describe('NodeCassandraDriver#beginQuery()', function () {
+  describe('DatastaxDriver#beginQuery()', function () {
 
-    var instance;
+    var pool, instance;
     beforeEach(function () {
       instance = getDefaultInstance();
-      sinon.stub(instance, 'execCql').yields(null, {});
-    });
-
-    afterEach(function () {
-      if (instance.execCql.restore) {
-        instance.execCql.restore();
-      }
+      pool = getPoolStub(instance.config, true, null, {});
+      instance.pools = { default: pool };
+      instance.execCql = sinon.stub().yields(null, {});
+      instance.getConnectionPool = sinon.stub().yields(null, pool);
     });
 
     function validateQueryCalls(asPromise) {
@@ -1572,15 +1553,14 @@ describe('lib/drivers/node-cassandra-cql.js', function () {
 
   });
 
-  describe('NodeCassandraDriver#namedQuery()', function () {
-
-    var instance = getNamedQueryInstance();
+  describe('DatastaxDriver#namedQuery()', function () {
+    var pool, instance;
     beforeEach(function () {
-      sinon.stub(instance, 'execCql').yields(null, {});
-    });
-
-    afterEach(function () {
-      instance.execCql.restore();
+      instance = getNamedQueryInstance();
+      pool = getPoolStub(instance.config, true, null, {});
+      instance.pools = { default: pool };
+      instance.execCql = sinon.stub().yields(null, {});
+      instance.getConnectionPool = sinon.stub().yields(null, pool);
     });
 
     function getNamedQueryInstance() {
@@ -1594,8 +1574,6 @@ describe('lib/drivers/node-cassandra-cql.js', function () {
       var queryName = 'myFakeCql';
       var params = [];
       var consistency = cql.types.consistencies.one;
-      var pool = getPoolStub(instance.config, true, null, {});
-      instance.pools = { default: pool };
 
       // act
       instance.namedQuery(queryName, params, { consistency: consistency }, function () {
@@ -1617,8 +1595,6 @@ describe('lib/drivers/node-cassandra-cql.js', function () {
       var queryName = 'myFakeCql';
       var params = [];
       var consistency = cql.types.consistencies.one;
-      var pool = getPoolStub(instance.config, true, null, {});
-      instance.pools = { default: pool };
 
       // act
       instance.namedQuery(queryName, params, { consistency: consistency, executeAsPrepared: false }, function () {
@@ -1637,8 +1613,6 @@ describe('lib/drivers/node-cassandra-cql.js', function () {
       var queryName = 'myFakeCql';
       var params = [];
       var consistency = cql.types.consistencies.one;
-      var pool = getPoolStub(instance.config, true, null, {});
-      instance.pools = { default: pool };
 
       // act/assert
       expect(function () {
