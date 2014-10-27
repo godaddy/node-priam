@@ -537,6 +537,7 @@ var db = require('priam')({
 
 Release Notes
 -------------
+ - `0.8.17`: Batch.execute no longer yields an error when the batch is empty
  - `0.8.16`: Simplified result set transformation for `node-cassandra-cql` drivers.
  - `0.8.15`: Add isBatch and isQuery methods to base driver.
  - `0.8.14`: Fix `resultTransformer` bug when query generates an error.
