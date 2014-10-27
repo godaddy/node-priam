@@ -529,7 +529,7 @@ describe('lib/util/batch.js', function () {
     function testCallbacks(isPromise) {
       describe(isPromise ? 'with promise' : 'with callback', function () {
 
-        it('yields error if query list is not populated', function (done) {
+        it('yields [] if query list is not populated', function (done) {
           // arrange
           batch.context.queries = [];
 
@@ -543,12 +543,7 @@ describe('lib/util/batch.js', function () {
                 e = error;
               })
               .done(function (data) {
-                if (e) {
-                  asserts(e);
-                }
-                else {
-                  asserts(null, data);
-                }
+                asserts(e, data);
               });
           }
           else {
@@ -557,8 +552,8 @@ describe('lib/util/batch.js', function () {
 
           // assert
           function asserts(err, data) {
-            assert.ok(err, 'error is populated');
-            assert.notOk(data, 'data is not populated');
+            expect(err).to.not.exist;
+            expect(data).to.deep.equal([]);
             done();
           }
         });
