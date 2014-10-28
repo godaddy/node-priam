@@ -14,7 +14,8 @@ var http = require('http')
   , metrics = new MetricsClient({ logger: logger })
   , db = require('../index' /*"priam"*/)({
       config: {
-        driver: 'node-cassandra-cql', //"helenus"
+        protocol: 'binary',
+        cqlVersion: '3.0',
         queryDirectory: path.join(__dirname, 'cql'),
 
         // If using config-based connection, use these options

@@ -9,13 +9,13 @@ priam
 
 A simple [Cassandra](http://cassandra.apache.org/) driver for [NodeJS](http://nodejs.org). It wraps the
 [helenus](https://github.com/simplereach/helenus) and
-[node-cassandra-cql](https://github.com/jorgebay/node-cassandra-cql) drivers with additional error/retry handling, external
+[cassandra-driver](https://github.com/datastax/nodejs-driver) modules with additional error/retry handling, external
 `.cql` file support, and connection option resolution from an external source, among other improvements.
 
-By default, the driver uses [node-cassandra-cql](https://github.com/jorgebay/node-cassandra-cql) over binary connection.
+By default, the driver uses [cassandra-driver](https://github.com/datastax/nodejs-driver) over a binary-protocol connection.
 If a Thrift connection is desired, simply specify the [helenus](https://github.com/simplereach/helenus) driver option
 in config. [Priam](https://github.com/godaddy/node-priam) uses internal aliases to map
-[helenus](https://github.com/simplereach/helenus) and [node-cassandra-cql](https://github.com/jorgebay/node-cassandra-cql)
+[helenus](https://github.com/simplereach/helenus) and [cassandra-driver](https://github.com/datastax/nodejs-driver)
 options to facilitate easily switching between the two drivers. Specifying the appropriate `cqlVersion` for your database
 will ensure that the appropriate driver is selected.
 
@@ -42,7 +42,8 @@ var db = require('priam')({
     timeout: 4000, /* optional, defaults to 4000 */
     poolSize: 2, /* optional, defaults to 1 */
     consistencyLevel: 'one', /* optional, defaults to one. Will throw if not a valid Cassandra consistency level*/
-    driver: 'thrift', /* optional, defaults to 'node-cassandra-cql' */,
+    driver: 'helenus', /* optional, defaults to 'datastax' */,
+    protocol: 'thrift', /* optional, defaults to 'binary' */,
     numRetries: 3, /* optional, defaults to 0. Retries occur on connection failures. */
     retryDelay: 100, /* optional, defaults to 100ms. Used on error retry or consistency fallback retry */
     enableConsistencyFailover: true, /* optional, defaults to true */
@@ -537,7 +538,8 @@ var db = require('priam')({
 
 Release Notes
 -------------
- - `0.8.17`: Batch.execute no longer yields an error when the batch is empty
+ - `0.9.0`: Removed `node-cassandra-cql` in favor of `cassandra-driver`.
+ - `0.8.17`: Batch.execute no longer yields an error when the batch is empty.
  - `0.8.16`: Simplified result set transformation for `node-cassandra-cql` drivers.
  - `0.8.15`: Add isBatch and isQuery methods to base driver.
  - `0.8.14`: Fix `resultTransformer` bug when query generates an error.
