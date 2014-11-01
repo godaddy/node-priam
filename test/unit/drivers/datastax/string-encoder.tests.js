@@ -56,11 +56,17 @@ describe('lib/drivers/datastax/string-encoder.js', function () {
       assert.strictEqual(stringify({ value: buffer, hint: dataTypes.varint }), expected, 'stringify for varint value failed');
       assert.strictEqual(stringify({ value: buffer, hint: dataTypes.blob }), expected, 'stringify for blob value failed');
     });
-    it('returns big number values as strings', function () {
-      var l = Long.fromNumber(12345);
+    it('returns int64 number values as strings', function () {
+      var l = (new Date()).getTime()*1000;
+      var expected = l.toString();
+      assert.strictEqual(stringify({ value: l, hint: dataTypes.bigint }), expected, 'stringify for int64 value failed');
+    });
+    it('returns big number values as blob strings', function () {
+      var n = 1234512345123451234512345;
+      var l = Long.fromNumber(n);
       var expected = 'blobAsBigint(0x' + Long.toBuffer(l).toString('hex') + ')';
       assert.strictEqual(stringify({ value: l, hint: dataTypes.bigint }), expected, 'stringify for bigint Long value failed');
-      assert.strictEqual(stringify({ value: 12345, hint: dataTypes.bigint }), expected, 'stringify for bigint numeric value failed');
+      assert.strictEqual(stringify({ value: n, hint: dataTypes.bigint }), expected, 'stringify for bigint numeric value failed');
       assert.strictEqual(stringify({ value: Long.toBuffer(l), hint: dataTypes.bigint }), expected, 'stringify for bigint Buffer value failed');
       expect(stringify.bind(encoder, { value: 'notaninteger', hint: dataTypes.bigint })).to.throw(TypeError);
     });
