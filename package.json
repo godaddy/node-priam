@@ -1,6 +1,6 @@
 {
   "name": "priam",
-  "version": "0.9.1",
+  "version": "0.9.2",
   "description": "A simple Cassandra driver. It wraps the helenus and cassandra-driver Cassandra drivers with additional error/retry handling, external .cql file support, and connection option resolution from an external source, query composition, among other improvements.",
   "keywords": [
     "cassandra",

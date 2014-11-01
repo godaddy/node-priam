@@ -13,7 +13,7 @@ chai.use(require('sinon-chai'));
 var cql = require('cassandra-driver');
 var Driver = require('../../../lib/drivers/datastax');
 
-describe('lib/drivers/datastax.js', function () {
+describe('lib/drivers/datastax', function () {
 
   function getDefaultConfig() {
     return {
@@ -164,7 +164,10 @@ describe('lib/drivers/datastax.js', function () {
             callback(null, null);
           });
         }
-      })
+      }),
+      controlConnection: {
+        protocolVersion: 2
+      }
     };
   }
 
@@ -404,6 +407,7 @@ describe('lib/drivers/datastax.js', function () {
       var pool = getPoolStub(instance.config, true, null, {});
       pool.on = sinon.stub();
       pool.connect = sinon.stub().yieldsAsync(null, {});
+
       sinon.stub(cql, 'Client').returns(pool);
       instance.pools = {};
       var connectionOpeningHandler = sinon.stub(),
@@ -781,6 +785,43 @@ describe('lib/drivers/datastax.js', function () {
       });
     });
 
+    it('executes CQL as stringified statement and returns the data if "executeAsPrepared" option is false and protocolVersion is 1', function (done) {
+      // arrange
+      var cqlQuery = 'SELECT * FROM table WHERE key1=? AND key2=?';
+      var params = ['param1', 'param2'];
+      var consistency = cql.types.consistencies.quorum;
+      var err = null;
+      var data = {
+        rows: [
+          {
+            columns: [
+              { name: 'field1', types: [1, null] }
+            ],
+            field1: 'value1' }
+        ]
+      };
+      var pool = getPoolStub(instance.config, true, err, data);
+      pool.controlConnection.protocolVersion = 1;
+      instance.pools = { default: pool };
+
+      // act
+      instance.cql(cqlQuery, params, { consistency: consistency, executeAsPrepared: false }, function (error, returnData) {
+        var call = pool.execute.getCall(0);
+
+        // assert
+        assert.strictEqual(call.args[0], 'SELECT * FROM table WHERE key1=\'param1\' AND key2=\'param2\'', 'cql should contain stringified parameters');
+        assert.deepEqual(call.args[1], [], 'params should be empty');
+        assert.strictEqual(call.args[2].prepare, false, 'prepare option should be false');
+        assert.strictEqual(call.args[2].consistency, consistency, 'consistency should be passed through');
+        assert.isNull(error, 'error should be null');
+        assert.deepEqual(returnData, [
+          { field1: 'value1' }
+        ], 'data should match normalized cql output');
+
+        done();
+      });
+    });
+
     it('executes CQL with hint options if parameters provide type hints', function (done) {
       // arrange
       var cqlQuery = 'MyCqlStatement';
@@ -1090,7 +1131,7 @@ describe('lib/drivers/datastax.js', function () {
 
     describe('with connection resolver', function () {
 
-      var logger = null;
+      var logger, resolverOptions;
 
       function getResolverInstance(context) {
         logger = {
@@ -1098,6 +1139,12 @@ describe('lib/drivers/datastax.js', function () {
           info: sinon.stub(),
           warn: sinon.stub(),
           error: sinon.stub()
+        };
+        resolverOptions = {
+          config: {
+            connectionResolverPath: '../../test/stubs/fake-resolver',
+            cqlVersion: '3.1.0'
+          }
         };
         return new Driver(_.extend({ config: getDefaultConfig(), logger: logger }, context));
       }
@@ -1141,7 +1188,7 @@ describe('lib/drivers/datastax.js', function () {
         var cqlQuery = 'MyCqlStatement';
         var params = ['param1', 'param2', 'param3'];
         var consistency = cql.types.consistencies.one;
-        instance = getResolverInstance({ config: { connectionResolverPath: '../../test/stubs/fake-resolver' } });
+        instance = getResolverInstance(resolverOptions);
         var userName = 'myResolvedUsername';
         var fakeConnectionInfo = {
           user: userName,
@@ -1171,7 +1218,7 @@ describe('lib/drivers/datastax.js', function () {
         var cqlQuery = 'MyCqlStatement';
         var params = ['param1', 'param2', 'param3'];
         var consistency = cql.types.consistencies.one;
-        instance = getResolverInstance({ config: { connectionResolverPath: '../../test/stubs/fake-resolver' } });
+        instance = getResolverInstance(resolverOptions);
         instance.config.connectionResolverPortMap = {
           from: '1234',
           to: '2345'

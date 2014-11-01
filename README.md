@@ -538,6 +538,7 @@ var db = require('priam')({
 
 Release Notes
 -------------
+ - `0.9.2`: Fix parameterized queries over binary protocol v1.
  - `0.9.1`: Dependency updates.
  - `0.9.0`: Removed `node-cassandra-cql` in favor of `cassandra-driver`.
  - `0.8.17`: Batch.execute no longer yields an error when the batch is empty.
