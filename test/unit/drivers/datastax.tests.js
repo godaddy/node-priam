@@ -1028,7 +1028,8 @@ describe('lib/drivers/datastax', function () {
       pool.execute = sinon.spy(function (c, d, con, cb) {
         callCount++;
         if (callCount === 1) {
-          cb(new Error('throws error on ALL'));
+          var err = new cql.errors.ResponseError(0x1200, 'timeout on read');
+          cb(err);
         }
         else {
           cb(null, data);
@@ -1062,7 +1063,8 @@ describe('lib/drivers/datastax', function () {
       pool.execute = sinon.spy(function (c, d, con, cb) {
         callCount++;
         if (callCount === 1) {
-          cb(new Error('throws error on QUORUM'));
+          var err = new cql.errors.ResponseError(0x1200, 'timeout on read');
+          cb(err);
         }
         else {
           cb(null, data);
@@ -1081,6 +1083,38 @@ describe('lib/drivers/datastax', function () {
         assert.deepEqual(call1.args[1], call2.args[1], 'parameters should be cloned');
         assert.deepEqual(returnData, data, 'data should match cql output');
 
+        done();
+      });
+    });
+
+    it('does not error retry at consistency LOCUM_QUORUM when original consistency is QUORUM if error is not retryable', function (done) {
+      // arrange
+      var cqlQuery = 'MyCqlStatement';
+      var params = ['param1', 'param2', 'param3'];
+      var consistency = cql.types.consistencies.quorum;
+      var pool = getPoolStub(instance.config, true, null, {});
+      var data = [];
+      var callCount = 0;
+      var err = new cql.errors.ResponseError(1234, 'something blew up');
+      pool.execute = sinon.spy(function (c, d, con, cb) {
+        callCount++;
+        if (callCount === 1) {
+          cb(err);
+        }
+        else {
+          cb(null, data);
+        }
+      });
+      instance.pools = { default: pool };
+      instance.config.retryDelay = 1;
+
+      // act
+      instance.cql(cqlQuery, params, { consistency: consistency }, function (error, returnData) {
+        var call1 = pool.execute.getCall(0);
+        var call2 = pool.execute.getCall(1);
+        // assert
+        assert.strictEqual(pool.execute.callCount, 1, 'cql should be called once');
+        assert.equal(error, err);
         done();
       });
     });
