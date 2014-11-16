@@ -15,7 +15,7 @@ var http = require('http')
   , db = require('../index' /*"priam"*/)({
       config: {
         protocol: 'binary',
-        cqlVersion: '3.0',
+        cqlVersion: '3.1',
         queryDirectory: path.join(__dirname, 'cql'),
 
         // If using config-based connection, use these options
@@ -89,7 +89,7 @@ http.createServer(function (req, res) {
       // When insert batch completes, execute select
 
       db.beginQuery()
-        .param('hello', 'ascii') // maps to 'column1' placeholder in 'helloWorld.cql'
+        .param('hello', 'ascii', true) // maps to 'column1' placeholder in 'helloWorld.cql'
         .param('world', 'ascii') // maps to 'column2' placeholder in 'helloWorld.cql'
         .namedQuery('hello-world')
         .execute()

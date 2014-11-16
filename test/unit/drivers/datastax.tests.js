@@ -752,7 +752,7 @@ describe('lib/drivers/datastax', function () {
     it('executes CQL as prepared statement and returns the data if "executeAsPrepared" option specified', function (done) {
       // arrange
       var cqlQuery = 'MyCqlStatement';
-      var params = ['param1', 'param2', 'param3', new Buffer('param4')];
+      var params = [{ value: 'param1', hint: 'ascii' }, 'param2', 'param3', new Buffer('param4')];
       var consistency = cql.types.consistencies.quorum;
       var err = null;
       var data = {
@@ -773,7 +773,6 @@ describe('lib/drivers/datastax', function () {
 
         // assert
         assert.strictEqual(call.args[0], cqlQuery, 'cql should be passed through');
-        assert.deepEqual(call.args[1], params, 'params should be passed through');
         assert.strictEqual(call.args[2].prepare, true, 'prepare option should be true');
         assert.strictEqual(call.args[2].consistency, consistency, 'consistency should be passed through');
         assert.isNull(error, 'error should be null');
@@ -829,7 +828,7 @@ describe('lib/drivers/datastax', function () {
         'param1',
         { value: 'param2', hint: null },
         { value: 'param3', hint: instance.dataType.ascii },
-        { value: 'param4', hint: 'int' },
+        { value: 'param4', hint: 'int', isRoutingKey: true },
         new Buffer('param5')];
       var consistency = cql.types.consistencies.quorum;
       var err = null;
@@ -860,6 +859,7 @@ describe('lib/drivers/datastax', function () {
         ], 'param values should be passed through');
         assert.strictEqual(call.args[2].prepare, true, 'prepare option should be true');
         assert.strictEqual(call.args[2].consistency, consistency, 'consistency should be passed through');
+        assert.deepEqual(call.args[2].routingIndexes, [3], 'routingIndexes should be generated');
         var expectedHints = [];
         expectedHints[2] = instance.dataType.ascii;
         expectedHints[3] = instance.dataType.int;

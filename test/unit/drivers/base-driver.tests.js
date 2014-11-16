@@ -330,6 +330,16 @@ describe('lib/drivers/base-driver.js', function () {
 
       expect(param.value).to.equal(timestamp);
       expect(param.hint).to.equal(driver.dataType.timestamp);
+      expect(param.isRoutingKey).to.equal(false);
+    });
+
+    it('returns a hinted value wrapper marked as routing key if a type hint was provided and isRoutingKey is true', function () {
+      var timestamp = new Date();
+      var param = driver.param(timestamp, driver.dataType.timestamp, true);
+
+      expect(param.value).to.equal(timestamp);
+      expect(param.hint).to.equal(driver.dataType.timestamp);
+      expect(param.isRoutingKey).to.equal(true);
     });
 
     it('returns a hinted value wrapper if a type hint was provided as a string', function () {
@@ -338,6 +348,7 @@ describe('lib/drivers/base-driver.js', function () {
 
       expect(param.value).to.equal(timestamp);
       expect(param.hint).to.equal(driver.dataType.timestamp);
+      expect(param.isRoutingKey).to.equal(false);
     });
 
     it('returns a hinted value wrapper if an unmapped type hint was provided as a string', function () {
@@ -347,6 +358,7 @@ describe('lib/drivers/base-driver.js', function () {
 
       expect(param.value).to.equal(val);
       expect(param.hint).to.equal(type);
+      expect(param.isRoutingKey).to.equal(false);
     });
   });
 

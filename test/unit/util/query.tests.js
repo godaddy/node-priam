@@ -17,8 +17,8 @@ describe('lib/util/query.js', function () {
   beforeEach(function () {
     db = {
       poolConfig: {},
-      param: function (value, hint) {
-        return { value: value, hint: hint};
+      param: function (value, hint, isRoutingKey) {
+        return { value: value, hint: hint, isRoutingKey: isRoutingKey === true };
       },
       consistencyLevel: {
         one: 1,
@@ -87,7 +87,7 @@ describe('lib/util/query.js', function () {
     });
 
     it('provides a param function', function () {
-      validateFunctionExists('param', 2);
+      validateFunctionExists('param', 3);
     });
 
     it('provides a params function', function () {
@@ -260,18 +260,20 @@ describe('lib/util/query.js', function () {
     it('adds a parameter to the context', function (done) {
       // arrange
       var param1 = { value: 'myVal1', hint: 'ascii'};
-      var param2 = { value: 12345, hint: 'int'};
+      var param2 = { value: 12345, hint: 'int' };
 
       // act
       query.param(param1.value, param1.hint);
-      query.param(param2.value, param2.hint);
+      query.param(param2.value, param2.hint, true);
 
       // assert
       assert.strictEqual(query.context.params.length, 2, 'params is populated');
       assert.strictEqual(query.context.params[0].value, param1.value, 'param1 value is populated');
       assert.strictEqual(query.context.params[0].hint, param1.hint, 'param1 hint is populated');
+      assert.notOk(query.context.params[0].isRoutingKey, 'param2 isRoutingKey is falsy');
       assert.strictEqual(query.context.params[1].value, param2.value, 'param2 value is populated');
       assert.strictEqual(query.context.params[1].hint, param2.hint, 'param2 hint is populated');
+      assert.ok(query.context.params[1].isRoutingKey, 'param2 isRoutingKey is truthy');
       done();
     });
 

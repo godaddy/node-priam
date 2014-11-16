@@ -104,10 +104,10 @@ keyspace set in the connection information.
 The `suppressDebugLog` option allows you to disable debug logging of CQL for an individual query. This is useful for
 queries that may contain sensitive data that you do not wish to show up in debug logs.
 
-When using the [node-cassandra-cql](https://github.com/jorgebay/node-cassandra-cql) driver,
-[hinted parameters](https://github.com/jorgebay/node-cassandra-cql/wiki/Data-types#wiki-providing-hint) are supported.
+When using the [cassandra-driver](https://github.com/datastax/nodejs-driver) driver,
+[hinted parameters](http://www.datastax.com/drivers/nodejs/1.0/types.js.html#line28) are supported.
 Instead of the driver inferring the data type, it can be explicitly specified by using a
-[specially formatted object](https://github.com/jorgebay/node-cassandra-cql/wiki/Data-types#wiki-providing-hint).
+[specially formatted object](http://www.datastax.com/documentation/developer/nodejs-driver/1.0/nodejs-driver/reference/nodejs2Cql3Datatypes.html).
 Similar to consistencies, data types are exposed via the `<instance>.dataType` object.
 *Other than type `uuid`, parameter hints will be ignored when using the [helenus](https://github.com/simplereach/helenus) driver.*
 
@@ -172,7 +172,9 @@ Calling `#beginQuery()` returns a `Query` object with the following chainable fu
 
  - `#namedQuery(queryName [string])`: Specifies the named query for the query to execute.
 
- - `#param(value [object], hint [optional, string])`: Adds a parameter to the query. *Note: They are applied in the order added*
+ - `#param(value [object], hint [optional, string], isRoutingKey [optional, bool])`: Adds a parameter to the query. *Note: They are applied in the order added*.
+
+ If `isRoutingKey` is provided and true, the given parameter will be used to determine the coordinator node to execute a query against, when using the `datastax` driver and a prepared statement.
 
  - `#params(parameters [Array])`: Adds the array of parameters to the query. Parameters should be created using `db.param()`
 
@@ -538,6 +540,7 @@ var db = require('priam')({
 
 Release Notes
 -------------
+ - `0.9.6`: Add support for `routingIndexes` when using `TokenAwarePolicy`.
  - `0.9.5`: Add better error handling for `cassandra-driver`.
  - `0.9.4`: Strip schema metadata from result sets over binary protocol v1.
  - `0.9.3`: Adjust stringify for numeric bigint values.
