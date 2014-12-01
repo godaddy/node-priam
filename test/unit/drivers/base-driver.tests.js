@@ -390,7 +390,7 @@ describe('lib/drivers/base-driver.js', function () {
     });
   });
 
-  describe('isBatch', function(){
+  describe('BaseDriver#isBatch()', function(){
     var driver;
 
     beforeEach(function () {
@@ -422,7 +422,7 @@ describe('lib/drivers/base-driver.js', function () {
     });
   });
 
-  describe('isQuery', function(){
+  describe('#BaseDriverisQuery()', function(){
     var driver;
 
     beforeEach(function () {

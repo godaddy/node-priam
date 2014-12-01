@@ -1011,6 +1011,7 @@ describe('lib/drivers/datastax', function () {
         // assert
         assert.strictEqual(pool.execute.callCount, 1, 'execute should be called once');
         assert.ok(error);
+        assert.equal(error.cql, cqlQuery);
         assert.notOk(returnData);
 
         done();
@@ -1115,6 +1116,7 @@ describe('lib/drivers/datastax', function () {
         // assert
         assert.strictEqual(pool.execute.callCount, 1, 'cql should be called once');
         assert.equal(error, err);
+        assert.equal(error.cql, cqlQuery);
         done();
       });
     });

@@ -818,6 +818,7 @@ describe('lib/drivers/helenus.js', function () {
         // assert
         assert.strictEqual(pool.cql.callCount, 1, 'cql should be called once');
         assert.ok(error);
+        assert.equal(error.cql, cql);
         assert.notOk(returnData);
 
         done();
