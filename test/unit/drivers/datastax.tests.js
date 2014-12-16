@@ -330,7 +330,7 @@ describe('lib/drivers/datastax', function () {
     beforeEach(function() {
       instance = getDefaultInstance();
       pool = getPoolStub(instance.config, true, null, {});
-      instance.pools = { default: pool };
+      instance.pools = { myKeySpace: pool };
       instance.getConnectionPool = sinon.stub().yields(null, {});
     });
 
@@ -424,7 +424,7 @@ describe('lib/drivers/datastax', function () {
         expect(connectionOpeningHandler).to.have.been.called;
         expect(connectionOpenedHandler).to.have.been.called;
         expect(queryStartedHandler).to.have.been.called;
-        assert.equal(instance.pools.default, pool, 'pool should be cached');
+        assert.equal(instance.pools.myKeySpace, pool, 'pool should be cached');
         assert.strictEqual(pool.waiters.length, 0, 'waiters should be executed after connection completes');
         assert.strictEqual(pool.execute.called, true, 'cql statements should execute after connection completes');
 
@@ -446,7 +446,7 @@ describe('lib/drivers/datastax', function () {
       sinon.stub(cql, 'Client').returns(pool);
       var existingPool = getPoolStub(instance.config, true, null, {});
       existingPool.isClosed = true;
-      instance.pools = { default: existingPool };
+      instance.pools = { myKeySpace: existingPool };
 
       // act
       instance.cql(cqlQuery, params, { consistency: consistency }, function () {
@@ -469,7 +469,7 @@ describe('lib/drivers/datastax', function () {
       sinon.stub(cql, 'Client').returns(pool);
 
       var existingPool = getPoolStub(_.extend({}, instance.config), true, null, {});
-      instance.pools = { default: existingPool };
+      instance.pools = { myKeySpace: existingPool };
 
       // act
       instance.cql(cqlQuery, params, { consistency: consistency, keyspace: 'myNewKeyspace' }, function () {
@@ -491,7 +491,7 @@ describe('lib/drivers/datastax', function () {
       pool.connect = sinon.stub().yieldsAsync(null, {});
       sinon.stub(cql, 'Client').returns(pool);
       var existingPool = getPoolStub(_.extend({}, instance.config), true, null, {});
-      instance.pools = { default: existingPool };
+      instance.pools = { myKeySpace: existingPool };
       var openingHandler = sinon.stub(), openedHandler = sinon.stub(), availableHandler = sinon.stub();
       instance
         .on('connectionOpening', openingHandler)
@@ -521,13 +521,13 @@ describe('lib/drivers/datastax', function () {
       pool.connect = sinon.stub().yieldsAsync(null, {});
       sinon.stub(cql, 'Client').returns(pool);
       var existingPool = getPoolStub({ keyspace: instance.config.keyspace }, true, null, {});
-      instance.pools = { default: existingPool };
+      instance.pools = { myKeySpace: existingPool };
 
       // act
       instance.cql(cqlQuery, params, { consistency: consistency }, function () {
         // assert
-        assert.notEqual(instance.pools.default, existingPool, 'existing pool should be replaced');
-        assert.equal(instance.pools.default, pool, 'pool should be cached');
+        assert.notEqual(instance.pools.myKeySpace, existingPool, 'existing pool should be replaced');
+        assert.equal(instance.pools.myKeySpace, pool, 'pool should be cached');
         assert.strictEqual(pool.waiters.length, 0, 'waiters should be executed after connection completes');
         assert.strictEqual(pool.execute.called, true, 'cql statements should execute after connection completes');
 
@@ -653,7 +653,7 @@ describe('lib/drivers/datastax', function () {
       var cqlQuery = 'MyCqlStatement';
       var params = ['param1', 'param2', 'param3'];
       var pool = getPoolStub(instance.config, true, null, []);
-      instance.pools = { default: pool };
+      instance.pools = { myKeySpace: pool };
 
       pool.execute = sinon.spy(function (cql, data, consist, cb) {
         var call = pool.execute.getCall(0);
@@ -710,7 +710,7 @@ describe('lib/drivers/datastax', function () {
         ]
       };
       var pool = getPoolStub(instance.config, true, err, data);
-      instance.pools = { default: pool };
+      instance.pools = { myKeySpace: pool };
       var completedHandler = sinon.stub();
       instance.on('queryCompleted', completedHandler);
 
@@ -738,7 +738,7 @@ describe('lib/drivers/datastax', function () {
       var cqlStatement = 'INSERT INTO foo (id, some_column) VALUES (?, ?)';
       var params = [1, null];
       var pool = getPoolStub(instance.config, true, null, null);
-      instance.pools = { default: pool };
+      instance.pools = { myKeySpace: pool };
 
       // act
       instance.cql(cqlStatement, params, { consistency: cql.types.consistencies.one }, function () {
@@ -765,7 +765,7 @@ describe('lib/drivers/datastax', function () {
         ]
       };
       var pool = getPoolStub(instance.config, true, err, data);
-      instance.pools = { default: pool };
+      instance.pools = { myKeySpace: pool };
 
       // act
       instance.cql(cqlQuery, params, { consistency: consistency, executeAsPrepared: true }, function (error, returnData) {
@@ -801,7 +801,7 @@ describe('lib/drivers/datastax', function () {
       };
       var pool = getPoolStub(instance.config, true, err, data);
       pool.controlConnection.protocolVersion = 1;
-      instance.pools = { default: pool };
+      instance.pools = { myKeySpace: pool };
 
       // act
       instance.cql(cqlQuery, params, { consistency: consistency, executeAsPrepared: false }, function (error, returnData) {
@@ -842,7 +842,7 @@ describe('lib/drivers/datastax', function () {
         ]
       };
       var pool = getPoolStub(instance.config, true, err, data);
-      instance.pools = { default: pool };
+      instance.pools = { myKeySpace: pool };
 
       // act
       instance.cql(cqlQuery, params, { consistency: consistency, executeAsPrepared: true }, function (error, returnData) {
@@ -903,7 +903,7 @@ describe('lib/drivers/datastax', function () {
       };
 
       var pool = getPoolStub(instance.config, true, err, data);
-      instance.pools = { default: pool };
+      instance.pools = { myKeySpace: pool };
 
       // act
       instance.cql(cqlQuery, params, {
@@ -962,7 +962,7 @@ describe('lib/drivers/datastax', function () {
       };
 
       var pool = getPoolStub(instance.config, true, err, data);
-      instance.pools = { default: pool };
+      instance.pools = { myKeySpace: pool };
 
       // act
       instance.cql(cqlQuery, params, {
@@ -1002,7 +1002,7 @@ describe('lib/drivers/datastax', function () {
           cb(null, data);
         }
       });
-      instance.pools = { default: pool };
+      instance.pools = { myKeySpace: pool };
       instance.config.retryDelay = 1;
       instance.config.enableConsistencyFailover = false;
 
@@ -1036,7 +1036,7 @@ describe('lib/drivers/datastax', function () {
           cb(null, data);
         }
       });
-      instance.pools = { default: pool };
+      instance.pools = { myKeySpace: pool };
       instance.config.retryDelay = 1;
 
       // act
@@ -1071,7 +1071,7 @@ describe('lib/drivers/datastax', function () {
           cb(null, data);
         }
       });
-      instance.pools = { default: pool };
+      instance.pools = { myKeySpace: pool };
       instance.config.retryDelay = 1;
 
       // act
@@ -1106,7 +1106,7 @@ describe('lib/drivers/datastax', function () {
           cb(null, data);
         }
       });
-      instance.pools = { default: pool };
+      instance.pools = { myKeySpace: pool };
       instance.config.retryDelay = 1;
 
       // act
@@ -1128,7 +1128,7 @@ describe('lib/drivers/datastax', function () {
       var consistency = cql.types.consistencies.quorum;
       var pool = getPoolStub(instance.config, true, null, {});
       pool.execute = sinon.stub().yields(new Error('throws error on QUORUM'));
-      instance.pools = { default: pool };
+      instance.pools = { myKeySpace: pool };
       var failedHandler = sinon.stub();
       instance.on('queryFailed', failedHandler);
 
@@ -1148,7 +1148,7 @@ describe('lib/drivers/datastax', function () {
       var err = null;
       var data = { field1: 'value1' };
       var pool = getPoolStub(instance.config, true, err, data);
-      instance.pools = { default: pool };
+      instance.pools = { myKeySpace: pool };
       instance.metrics = {
         measurement: sinon.stub()
       };
@@ -1639,7 +1639,7 @@ describe('lib/drivers/datastax', function () {
     beforeEach(function () {
       instance = getDefaultInstance();
       pool = getPoolStub(instance.config, true, null, {});
-      instance.pools = { default: pool };
+      instance.pools = { myKeySpace: pool };
       instance.execCql = sinon.stub().yields(null, {});
       instance.getConnectionPool = sinon.stub().yields(null, pool);
     });
@@ -1694,7 +1694,7 @@ describe('lib/drivers/datastax', function () {
     beforeEach(function () {
       instance = getNamedQueryInstance();
       pool = getPoolStub(instance.config, true, null, {});
-      instance.pools = { default: pool };
+      instance.pools = { myKeySpace: pool };
       instance.execCql = sinon.stub().yields(null, {});
       instance.getConnectionPool = sinon.stub().yields(null, pool);
     });

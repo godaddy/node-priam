@@ -274,7 +274,7 @@ describe('lib/drivers/helenus.js', function () {
     it('closes the connection pool if it exists', function (done) {
       // arrange
       var pool = getPoolStub(instance.config, true, null, {});
-      instance.pools = { default: pool };
+      instance.pools = { myKeySpace: pool };
 
       // act
       instance.close(function () {
@@ -330,7 +330,7 @@ describe('lib/drivers/helenus.js', function () {
       // act
       instance.cql(cql, params, { consistency: consistency }, function () {
         // assert
-        assert.equal(instance.pools.default, pool, 'pool should be cached');
+        assert.equal(instance.pools.myKeySpace, pool, 'pool should be cached');
         assert.strictEqual(pool.waiters.length, 0, 'waiters should be executed after connection completes');
         assert.strictEqual(pool.cql.called, true, 'cql statements should execute after connection completes');
 
@@ -351,13 +351,13 @@ describe('lib/drivers/helenus.js', function () {
       pool.connect = sinon.stub().yieldsAsync(null, {});
       sinon.stub(helenus, 'ConnectionPool').returns(pool);
       var existingPool = getPoolStub({ keyspace: instance.config.keyspace }, true, null, {});
-      instance.pools = { default: existingPool };
+      instance.pools = { myKeySpace: existingPool };
 
       // act
       instance.cql(cql, params, { consistency: consistency }, function () {
         // assert
-        assert.notEqual(instance.pools.default, existingPool, 'existing pool should be replaced');
-        assert.equal(instance.pools.default, pool, 'pool should be cached');
+        assert.notEqual(instance.pools.myKeySpace, existingPool, 'existing pool should be replaced');
+        assert.equal(instance.pools.myKeySpace, pool, 'pool should be cached');
         assert.strictEqual(pool.waiters.length, 0, 'waiters should be executed after connection completes');
         assert.strictEqual(pool.cql.called, true, 'cql statements should execute after connection completes');
 
@@ -379,7 +379,7 @@ describe('lib/drivers/helenus.js', function () {
       sinon.stub(helenus, 'ConnectionPool').returns(pool);
       var existingPool = getPoolStub(instance.config, true, null, {});
       existingPool.isClosed = true;
-      instance.pools = { default: existingPool };
+      instance.pools = { myKeySpace: existingPool };
 
       // act
       instance.cql(cql, params, { consistency: consistency }, function () {
@@ -404,7 +404,7 @@ describe('lib/drivers/helenus.js', function () {
       sinon.stub(helenus, 'ConnectionPool').returns(pool);
 
       var existingPool = getPoolStub(_.extend({}, instance.config), true, null, {});
-      instance.pools = { default: existingPool };
+      instance.pools = { myKeySpace: existingPool };
 
       // act
       instance.cql(cql, params, { consistency: consistency, keyspace: 'myNewKeyspace' }, function () {
@@ -427,7 +427,7 @@ describe('lib/drivers/helenus.js', function () {
       sinon.stub(helenus, 'ConnectionPool').returns(pool);
 
       var existingPool = getPoolStub(_.extend({}, instance.config), true, null, {});
-      instance.pools = { default: existingPool };
+      instance.pools = { myKeySpace: existingPool };
 
       // act
       instance.cql(cql, params, { consistency: consistency, keyspace: instance.config.keyspace }, function () {
@@ -524,7 +524,7 @@ describe('lib/drivers/helenus.js', function () {
       var params = ['param1', 'param2', 'param3'];
       var consistency = helenus.ConsistencyLevel.ONE;
       var pool = getPoolStub(instance.config, true, null, []);
-      instance.pools = { default: pool };
+      instance.pools = { myKeySpace: pool };
 
       pool.cql = sinon.spy(function (cql, data, cb) {
         var call = pool.cql.getCall(0);
@@ -572,7 +572,7 @@ describe('lib/drivers/helenus.js', function () {
       var err = null;
       var data = { field1: 'value1' };
       var pool = getPoolStub(instance.config, true, err, data);
-      instance.pools = { default: pool };
+      instance.pools = { myKeySpace: pool };
 
       // act
       instance.cql(cql, params, { consistency: consistency }, function (error, returnData) {
@@ -599,7 +599,7 @@ describe('lib/drivers/helenus.js', function () {
       var err = null;
       var data = { field1: 'value1' };
       var pool = getPoolStub(instance.config, true, err, data);
-      instance.pools = { default: pool };
+      instance.pools = { myKeySpace: pool };
 
       // act
       instance.cql(cql, params, { consistency: consistency }, function (error, returnData) {
@@ -634,7 +634,7 @@ describe('lib/drivers/helenus.js', function () {
       data[0].get.withArgs('field7').returns({ value: '{ "jsonThat": "iDontWantToParse" }' });
 
       var pool = getPoolStub(instance.config, true, err, data);
-      instance.pools = { default: pool };
+      instance.pools = { myKeySpace: pool };
 
       // act
       instance.cql(cql, params, {
@@ -686,7 +686,7 @@ describe('lib/drivers/helenus.js', function () {
       data[0].get.withArgs('field5').returns({ value: '{ some invalid json }' });
 
       var pool = getPoolStub(instance.config, true, err, data);
-      instance.pools = { default: pool };
+      instance.pools = { myKeySpace: pool };
 
       // act
       instance.cql(cql, params, {
@@ -760,7 +760,7 @@ describe('lib/drivers/helenus.js', function () {
             cb(null, data);
           }
         });
-        instance.pools = { default: pool };
+        instance.pools = { myKeySpace: pool };
         instance.config.numRetries = numRetries;
         instance.config.retryDelay = 1;
 
@@ -809,7 +809,7 @@ describe('lib/drivers/helenus.js', function () {
           cb(null, data);
         }
       });
-      instance.pools = { default: pool };
+      instance.pools = { myKeySpace: pool };
       instance.config.retryDelay = 1;
       instance.config.enableConsistencyFailover = false;
 
@@ -842,7 +842,7 @@ describe('lib/drivers/helenus.js', function () {
           cb(null, data);
         }
       });
-      instance.pools = { default: pool };
+      instance.pools = { myKeySpace: pool };
       instance.config.retryDelay = 1;
 
       // act
@@ -876,7 +876,7 @@ describe('lib/drivers/helenus.js', function () {
           cb(null, data);
         }
       });
-      instance.pools = { default: pool };
+      instance.pools = { myKeySpace: pool };
       instance.config.retryDelay = 1;
 
       // act
@@ -903,7 +903,7 @@ describe('lib/drivers/helenus.js', function () {
       var err = null;
       var data = { field1: 'value1' };
       var pool = getPoolStub(instance.config, true, err, data);
-      instance.pools = { default: pool };
+      instance.pools = { myKeySpace: pool };
       instance.metrics = {
         measurement: sinon.stub()
       };
@@ -1426,7 +1426,7 @@ describe('lib/drivers/helenus.js', function () {
       var params = [];
       var consistency = helenus.ConsistencyLevel.ONE;
       var pool = getPoolStub(instance.config, true, null, {});
-      instance.pools = { default: pool };
+      instance.pools = { myKeySpace: pool };
 
       // act
       instance.namedQuery(queryName, params, { consistency: consistency }, function (error, returnData) {
@@ -1446,7 +1446,7 @@ describe('lib/drivers/helenus.js', function () {
       var params = [];
       var consistency = helenus.ConsistencyLevel.ONE;
       var pool = getPoolStub(instance.config, true, null, {});
-      instance.pools = { default: pool };
+      instance.pools = { myKeySpace: pool };
 
       // act/assert
       expect(function () {
