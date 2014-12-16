@@ -424,7 +424,8 @@ describe('lib/drivers/datastax', function () {
         expect(connectionOpeningHandler).to.have.been.called;
         expect(connectionOpenedHandler).to.have.been.called;
         expect(queryStartedHandler).to.have.been.called;
-        assert.equal(instance.pools.default, pool, 'pool should be cached');
+
+        assert.equal(instance.pools.myKeySpace, pool, 'pool should be cached');
         assert.strictEqual(pool.waiters.length, 0, 'waiters should be executed after connection completes');
         assert.strictEqual(pool.execute.called, true, 'cql statements should execute after connection completes');
 
@@ -526,8 +527,8 @@ describe('lib/drivers/datastax', function () {
       // act
       instance.cql(cqlQuery, params, { consistency: consistency }, function () {
         // assert
-        assert.notEqual(instance.pools.default, existingPool, 'existing pool should be replaced');
-        assert.equal(instance.pools.default, pool, 'pool should be cached');
+        assert.notEqual(instance.pools.myKeySpace, existingPool, 'existing pool should be replaced');
+        assert.equal(instance.pools.myKeySpace, pool, 'pool should be cached');
         assert.strictEqual(pool.waiters.length, 0, 'waiters should be executed after connection completes');
         assert.strictEqual(pool.execute.called, true, 'cql statements should execute after connection completes');
 

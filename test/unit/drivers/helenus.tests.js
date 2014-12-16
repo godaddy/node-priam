@@ -330,7 +330,7 @@ describe('lib/drivers/helenus.js', function () {
       // act
       instance.cql(cql, params, { consistency: consistency }, function () {
         // assert
-        assert.equal(instance.pools.default, pool, 'pool should be cached');
+        assert.equal(instance.pools.myKeySpace, pool, 'pool should be cached');
         assert.strictEqual(pool.waiters.length, 0, 'waiters should be executed after connection completes');
         assert.strictEqual(pool.cql.called, true, 'cql statements should execute after connection completes');
 
@@ -356,8 +356,8 @@ describe('lib/drivers/helenus.js', function () {
       // act
       instance.cql(cql, params, { consistency: consistency }, function () {
         // assert
-        assert.notEqual(instance.pools.default, existingPool, 'existing pool should be replaced');
-        assert.equal(instance.pools.default, pool, 'pool should be cached');
+        assert.notEqual(instance.pools.myKeySpace, existingPool, 'existing pool should be replaced');
+        assert.equal(instance.pools.myKeySpace, pool, 'pool should be cached');
         assert.strictEqual(pool.waiters.length, 0, 'waiters should be executed after connection completes');
         assert.strictEqual(pool.cql.called, true, 'cql statements should execute after connection completes');
 
