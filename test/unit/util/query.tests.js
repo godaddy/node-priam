@@ -4,6 +4,7 @@ var sinon = require('sinon'),
   chai = require('chai'),
   assert = chai.assert,
   expect = chai.expect,
+  isStream = require('isstream'),
   path = require('path'),
   q = require('q');
 
@@ -12,7 +13,8 @@ var Query = require('../../../lib/util/query');
 describe('lib/util/query.js', function () {
 
   var query,
-    db;
+      context,
+      db;
 
   beforeEach(function () {
     db = {
@@ -25,7 +27,9 @@ describe('lib/util/query.js', function () {
         localQuorum: 2
       }
     };
-    query = new Query(db);
+    context = {};
+    context.config = {};
+    query = new Query(db, context);
   });
 
   describe('constructor', function () {
@@ -125,7 +129,6 @@ describe('lib/util/query.js', function () {
     it('provides a clearResultTransformers function', function () {
       validateFunctionExists('clearResultTransformers', 0);
     });
-
 
   });
 
@@ -373,6 +376,37 @@ describe('lib/util/query.js', function () {
       // assert
       assert.equal(result, query, 'returns self');
       done();
+    });
+  });
+
+  describe('#stream()', function () {
+    beforeEach(function () {
+      db.cql = sinon.stub().returns(null);
+    });
+
+    it('returns a stream when context has proper cql', function () {
+      query.context.cql = 'SELECT * from myColumnFamily';
+
+      var stream = query.stream();
+
+      assert(isStream(stream), 'that the returned stream is indeed a stream');
+    });
+
+    it('throws an error when it is using the helenus driver', function () {
+      query.context.config.driver = 'helenus';
+
+      expect(function () {
+        var stream = query.stream();
+      }).to.throw(Error);
+    });
+
+    it('emits an error when cql is not in the context', function (done) {
+      query.context.cql = null;
+      var stream = query.stream();
+      stream.on('error', function (err) {
+        expect(err, 'to be an error');
+        done();
+      });
     });
   });
 
