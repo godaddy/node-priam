@@ -21,8 +21,11 @@
     "async": "~0.9.0",
     "cassandra-driver": "~1.0.2",
     "helenus": "~0.6.10",
+    "isstream": "~0.1.1",
     "lodash": "~2.4.1",
     "q": "~1.1.2",
+    "read-only-stream": "~1.1.1",
+    "through2": "~0.6.3",
     "uuid": "~2.0.1"
   },
   "devDependencies": {
