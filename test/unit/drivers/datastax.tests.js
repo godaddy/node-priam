@@ -1440,11 +1440,11 @@ describe('lib/drivers/datastax', function () {
   });
 
   describe('DatastaxDriver#streamCqlOnDriver()', function () {
-    var pool, cql, params, consistency, options, stream,
+    var pool, cqlStatement, params, consistency, options, stream,
       resultStream, fakeThroughObj, instance;
     beforeEach(function () {
       instance = getDefaultInstance();
-      cql = 'myCqlStatement';
+      cqlStatement = 'myCqlStatement';
       params = [1, 2, 3];
       consistency = 'one';
       options = { foo: 'bar' };
@@ -1472,9 +1472,9 @@ describe('lib/drivers/datastax', function () {
     });
 
     it('calls pool.stream() with the correct arguments', function () {
-      instance.streamCqlOnDriver(pool, cql, params, consistency, options, stream);
+      instance.streamCqlOnDriver(pool, cqlStatement, params, consistency, options, stream);
       assert.ok(pool.stream.calledOnce);
-      assert.strictEqual(pool.stream.args[0][0], cql, 'cql is passed');
+      assert.strictEqual(pool.stream.args[0][0], cqlStatement, 'cql is passed');
       assert.deepEqual(pool.stream.args[0][1], params, 'params are passed');
       assert.deepEqual(pool.stream.args[0][2], {
         consistency: 'one',
@@ -1484,7 +1484,7 @@ describe('lib/drivers/datastax', function () {
     });
 
     it('wires up appropriate streaming pipeline', function () {
-      instance.streamCqlOnDriver(pool, cql, params, consistency, options, stream);
+      instance.streamCqlOnDriver(pool, cqlStatement, params, consistency, options, stream);
       assert.ok(resultStream.on.calledTwice);
       assert.strictEqual(resultStream.on.args[0][0], 'error', 'wires up error handler for transform');
       assert.strictEqual(resultStream.on.args[1][0], 'error', 'wires up error handler for stream');
@@ -1497,7 +1497,7 @@ describe('lib/drivers/datastax', function () {
 
     it('transformation stream returns null if row is null', function () {
       instance.getNormalizedResults = sinon.stub();
-      instance.streamCqlOnDriver(pool, cql, params, consistency, options, stream);
+      instance.streamCqlOnDriver(pool, cqlStatement, params, consistency, options, stream);
       var cb = sinon.stub();
       var transformer = through.obj.args[0][0];
 
@@ -1513,7 +1513,7 @@ describe('lib/drivers/datastax', function () {
       var row = { foo: 'bar' };
       var normalized = { something: 'else' };
       instance.getNormalizedResults = sinon.stub().returns([normalized]);
-      instance.streamCqlOnDriver(pool, cql, params, consistency, options, stream);
+      instance.streamCqlOnDriver(pool, cqlStatement, params, consistency, options, stream);
       var cb = sinon.stub();
       var transformer = through.obj.args[0][0];
 
@@ -1533,7 +1533,7 @@ describe('lib/drivers/datastax', function () {
       var transform = sinon.stub().returns(transformed);
       options.resultTransformers = [transform];
       instance.getNormalizedResults = sinon.stub().returns([normalized]);
-      instance.streamCqlOnDriver(pool, cql, params, consistency, options, stream);
+      instance.streamCqlOnDriver(pool, cqlStatement, params, consistency, options, stream);
       var cb = sinon.stub();
       var transformer = through.obj.args[0][0];
 

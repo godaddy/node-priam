@@ -103,7 +103,7 @@ http.createServer(function (req, res) {
           .on('data', data.push.bind(data))
           .on('end', function () {
             if (res.headersSent) { return; }
-            var message = (Array.isArray(data) && data.length) ?
+            var message = data.length ?
               (data[0].column1 + ' ' + data[0].column2 + ' - from stream! Map: ' + JSON.stringify(data[0].column3)) :
               'NO DATA FOUND! Please execute "/example/cql/create-db.cql" in your keyspace.';
             res.writeHead(200, {'Content-Type': 'text/plain'});

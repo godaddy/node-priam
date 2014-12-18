@@ -392,14 +392,6 @@ describe('lib/util/query.js', function () {
       assert(isStream(stream), 'that the returned stream is indeed a stream');
     });
 
-    it('throws an error when it is using the helenus driver', function () {
-      query.db.name = 'helenus';
-
-      expect(function () {
-        var stream = query.stream();
-      }).to.throw(Error, /not supported/);
-    });
-
     it('emits an error when cql is not in the context', function (done) {
       query.context.cql = null;
       var stream = query.stream();
