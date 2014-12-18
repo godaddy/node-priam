@@ -103,6 +103,19 @@ describe('lib/drivers/helenus.js', function () {
         // assert
         .to.throw(Error, /missing context.config /i);
     });
+
+    it('sets the name property', function () {
+      // arrange
+      var config = _.extend({ }, getDefaultConfig());
+      var consistencyLevel = helenus.ConsistencyLevel.ONE;
+
+      // act
+      var instance = new Driver({ config: config });
+
+      // assert
+      assert.strictEqual(instance.name, 'helenus');
+    });
+
     it('sets default pool configuration', function () {
       // arrange
       var config = _.extend({ }, getDefaultConfig());

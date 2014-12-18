@@ -108,6 +108,19 @@ describe('lib/drivers/datastax', function () {
       }).to.throw(Error, /missing context.config /i);
     });
 
+    it('sets the name property', function () {
+      // arrange
+      var config = _.extend({ }, getDefaultConfig());
+      var configCopy = _.extend({ }, config);
+      var consistencyLevel = cql.types.consistencies.one;
+
+      // act
+      var instance = new Driver({ config: config });
+
+      // assert
+      assert.strictEqual(instance.name, 'datastax');
+    });
+
     it('sets default pool configuration', function () {
       // arrange
       var config = _.extend({ }, getDefaultConfig());

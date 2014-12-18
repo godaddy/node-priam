@@ -393,11 +393,11 @@ describe('lib/util/query.js', function () {
     });
 
     it('throws an error when it is using the helenus driver', function () {
-      query.context.config.driver = 'helenus';
+      query.db.name = 'helenus';
 
       expect(function () {
         var stream = query.stream();
-      }).to.throw(Error);
+      }).to.throw(Error, /not supported/);
     });
 
     it('emits an error when cql is not in the context', function (done) {
