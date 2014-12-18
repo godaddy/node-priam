@@ -1,6 +1,7 @@
 'use strict';
 
 var http = require('http')
+  , url = require('url')
   , path = require('path')
   , ConnectionResolver = require('./lib/connection-resolver')
   , MetricsClient = require('./lib/metrics-client')
@@ -38,6 +39,8 @@ var http = require('http')
   , port = 8080;
 
 http.createServer(function (req, res) {
+  var parsed = url.parse(req.url, true);
+  var shouldStreamData = (parsed.query.stream && parsed.query.stream.toLowerCase() === 'true');
 
   function errorHandler(err) {
     if (err) {
@@ -85,23 +88,45 @@ http.createServer(function (req, res) {
     .options({ queryName: 'hello-world-writes'})
     .execute() // This will execute the two inserts above in a single batch
     .fail(errorHandler)
-    .done(
+    .done(function () {
       // When insert batch completes, execute select
 
-      db.beginQuery()
-        .param('hello', 'ascii', true) // maps to 'column1' placeholder in 'helloWorld.cql'
-        .param('world', 'ascii') // maps to 'column2' placeholder in 'helloWorld.cql'
-        .namedQuery('hello-world')
-        .execute()
-        .fail(errorHandler)
-        .done(function (data) {
-          var message = (Array.isArray(data) && data.length) ?
-            (data[0].column1 + ' ' + data[0].column2 + '! Map: ' + JSON.stringify(data[0].column3)) :
-            'NO DATA FOUND! Please execute "/example/cql/create-db.cql" in your keyspace.';
-          res.writeHead(200, {'Content-Type': 'text/plain'});
-          res.end(message);
-        })
-    );
+      if (shouldStreamData) {
+        // Read the data from a stream!
+        var data = [];
+        var dataStream = db.beginQuery()
+          .param('hello', 'ascii', true) // maps to 'column1' placeholder in 'helloWorld.cql'
+          .param('world', 'ascii') // maps to 'column2' placeholder in 'helloWorld.cql'
+          .namedQuery('hello-world')
+          .stream()
+          .on('error', errorHandler)
+          .on('data', data.push.bind(data))
+          .on('end', function () {
+            if (res.headersSent) { return; }
+            var message = (Array.isArray(data) && data.length) ?
+              (data[0].column1 + ' ' + data[0].column2 + ' - from stream! Map: ' + JSON.stringify(data[0].column3)) :
+              'NO DATA FOUND! Please execute "/example/cql/create-db.cql" in your keyspace.';
+            res.writeHead(200, {'Content-Type': 'text/plain'});
+            res.end(message);
+          });
+      }
+      else {
+        // Read the data from a Promise!
+        db.beginQuery()
+          .param('hello', 'ascii', true) // maps to 'column1' placeholder in 'helloWorld.cql'
+          .param('world', 'ascii') // maps to 'column2' placeholder in 'helloWorld.cql'
+          .namedQuery('hello-world')
+          .execute()
+          .fail(errorHandler)
+          .done(function (data) {
+            var message = (Array.isArray(data) && data.length) ?
+              (data[0].column1 + ' ' + data[0].column2 + ' - from Promise! Map: ' + JSON.stringify(data[0].column3)) :
+              'NO DATA FOUND! Please execute "/example/cql/create-db.cql" in your keyspace.';
+            res.writeHead(200, {'Content-Type': 'text/plain'});
+            res.end(message);
+          });
+      }
+    });
 }).listen(port);
 
 logger.info('Node HTTP server listening at port %s', port);
