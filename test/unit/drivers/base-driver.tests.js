@@ -4,6 +4,7 @@ var sinon = require('sinon')
   , chai = require('chai')
   , assert = chai.assert
   , expect = chai.expect
+  , Stream = require('stream')
   , Query = require('../../../lib/util/query')
   , Batch = require('../../../lib/util/batch');
 
@@ -197,6 +198,44 @@ describe('lib/drivers/base-driver.js', function () {
       assert.equal(driver.cql.length, 4);
     });
 
+    it('calls #execCql() if callback function is provided', function() {
+      var cql = 'myCqlQuery';
+      var params = [];
+      var options = { consistency: 'one' };
+      var cb = sinon.stub();
+      var driver = getDefaultInstance();
+      driver.execCql = sinon.stub();
+      driver.execCqlStream = sinon.stub();
+
+      driver.cql(cql, params, options, cb);
+
+      expect(driver.execCql.calledOnce).to.be.true;
+      expect(driver.execCql.args[0][0]).to.equal(cql);
+      expect(driver.execCql.args[0][1]).to.deep.equal(params);
+      expect(driver.execCql.args[0][2]).to.deep.equal(options);
+      expect(driver.execCql.args[0][3]).to.be.a.function;
+      expect(driver.execCqlStream.called).to.be.false;
+    });
+
+    it('calls #execCqlStream() if stream is provided', function() {
+      var cql = 'myCqlQuery';
+      var params = [];
+      var options = { consistency: 'one' };
+      var stream = new Stream();
+      var driver = getDefaultInstance();
+      driver.execCql = sinon.stub();
+      driver.execCqlStream = sinon.stub();
+
+      driver.cql(cql, params, options, stream);
+
+      expect(driver.execCqlStream.calledOnce).to.be.true;
+      expect(driver.execCqlStream.args[0][0]).to.equal(cql);
+      expect(driver.execCqlStream.args[0][1]).to.deep.equal(params);
+      expect(driver.execCqlStream.args[0][2]).to.deep.equal(options);
+      expect(driver.execCqlStream.args[0][3]).to.equal(stream);
+      expect(driver.execCql.called).to.be.false;
+    });
+
     describe('resultTransformers', function(){
 
       function testTransformers(transformers, results, cb){
@@ -274,6 +313,70 @@ describe('lib/drivers/base-driver.js', function () {
 
     assert.strictEqual(expected, actual);
     done();
+  });
+
+  describe('BaseDriver#executeCqlStream()', function () {
+
+    var cql, dataParams, options, stream, driver, pool;
+    beforeEach(function () {
+      cql = 'myCqlStatement';
+      dataParams = [];
+      options = { consistency: 'one' };
+      stream = {
+        emit: sinon.stub()
+      };
+      driver = getDefaultInstance();
+      pool = { isReady: true, waiters: [] };
+      driver.streamCqlOnDriver = sinon.stub();
+      driver.getConnectionPool = sinon.stub().yields(null, pool);
+    });
+
+    it('calls #streamCqlOnDriver() if pool is ready', function () {
+      driver.execCqlStream(cql, dataParams, options, stream);
+      expect(driver.streamCqlOnDriver.calledOnce).to.be.true;
+      expect(driver.streamCqlOnDriver.args[0][0]).to.equal(pool);
+      expect(driver.streamCqlOnDriver.args[0][1]).to.equal(cql);
+      expect(driver.streamCqlOnDriver.args[0][2]).to.deep.equal(dataParams);
+      expect(driver.streamCqlOnDriver.args[0][3]).to.deep.equal(options.consistency);
+      expect(driver.streamCqlOnDriver.args[0][4]).to.deep.equal(options);
+      expect(driver.streamCqlOnDriver.args[0][5]).to.equal(stream);
+      expect(pool.waiters.length).to.equal(0);
+      expect(stream.emit.called).to.be.false;
+    });
+
+    it('calls #streamCqlOnDriver() after pool is ready if pool is not yet ready', function () {
+      pool.isReady = false;
+      driver.execCqlStream(cql, dataParams, options, stream);
+      expect(driver.streamCqlOnDriver.called).to.be.false;
+      expect(pool.waiters.length).to.equal(1);
+      pool.isReady = true;
+      pool.waiters[0]();
+      expect(driver.streamCqlOnDriver.calledOnce).to.be.true;
+      expect(stream.emit.called).to.be.false;
+    });
+
+    it('emits error to stream if pool resolution fails', function () {
+      var error = new Error('uh-oh');
+      driver.getConnectionPool = sinon.stub().yields(error);
+      driver.execCqlStream(cql, dataParams, options, stream);
+      expect(driver.streamCqlOnDriver.called).to.be.false;
+      expect(stream.emit.calledOnce).to.be.true;
+      expect(stream.emit.args[0][0]).to.equal(error);
+    });
+
+    it('emits error to stream if pool connection fails', function () {
+      pool.isReady = false;
+      driver.execCqlStream(cql, dataParams, options, stream);
+      expect(driver.streamCqlOnDriver.called).to.be.false;
+      expect(pool.waiters.length).to.equal(1);
+      pool.isReady = true;
+      var error = new Error('uh-oh');
+      pool.waiters[0](error);
+      expect(driver.streamCqlOnDriver.called).to.be.false;
+      expect(stream.emit.calledOnce).to.be.true;
+      expect(stream.emit.args[0][0]).to.equal(error);
+    });
+
   });
 
   it('BaseDriver#executeCqlOnDriver() calls callback', function (done) {
