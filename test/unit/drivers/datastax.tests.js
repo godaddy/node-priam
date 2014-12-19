@@ -555,7 +555,7 @@ describe('lib/drivers/datastax', function () {
       assert.strictEqual(pool.execute.called, false, 'cql statements should wait to execute until after connection completes');
     });
 
-    function testLogEvent(logLevel, expectedLevel, done) {
+    function testLogEvent(logLevel, expectedLevel, errorData, done) {
       // setup arrange
       var consistency = cql.types.consistencies.one;
       var pool = getPoolStub(instance.config, true, null, {});
@@ -582,14 +582,24 @@ describe('lib/drivers/datastax', function () {
         };
 
         // handler act
-        var message = 'something blew up',
-          metaData = { some: 'metadata' };
+        var message = 'Error',
+          metaData = errorData;
         errorCb(logLevel, message, metaData);
 
         // handler assert
+        var expectedMessage = message;
+        var expectedData = {
+          datastaxLogLevel: logLevel,
+          data: errorData
+        };
+        if (typeof errorData === 'string') {
+          expectedMessage = message + ': ' + errorData;
+          delete expectedData.data;
+        }
         expect(logEventHandler).to.have.been.calledWith(logLevel, message, metaData);
         if (expectedLevel) {
-          assert.ok(instance.logger[expectedLevel].calledWithMatch('priam.Driver: ' + message, { data: metaData }));
+          assert.strictEqual(instance.logger[expectedLevel].args[0][0], 'priam.Driver.' + expectedMessage);
+          assert.deepEqual(instance.logger[expectedLevel].args[0][1], expectedData);
         }
         else {
           assert.notOk(instance.logger.info.called);
@@ -602,19 +612,23 @@ describe('lib/drivers/datastax', function () {
     }
 
     it('sets up a global trace handler for the connection pool - logs debug level as debug', function (done) {
-      testLogEvent('verbose', 'debug', done);
+      testLogEvent('verbose', 'debug', 'myMessage', done);
     });
 
     it('sets up a global trace handler for the connection pool - logs info level as debug', function (done) {
-      testLogEvent('info', 'debug', done);
+      testLogEvent('info', 'debug', 'myMessage', done);
     });
 
     it('sets up a global error handler for the connection pool - logs warning as warn', function (done) {
-      testLogEvent('warning', 'warn', done);
+      testLogEvent('warning', 'warn', 'myMessage', done);
+    });
+
+    it('sets up a global error handler for the connection pool - logs warning object as warn', function (done) {
+      testLogEvent('warning', 'warn', { some: 'metaData' }, done);
     });
 
     it('sets up a global error handler for the connection pool - logs error as warn', function (done) {
-      testLogEvent('error', 'warn', done);
+      testLogEvent('error', 'warn', 'myMessage', done);
     });
 
     it('sets up an error handler for pool.connect', function (done) {
