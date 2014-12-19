@@ -94,7 +94,7 @@ http.createServer(function (req, res) {
       if (shouldStreamData) {
         // Read the data from a stream!
         var data = [];
-        var dataStream = db.beginQuery()
+        db.beginQuery()
           .param('hello', 'ascii', true) // maps to 'column1' placeholder in 'helloWorld.cql'
           .param('world', 'ascii') // maps to 'column2' placeholder in 'helloWorld.cql'
           .namedQuery('hello-world')

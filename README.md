@@ -568,6 +568,7 @@ var db = require('priam')({
 
 Release Notes
 -------------
+ - `1.1.2`: Update `cassandra-driver` connection error logging.
  - `1.1.1`: Add emulated streaming support for `helenus` driver.
  - `1.1.0`: Add streaming support with `Query.stream()` or `db.cql()` for `cassandra-driver`.
  - `1.0.0`: Fix `keyspace` option when using multiple instances. **This is a breaking change if you relied on the undocumented `instance.pools.default` property being available.**
