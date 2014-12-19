@@ -1181,7 +1181,8 @@ describe('lib/drivers/helenus.js', function () {
       consistency = 'one';
       options = { foo: 'bar' };
       stream = {
-        emit: sinon.stub()
+        emit: sinon.stub(),
+        end: sinon.stub()
       };
       pool = {
         cql: sinon.stub().yields()
@@ -1190,7 +1191,8 @@ describe('lib/drivers/helenus.js', function () {
         on: sinon.stub().returnsThis(),
         pipe: sinon.stub().returnsThis(),
         write: sinon.stub(),
-        emit: sinon.stub()
+        emit: sinon.stub(),
+        end: sinon.stub()
       };
       sinon.stub(through, 'obj').returns(fakeThroughObj);
     });
@@ -1270,15 +1272,15 @@ describe('lib/drivers/helenus.js', function () {
       assert.deepEqual(cb.args[0][1], transformed);
     });
 
-    it('transformation writes to output stream and emits "end" event when EOF reached', function (done) {
+    it('transformation writes to output stream and calls #end() when EOF reached', function (done) {
       var row = { foo: 'bar' };
       pool.cql = sinon.stub().yields(null, [row]);
       instance.streamCqlOnDriver(pool, cql, params, consistency, options, stream);
       setTimeout(function() {
         assert.ok(fakeThroughObj.write.calledOnce);
         assert.deepEqual(fakeThroughObj.write.args[0][0], row);
-        assert.ok(fakeThroughObj.emit.calledOnce);
-        assert.strictEqual(fakeThroughObj.emit.args[0][0], 'end');
+        assert.notOk(fakeThroughObj.emit.called);
+        assert.ok(fakeThroughObj.end.calledOnce);
         done();
       }, 1);
     });
@@ -1294,6 +1296,7 @@ describe('lib/drivers/helenus.js', function () {
         assert.strictEqual(stream.emit.args[0][0], 'error');
         assert.equal(stream.emit.args[0][1], error);
         assert.strictEqual(stream.emit.args[1][0], 'end');
+        assert.notOk(fakeThroughObj.end.called);
         done();
       }, 1);
     });
@@ -1307,10 +1310,10 @@ describe('lib/drivers/helenus.js', function () {
       setTimeout(function() {
         assert.ok(fakeThroughObj.write.called);
         assert.deepEqual(fakeThroughObj.write.args[0][0], row);
-        assert.ok(fakeThroughObj.emit.calledTwice);
+        assert.ok(fakeThroughObj.emit.calledOnce);
         assert.strictEqual(fakeThroughObj.emit.args[0][0], 'error');
         assert.equal(fakeThroughObj.emit.args[0][1], error);
-        assert.strictEqual(fakeThroughObj.emit.args[1][0], 'end');
+        assert.ok(fakeThroughObj.end.calledOnce);
         done();
       }, 1);
     });
