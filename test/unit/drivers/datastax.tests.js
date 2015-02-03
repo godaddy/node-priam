@@ -1868,6 +1868,19 @@ describe('lib/drivers/datastax', function () {
       });
     });
 
+    it('handles CQL files containing a BOM', function (done) {
+      // arrange
+      var queryName = 'cqlFileWithBOM';
+      var params = [];
+      var consistency = cql.types.consistencies.one;
+
+      // act
+      instance.namedQuery(queryName, params, { consistency: consistency }, function () {
+        expect(instance.execCql.firstCall.args[0]).to.equal('SELECT * FROM "myColumnFamily"');
+        done();
+      });
+    });
+
     it('allows caller to disable prepared statement', function (done) {
       // arrange
       var queryName = 'myFakeCql';
