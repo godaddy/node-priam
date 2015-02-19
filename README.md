@@ -1,6 +1,7 @@
 [![Build Status](https://travis-ci.org/godaddy/node-priam.png?branch=master)](https://travis-ci.org/godaddy/node-priam)
 [![Coverage Status](https://coveralls.io/repos/godaddy/node-priam/badge.png?branch=master)](https://coveralls.io/r/godaddy/node-priam)
 [![Dependency Status](https://gemnasium.com/godaddy/node-priam.png?branch=master)](https://gemnasium.com/godaddy/node-priam)
+[![Bitdeli Badge](https://d2weczhvl823v0.cloudfront.net/godaddy/node-priam/trend.png)](https://bitdeli.com/free "Bitdeli Badge")
 
 [![NPM](https://nodei.co/npm/priam.png?downloads=true&stars=true)](https://www.npmjs.org/package/priam)
 
