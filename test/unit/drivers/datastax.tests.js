@@ -859,8 +859,9 @@ describe('lib/drivers/datastax', function () {
         'param1',
         { value: 'param2', hint: null },
         { value: 'param3', hint: instance.dataType.ascii },
-        { value: 'param4', hint: 'int', isRoutingKey: true },
-        new Buffer('param5')];
+        { value: 'param4', hint: 'map<text,boolean>' },
+        { value: 'param5', hint: 'int', isRoutingKey: true },
+        new Buffer('param6')];
       var consistency = cql.types.consistencies.quorum;
       var err = null;
       var data = {
@@ -886,14 +887,23 @@ describe('lib/drivers/datastax', function () {
           params[1].value,
           params[2].value,
           params[3].value,
-          params[4]
+          params[4].value,
+          params[5]
         ], 'param values should be passed through');
         assert.strictEqual(call.args[2].prepare, true, 'prepare option should be true');
         assert.strictEqual(call.args[2].consistency, consistency, 'consistency should be passed through');
-        assert.deepEqual(call.args[2].routingIndexes, [3], 'routingIndexes should be generated');
+        assert.deepEqual(call.args[2].routingIndexes, [4], 'routingIndexes should be generated');
         var expectedHints = [];
         expectedHints[2] = instance.dataType.ascii;
-        expectedHints[3] = instance.dataType.int;
+        expectedHints[3] = {
+          name: 'map',
+          type: instance.dataType.map,
+          subtypes: ['text', 'boolean']
+        };
+        expectedHints[4] = {
+          name: 'int',
+          type: instance.dataType.int
+        };
         assert.deepEqual(call.args[2].hints, expectedHints, 'hints should be passed through');
         assert.isNull(error, 'error should be null');
         assert.deepEqual(returnData, [
