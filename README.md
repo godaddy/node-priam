@@ -569,6 +569,10 @@ var db = require('priam')({
 
 Release Notes
 -------------
+ - `1.2.0`: Resolved #44 (issue with `USING TIMESTAMP` on individual statementes within batch queries).
+            Fixed an issue with subtypes being dropped from collection type hints.
+            Downgrade `helenus` library to an optional dependency.
+ - `1.1.3`: Fix issue with BOM marks inside of named queries.
  - `1.1.2`: Update `cassandra-driver` connection error logging.
  - `1.1.1`: Add emulated streaming support for `helenus` driver.
  - `1.1.0`: Add streaming support with `Query.stream()` or `db.cql()` for `cassandra-driver`.

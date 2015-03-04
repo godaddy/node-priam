@@ -859,8 +859,9 @@ describe('lib/drivers/datastax', function () {
         'param1',
         { value: 'param2', hint: null },
         { value: 'param3', hint: instance.dataType.ascii },
-        { value: 'param4', hint: 'int', isRoutingKey: true },
-        new Buffer('param5')];
+        { value: 'param4', hint: 'map<text,boolean>' },
+        { value: 'param5', hint: 'int', isRoutingKey: true },
+        new Buffer('param6')];
       var consistency = cql.types.consistencies.quorum;
       var err = null;
       var data = {
@@ -886,14 +887,23 @@ describe('lib/drivers/datastax', function () {
           params[1].value,
           params[2].value,
           params[3].value,
-          params[4]
+          params[4].value,
+          params[5]
         ], 'param values should be passed through');
         assert.strictEqual(call.args[2].prepare, true, 'prepare option should be true');
         assert.strictEqual(call.args[2].consistency, consistency, 'consistency should be passed through');
-        assert.deepEqual(call.args[2].routingIndexes, [3], 'routingIndexes should be generated');
+        assert.deepEqual(call.args[2].routingIndexes, [4], 'routingIndexes should be generated');
         var expectedHints = [];
         expectedHints[2] = instance.dataType.ascii;
-        expectedHints[3] = instance.dataType.int;
+        expectedHints[3] = {
+          name: 'map',
+          type: instance.dataType.map,
+          subtypes: ['text', 'boolean']
+        };
+        expectedHints[4] = {
+          name: 'int',
+          type: instance.dataType.int
+        };
         assert.deepEqual(call.args[2].hints, expectedHints, 'hints should be passed through');
         assert.isNull(error, 'error should be null');
         assert.deepEqual(returnData, [
@@ -1015,6 +1025,56 @@ describe('lib/drivers/datastax', function () {
         done();
       });
     });
+
+    function testErrorRetry(errorName, errorCode, numRetries, shouldRetry) {
+      it((shouldRetry ? 'adds' : 'does not add') + ' error retry if error is "' + errorName + '", code "' + errorCode + '", and retries ' + numRetries, function (done) {
+        // arrange
+        var cqlQuery = 'MyCqlStatement';
+        var params = ['param1', 'param2', 'param3'];
+        var consistency = cql.types.consistencies.one;
+        var pool = getPoolStub(instance.config, true, null, {});
+        var data = [];
+        var callCount = 0;
+        pool.execute = sinon.spy(function (c, d, con, cb) {
+          callCount++;
+          if (callCount === 1) {
+            var err = new cql.errors[errorName](errorCode, 'error message');
+            cb(err);
+          }
+          else {
+            cb(null, data);
+          }
+        });
+        instance.pools = { myKeySpace: pool };
+        instance.config.numRetries = numRetries;
+        instance.config.retryDelay = 1;
+
+        // act
+        instance.cql(cqlQuery, params, { consistency: consistency }, function (error, returnData) {
+          // assert
+          if (shouldRetry) {
+            var call1 = pool.execute.getCall(0);
+            var call2 = pool.execute.getCall(1);
+            assert.strictEqual(pool.execute.callCount, 2, 'execute should be called twice');
+            assert.notEqual(call1.args[1], call2.args[1], 'parameters should be cloned');
+            assert.deepEqual(call1.args[1], call2.args[1], 'parameters should be cloned');
+            assert.deepEqual(returnData, data, 'data should match cql output');
+          }
+          else {
+            assert.strictEqual(pool.execute.callCount, 1, 'execute should be called once');
+          }
+
+          done();
+        });
+      });
+    }
+
+    testErrorRetry('ResponseError', 0x1200, 0, false); // readTimeout
+    testErrorRetry('ResponseError', 0x1200, 1, true);
+    testErrorRetry('ResponseError', 0x2000, 1, false); // syntaxError
+    testErrorRetry('NoHostAvailableError', null, 1, true);
+    testErrorRetry('DriverInternalError', null, 1, true);
+    testErrorRetry('AuthenticationError', 0x1200, 1, false);
 
     it('does not add error retry at consistency QUORUM when original consistency is ALL and enableConsistencyFailover is false', function (done) {
       // arrange
