@@ -1026,6 +1026,56 @@ describe('lib/drivers/datastax', function () {
       });
     });
 
+    function testErrorRetry(errorName, errorCode, numRetries, shouldRetry) {
+      it((shouldRetry ? 'adds' : 'does not add') + ' error retry if error is "' + errorName + '", code "' + errorCode + '", and retries ' + numRetries, function (done) {
+        // arrange
+        var cqlQuery = 'MyCqlStatement';
+        var params = ['param1', 'param2', 'param3'];
+        var consistency = cql.types.consistencies.one;
+        var pool = getPoolStub(instance.config, true, null, {});
+        var data = [];
+        var callCount = 0;
+        pool.execute = sinon.spy(function (c, d, con, cb) {
+          callCount++;
+          if (callCount === 1) {
+            var err = new cql.errors[errorName](errorCode, 'error message');
+            cb(err);
+          }
+          else {
+            cb(null, data);
+          }
+        });
+        instance.pools = { myKeySpace: pool };
+        instance.config.numRetries = numRetries;
+        instance.config.retryDelay = 1;
+
+        // act
+        instance.cql(cqlQuery, params, { consistency: consistency }, function (error, returnData) {
+          // assert
+          if (shouldRetry) {
+            var call1 = pool.execute.getCall(0);
+            var call2 = pool.execute.getCall(1);
+            assert.strictEqual(pool.execute.callCount, 2, 'execute should be called twice');
+            assert.notEqual(call1.args[1], call2.args[1], 'parameters should be cloned');
+            assert.deepEqual(call1.args[1], call2.args[1], 'parameters should be cloned');
+            assert.deepEqual(returnData, data, 'data should match cql output');
+          }
+          else {
+            assert.strictEqual(pool.execute.callCount, 1, 'execute should be called once');
+          }
+
+          done();
+        });
+      });
+    }
+
+    testErrorRetry('ResponseError', 0x1200, 0, false); // readTimeout
+    testErrorRetry('ResponseError', 0x1200, 1, true);
+    testErrorRetry('ResponseError', 0x2000, 1, false); // syntaxError
+    testErrorRetry('NoHostAvailableError', null, 1, true);
+    testErrorRetry('DriverInternalError', null, 1, true);
+    testErrorRetry('AuthenticationError', 0x1200, 1, false);
+
     it('does not add error retry at consistency QUORUM when original consistency is ALL and enableConsistencyFailover is false', function (done) {
       // arrange
       var cqlQuery = 'MyCqlStatement';
