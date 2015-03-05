@@ -3,7 +3,7 @@
 [![Dependency Status](https://gemnasium.com/godaddy/node-priam.png?branch=master)](https://gemnasium.com/godaddy/node-priam)
 [![Bitdeli Badge](https://d2weczhvl823v0.cloudfront.net/godaddy/node-priam/trend.png)](https://bitdeli.com/free "Bitdeli Badge")
 
-[![NPM](https://nodei.co/npm/priam.png?downloads=true&stars=true)](https://www.npmjs.org/package/priam)
+[![NPM](https://nodei.co/npm/priam.png?downloads=true&downloadRank=true&stars=true)](https://www.npmjs.org/package/priam)
 
 priam
 =====
@@ -11,7 +11,7 @@ priam
 A simple [Cassandra](http://cassandra.apache.org/) driver for [NodeJS](http://nodejs.org). It wraps the
 [helenus](https://github.com/simplereach/helenus) and
 [cassandra-driver](https://github.com/datastax/nodejs-driver) modules with additional error/retry handling, external
-`.cql` file support, and connection option resolution from an external source, among other improvements.
+`.cql` file support, connection option resolution from an external source, and query composition, among other improvements.
 
 By default, the driver uses [cassandra-driver](https://github.com/datastax/nodejs-driver) over a binary-protocol connection.
 If a Thrift connection is desired, simply specify the [helenus](https://github.com/simplereach/helenus) driver option
