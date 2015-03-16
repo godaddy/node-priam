@@ -45,8 +45,9 @@ var db = require('priam')({
     consistencyLevel: 'one', /* optional, defaults to one. Will throw if not a valid Cassandra consistency level*/
     driver: 'helenus', /* optional, defaults to 'datastax' */,
     protocol: 'thrift', /* optional, defaults to 'binary' */,
-    numRetries: 3, /* optional, defaults to 0. Retries occur on connection failures. */
-    retryDelay: 100, /* optional, defaults to 100ms. Used on error retry or consistency fallback retry */
+    numRetries: 3, /* optional, defaults to 0. Retries occur on connection failures. Deprecated, use retryOptions instead. */
+    retryDelay: 100, /* optional, defaults to 100ms. Used on error retry (deprecated) or consistency fallback retry */
+    retryOptions: {}, /* optional. See https://www.npmjs.com/package/retry for options */
     enableConsistencyFailover: true, /* optional, defaults to true */
     queryDirectory: path.join(__dirname, 'path/to/your/cql/files'), /* optional, required to use #namedQuery() */
     user: '<your_username>',
