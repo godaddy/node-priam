@@ -46,8 +46,8 @@ var db = require('priam')({
     driver: 'helenus', /* optional, defaults to 'datastax' */,
     protocol: 'thrift', /* optional, defaults to 'binary' */,
     numRetries: 3, /* optional, defaults to 0. Retries occur on connection failures. Deprecated, use retryOptions instead. */
-    retryDelay: 100, /* optional, defaults to 100ms. Used on error retry (deprecated) or consistency fallback retry */
-    retryOptions: {}, /* optional. See https://www.npmjs.com/package/retry for options */
+    retryDelay: 100, /* optional, defaults to 100ms. Used on consistency fallback retry */
+    retryOptions: { retries: 0 }, /* optional. See https://www.npmjs.com/package/retry for options */
     enableConsistencyFailover: true, /* optional, defaults to true */
     queryDirectory: path.join(__dirname, 'path/to/your/cql/files'), /* optional, required to use #namedQuery() */
     user: '<your_username>',
@@ -386,13 +386,15 @@ The following retry options are supported in the driver constructor:
 
 - `enableConsistencyFailover`: Optional. Defaults to `true`. If `false`, the failover described above will not take place.
 
-- `numRetries`: Optional. Defaults to 0 (no retry). The number of retries to execute on network failure. *Note:
+- `numRetries`: (Deprecated) Optional. Defaults to 0 (no retry). The number of retries to execute on network failure.
+
+- `retryOptions`: Optional. Defaults to `{ retries: 0 }` (no retries). Retry logic in the event that a network failure happens. See the [retry](https://www.npmjs.com/package/retry) package for options. *Note:
                 this will also affect the number of retries executed during consistency level fallback. For example,
-                if `numRetries` is 2 and a CQL query with `db.consistencyLevel.all` is submitted, it will be executed
+                if the number of retries is 2 and a CQL query with `db.consistencyLevel.all` is submitted, it will be executed
                 3 times at `db.consistencyLevel.all`, 3 times at `db.constistencyLevel.eachQuorum` and 3 times at
                 `db.consistencyLevel.localQuorum` before yielding an error back to the caller.
 
-- `retryDelay`: Optional. Defaults to 100.
+- `retryDelay`: Optional. Defaults to 100. The number of milliseconds used for consistency level fallback.
 
 ### Logging ###
 The driver supports passing a [winston](https://github.com/flatiron/winston) logger inside of the options.
