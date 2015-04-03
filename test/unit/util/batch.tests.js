@@ -1056,6 +1056,72 @@ describe('lib/util/batch.js', function () {
           }
         });
 
+        it('assembles batch query names for tracing', function (done) {
+          // arrange
+          var data = [
+            {}
+          ];
+          var query1 = new Query(db)
+              .query('myCqlQuery1')
+              .options({ queryName: 'query1' })
+              .consistency('localQuorum')
+              .param('param1', 'ascii')
+              .param('param2', 'ascii'),
+            query2 = new Query(db)
+              .query('myCqlQuery2;\n')
+              .options({ queryName: 'query2' })
+              .consistency('eachQuorum')
+              .param('param3', 'ascii')
+              .param('param4', 'ascii'),
+            query3 = new Query(db)
+              .query('myCqlQuery3')
+              .options({ suppressDebugLog: true, queryName: 'query3' })
+              .consistency('one')
+              .param('param5', 'ascii')
+              .param('param6', 'ascii'),
+            childBatch = new Batch(db);
+
+          childBatch.addQuery(query2);
+          childBatch.addQuery(query3);
+          batch.addQuery(query1);
+          batch.addBatch(childBatch);
+
+          db.cql = sinon.stub().yields(null, data);
+
+          // act
+          if (isPromise) {
+            var e = null,
+              result = null;
+            batch
+              .execute()
+              .catch(function (error) {
+                e = error;
+              })
+              .done(function (data) {
+                if (e) {
+                  asserts(e);
+                }
+                else {
+                  asserts(null, data);
+                }
+              });
+          }
+          else {
+            batch.execute(asserts);
+          }
+
+          // assert
+          function asserts(err, result) {
+            assert.strictEqual(db.cql.callCount, 1, 'cql is only called once');
+            var callArgs = db.cql.getCall(0).args;
+            assert.equal(callArgs[2].batchQueryNames.length, 3, 'queryNames contains 3 query names.');
+            assert.equal(callArgs[2].batchQueryNames[0], 'query1', 'queryNames contains query1 query name.');
+            assert.equal(callArgs[2].batchQueryNames[1], 'query2', 'queryNames contains query2 query name.');
+            assert.equal(callArgs[2].batchQueryNames[2], 'query3', 'queryNames contains query3 query name.');
+            done();
+          }
+        });
+
         it('joins nested batches correctly', function (done) {
           // arrange
           var data = [
@@ -1738,6 +1804,8 @@ describe('lib/util/batch.js', function () {
           }
         });
       });
+
+      
     }
 
     testCallbacks(false);

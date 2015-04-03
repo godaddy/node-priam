@@ -1256,6 +1256,34 @@ describe('lib/drivers/datastax', function () {
       });
     });
 
+    it('captures metrics if metrics and batchQueryNames are provided', function (done) {
+      // arrange
+      var cqlQuery = 'MyBatchCqlStatement';
+      var batchQueryNames = ['batchQuery1', 'batchQuery2'];
+      var params = ['param1', 'param2', 'param3'];
+      var consistency = cql.types.consistencies.one;
+      var err = null;
+      var data = { field1: 'value1' };
+      var pool = getPoolStub(instance.config, true, err, data);
+      instance.pools = { myKeySpace: pool };
+      instance.metrics = {
+        measurement: sinon.stub()
+      };
+
+      // act
+      instance.cql(cqlQuery, params, { consistency: consistency, batchQueryNames: batchQueryNames }, function () {
+        var call1 = instance.metrics.measurement.getCall(0);
+        var call2 = instance.metrics.measurement.getCall(1);
+        
+        // assert
+        assert.ok(instance.metrics.measurement.calledTwice, 'measurement called twice');
+        assert.strictEqual(call1.args[0], 'query.' + batchQueryNames[0], 'measurement called with appropriate query name');
+        assert.strictEqual(call2.args[0], 'query.' + batchQueryNames[1], 'measurement called with appropriate query name');
+
+        done();
+      });
+    });
+
     describe('with connection resolver', function () {
 
       var logger, resolverOptions;
