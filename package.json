@@ -18,20 +18,18 @@
     "url": "https://github.com/godaddy/node-priam.git"
   },
   "dependencies": {
-    "async": "~0.9.0",
+    "async": "^0.9.0",
     "cassandra-driver": "~1.0.3",
-    "isstream": "~0.1.1",
-    "lodash": "~3.3.1",
-    "q": "~1.2.0",
+    "isstream": "^0.1.2",
+    "lodash": "^3.8.0",
+    "q": "^1.4.0",
     "read-only-stream": "~1.1.1",
-    "retry": "~0.6.1",
-    "through2": "~0.6.3",
-    "uuid": "~2.0.1"
-  },
-  "optionalDependencies": {
-    "helenus": "~0.6.10"
+    "retry": "^0.6.1",
+    "through2": "^0.6.5",
+    "uuid": "^2.0.1"
   },
   "devDependencies": {
+    "async": "^0.9.0",
     "chai": "~2.1.1",
     "coveralls": "^2.11.2",
     "del": "^1.1.1",
@@ -51,6 +49,7 @@
     "mocha": "~2.1.0",
     "mocha-istanbul": "~0.2.0",
     "mocha-lcov-reporter": "~0.0.2",
+    "read-only-stream": "^1.1.1",
     "run-sequence": "^1.1.0",
     "sinon": "~1.12.2",
     "sinon-chai": "^2.7.0",
@@ -58,7 +57,7 @@
   },
   "scripts": {
     "pretest": "node node_modules/jshint/bin/jshint ./lib/. ./test/. ./example/. ./index.js",
-    "test": "istanbul cover ./node_modules/mocha/bin/_mocha",
+    "test": "gulp",
     "start": "node example/example"
   }
 }
