@@ -1,33 +1,35 @@
 'use strict';
 
-var http = require('http')
-  , url = require('url')
-  , path = require('path')
-  , ConnectionResolver = require('./lib/connection-resolver')
-  , MetricsClient = require('./lib/metrics-client')
-  , winston = require('winston')
-  , _ = require('lodash')
-  , logger = new (winston.Logger)({
+var http               = require('http'),
+    util               = require('util'),
+    url                = require('url'),
+    path               = require('path'),
+    ConnectionResolver = require('./lib/connection-resolver'),
+    MetricsClient      = require('./lib/metrics-client'),
+    winston            = require('winston'),
+    _                  = require('lodash'),
+    logger             = new (winston.Logger)({
       transports: [
         new (winston.transports.Console)({ level: 'debug' })
       ]
-    })
-  , metrics = new MetricsClient({ logger: logger })
-  , db = require('../index' /*"priam"*/)({
+    }),
+    metrics            = new MetricsClient({ logger: logger }),
+    db                 = require('../index' /*"priam"*/)({
       config: {
         protocol: 'binary',
         cqlVersion: '3.1',
         queryDirectory: path.join(__dirname, 'cql'),
 
         // If using config-based connection, use these options
-        user: '<your_username>',
-        password: '<your_password>',
-        keyspace: '<your_keyspace>',
+        user: 'admin',
+        password: 'admin',
+        keyspace: 'priam_test_db',
         hosts: [
-          '123.456.789.010', // your host IP's should be here
-          '123.456.789.011',
-          '123.456.789.012',
-          '123.456.789.013'
+          '127.0.0.1', // your host IP's should be here
+          '127.0.0.2',
+          '127.0.0.3',
+          '127.0.0.4',
+          '127.0.0.5'
         ]
       },
       logger: logger, // optional
@@ -35,8 +37,12 @@ var http = require('http')
 
       // If using resolver-based connection, use this option
       connectionResolver: new ConnectionResolver({ pollInterval: 3000 }) // this will override any matching config options
-    })
-  , port = 8080;
+    }),
+    port               = 8080;
+
+
+//console.log(util.inspect(db, { showHidden: true, depth: null, colors: true }));
+console.log(util.inspect(db, { showHidden: true, depth: null, colors: true }));
 
 http.createServer(function (req, res) {
   var parsed = url.parse(req.url, true);
@@ -59,33 +65,28 @@ http.createServer(function (req, res) {
         message += '------------------------\n';
         message += JSON.stringify({ message: err.name, info: err.info, stack: err.stack });
       }
-      res.writeHead(statusCode, {'Content-Type': 'text/plain'});
+      res.writeHead(statusCode, { 'Content-Type': 'text/plain' });
       res.end(message);
     }
   }
 
+  // Batching inserts/updates demo
   db.beginBatch()
-
-    // Batching inserts/updates demo
-
     .addQuery(db.beginQuery()
       .param('hello from Priam - batch query 1', 'ascii') // maps to 'column1' placeholder in 'addTimestamp.cql'
       .param((new Date()).toISOString(), 'ascii') // maps to 'column2' placeholder in 'addTimestamp.cql'
       .namedQuery('add-timestamp')
-    )
-    .addQuery(db.beginQuery()
+  ).addQuery(db.beginQuery()
       .param('hello from Priam - batch query 2', 'ascii') // maps to 'column1' placeholder in 'addTimestamp.cql'
       .param((new Date()).toISOString(), 'ascii') // maps to 'column2' placeholder in 'addTimestamp.cql'
       .namedQuery('add-timestamp')
-    )
-    .addQuery(db.beginQuery()
+  ).addQuery(db.beginQuery()
       .param({ 'key3': (new Date()).toISOString() }, 'map<text, text>') // maps to 'column3' placeholder in 'updateWorld.cql'
       .param('hello', 'ascii') // maps to 'column1' placeholder in 'updateWorld.cql'
       .param('world', 'ascii') // maps to 'column2' placeholder in 'updateWorld.cql'
       .namedQuery('update-world')
-    )
-    .timestamp()
-    .options({ queryName: 'hello-world-writes'})
+  ).timestamp()
+    .options({ queryName: 'hello-world-writes' })
     .execute() // This will execute the two inserts above in a single batch
     .fail(errorHandler)
     .done(function () {
@@ -102,11 +103,13 @@ http.createServer(function (req, res) {
           .on('error', errorHandler)
           .on('data', data.push.bind(data))
           .on('end', function () {
-            if (res.headersSent) { return; }
+            if (res.headersSent) {
+              return;
+            }
             var message = data.length ?
               (data[0].column1 + ' ' + data[0].column2 + ' - from stream! Map: ' + JSON.stringify(data[0].column3)) :
               'NO DATA FOUND! Please execute "/example/cql/create-db.cql" in your keyspace.';
-            res.writeHead(200, {'Content-Type': 'text/plain'});
+            res.writeHead(200, { 'Content-Type': 'text/plain' });
             res.end(message);
           });
       }
@@ -122,7 +125,7 @@ http.createServer(function (req, res) {
             var message = (Array.isArray(data) && data.length) ?
               (data[0].column1 + ' ' + data[0].column2 + ' - from Promise! Map: ' + JSON.stringify(data[0].column3)) :
               'NO DATA FOUND! Please execute "/example/cql/create-db.cql" in your keyspace.';
-            res.writeHead(200, {'Content-Type': 'text/plain'});
+            res.writeHead(200, { 'Content-Type': 'text/plain' });
             res.end(message);
           });
       }

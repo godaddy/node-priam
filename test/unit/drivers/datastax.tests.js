@@ -818,49 +818,7 @@ describe('lib/drivers/datastax', function () {
         done();
       });
     });
-
-    it.only('executes CQL as stringified statement and returns the data if "executeAsPrepared" option is false and protocolVersion is 1', function (done) {
-      // arrange
-      var cqlQuery = 'SELECT * FROM table WHERE key1=? AND key2=?';
-      var params = ['param1', 'param2'];
-      var consistency = cql.types.consistencies.quorum;
-      var err = null;
-      var data = {
-        rows: [
-          {
-            columns: [
-              { name: 'field1', types: [1, null] }
-            ],
-            field1: 'value1'
-          }
-        ]
-      };
-      var pool = getPoolStub(instance.config, true, err, data);
-      pool.controlConnection.protocolVersion = 1;
-      instance.pools = { myKeySpace: pool };
-
-      // act
-      instance.cql(cqlQuery, params, {
-        consistency: consistency,
-        executeAsPrepared: false
-      }, function (error, returnData) {
-        var call = pool.batch.getCall(0);
-        // assert
-        //        assert.strictEqual(call.args[0], 'SELECT * FROM table WHERE key1=\'param1\' AND key2=\'param2\'', 'cql should contain stringified parameters');
-        //        assert.deepEqual(call.args[1], [], 'params should be empty');
-        //        assert.strictEqual(call.args[2].prepare, false, 'prepare option should be false');
-        //        assert.strictEqual(call.args[2].consistency, consistency, 'consistency should be passed through');
-        //        assert.isNull(error, 'error should be null');
-        //        assert.deepEqual(returnData, [
-        //          { field1: 'value1' }
-        //        ], 'data should match normalized cql output');
-
-        console.log(call.args);
-
-        done();
-      });
-    });
-
+    
     it('executes CQL with hint options if parameters provide type hints', function (done) {
       // arrange
       var cqlQuery = 'MyCqlStatement';
