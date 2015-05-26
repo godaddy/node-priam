@@ -19,7 +19,7 @@
   },
   "dependencies": {
     "async": "^0.9.0",
-    "cassandra-driver": "~1.0.3",
+    "cassandra-driver": "^2.1.0",
     "isstream": "^0.1.2",
     "lodash": "^3.8.0",
     "q": "^1.4.0",
@@ -56,7 +56,7 @@
     "winston": "^0.9.0"
   },
   "scripts": {
-    "pretest": "node node_modules/jshint/bin/jshint ./lib/. ./test/. ./example/. ./index.js",
+    "pretest": "jshint ./lib/. ./test/. ./example/. ./index.js",
     "test": "gulp",
     "start": "node example/example"
   }
