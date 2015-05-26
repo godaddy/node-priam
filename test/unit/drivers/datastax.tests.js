@@ -818,7 +818,7 @@ describe('lib/drivers/datastax', function () {
         done();
       });
     });
-    
+
     it('executes CQL with hint options if parameters provide type hints', function (done) {
       // arrange
       var cqlQuery = 'MyCqlStatement';
