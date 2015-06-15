@@ -23,7 +23,7 @@ var http               = require('http'),
         // If using config-based connection, use these options
         user: 'admin',
         password: 'admin',
-        keyspace: 'priam_test_db',
+        //keyspace: 'priam_test_db',
         hosts: [
           '127.0.0.1', // your host IP's should be here
           '127.0.0.2',
@@ -40,8 +40,6 @@ var http               = require('http'),
     }),
     port               = 8080;
 
-
-//console.log(util.inspect(db, { showHidden: true, depth: null, colors: true }));
 console.log(util.inspect(db, { showHidden: true, depth: null, colors: true }));
 
 http.createServer(function (req, res) {

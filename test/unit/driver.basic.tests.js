@@ -5,14 +5,16 @@ var sinon  = require('sinon')
   , assert = chai.assert
   , expect = chai.expect
   , Stream = require('stream')
-  , Query  = require('../../../lib/util/query')
-  , Batch  = require('../../../lib/util/batch');
+  , _ = require('lodash')
+  , Query  = require('../../lib/util/query')
+  , Batch  = require('../../lib/util/batch');
 
 var EventEmitter = require('events').EventEmitter;
 
-var Driver = require('../../../lib/drivers/base-driver');
+var cql = require('cassandra-driver');
+var Driver = require('../../lib/driver');
 
-describe('lib/drivers/base-driver.js', function () {
+describe('lib/driver.js', function () {
 
   function getDefaultLogger() {
     return {
@@ -32,15 +34,31 @@ describe('lib/drivers/base-driver.js', function () {
     };
   }
 
-  function getDefaultInstance() {
-    var instance = new Driver();
-    var context = {
+  function getDefaultContext() {
+    return {
       config: getDefaultConfig(),
       logger: getDefaultLogger()
     };
-    instance.init(context);
+  }
+
+  function getDefaultInstance() {
+    var context = getDefaultContext();
+    var instance = new Driver(context);
+
     return instance;
   }
+
+  beforeEach(function () {
+    sinon.stub(cql, 'Client').returns({
+      connect: sinon.stub().yieldsAsync(),
+      on: sinon.stub(),
+      execute: sinon.stub().yieldsAsync(null, [])
+    });
+  });
+
+  afterEach(function () {
+    if (cql.Client.restore) { cql.Client.restore(); }
+  });
 
   describe('interface', function () {
 
@@ -61,6 +79,9 @@ describe('lib/drivers/base-driver.js', function () {
     describe('instance', function () {
       it('provides a cql function', function () {
         validateFunctionExists('cql', 4);
+      });
+      it('instance provides a streamCqlOnDriver function', function () {
+        validateFunctionExists('streamCqlOnDriver', 6);
       });
       it('provides a namedQuery function', function () {
         validateFunctionExists('namedQuery', 4);
@@ -87,10 +108,28 @@ describe('lib/drivers/base-driver.js', function () {
   });
 
   describe('BaseDriver#constructor', function () {
+    it('throws an error if context not provided', function () {
+      // arrange
+      // act
+      var initWithNoContext = function () { new Driver(); };
+
+      // assert
+      expect(initWithNoContext).to.throw(Error, /missing context/);
+    });
+
+    it('throws an error if context.config not provided', function () {
+      // arrange
+      // act
+      var initWithNoConfig = function () { new Driver({}); };
+
+      // assert
+      expect(initWithNoConfig).to.throw(Error, /missing context\.config/);
+    });
+
     it('sets default values', function () {
       // arrange
       // act
-      var instance = new Driver();
+      var instance = new Driver(getDefaultContext());
 
       // assert
       assert.ok(instance.consistencyLevel);
@@ -100,7 +139,7 @@ describe('lib/drivers/base-driver.js', function () {
     it('converts consistency levels to DB codes', function () {
       // arrange
       // act
-      var instance = new Driver();
+      var instance = new Driver(getDefaultContext());
       instance.consistencyLevel = { one: 1 };
       instance.init({ config: { consistency: 'one' } });
 
@@ -111,7 +150,7 @@ describe('lib/drivers/base-driver.js', function () {
     it('throws an error if given an invalid consistency level', function () {
       // arrange
       // act
-      var instance = new Driver();
+      var instance = new Driver(getDefaultContext());
       instance.consistencyLevel = { one: 1 };
       var initWithInvalidConsistency = function () {
         instance.init({ config: { consistency: 'invalid consistency level' } });
@@ -119,6 +158,60 @@ describe('lib/drivers/base-driver.js', function () {
 
       // assert
       assert.throw(initWithInvalidConsistency, 'Error: "invalid consistency level" is not a valid consistency level');
+    });
+
+    it('sets the name property', function () {
+      // arrange
+      var config = _.extend({}, getDefaultConfig());
+      var configCopy = _.extend({}, config);
+      var consistencyLevel = cql.types.consistencies.one;
+
+      // act
+      var instance = new Driver({ config: config });
+
+      // assert
+      assert.strictEqual(instance.name, 'datastax');
+    });
+
+    it('sets default pool configuration', function () {
+      // arrange
+      var config = _.extend({}, getDefaultConfig());
+      var configCopy = _.extend({}, config);
+      var consistencyLevel = cql.types.consistencies.one;
+
+      // act
+      var instance = new Driver({ config: config });
+
+      // assert
+      assert.deepEqual(instance.poolConfig.contactPoints, configCopy.hosts, 'hosts should be passed through');
+      assert.strictEqual(instance.poolConfig.keyspace, configCopy.keyspace, 'keyspace should be passed through');
+      assert.strictEqual(instance.poolConfig.getAConnectionTimeout, configCopy.timeout, 'timeout should be passed through');
+      assert.strictEqual(instance.poolConfig.version, configCopy.cqlVersion, 'cqlVersion should be passed through');
+      assert.strictEqual(instance.poolConfig.limit, configCopy.limit, 'limit should be passed through');
+      assert.strictEqual(instance.poolConfig.consistencyLevel, consistencyLevel, 'consistencyLevel should default to ONE');
+    });
+
+    it('should override default pool config with additional store options', function () {
+      // arrange
+      var config = _.extend({}, getDefaultConfig());
+      var configCopy = _.extend({}, config);
+      var cqlVersion = '2.0.0';
+      var consistencyLevel = cql.types.consistencies.any;
+      var limit = 300;
+      config.cqlVersion = cqlVersion;
+      config.consistencyLevel = consistencyLevel;
+      config.limit = limit;
+
+      // act
+      var instance = new Driver({ config: config });
+
+      // assert
+      assert.deepEqual(instance.poolConfig.contactPoints, configCopy.hosts, 'hosts should be passed through');
+      assert.strictEqual(instance.poolConfig.getAConnectionTimeout, configCopy.timeout, 'timeout should be passed through');
+      assert.strictEqual(instance.poolConfig.keyspace, configCopy.keyspace, 'keyspace should be passed through');
+      assert.strictEqual(instance.poolConfig.version, cqlVersion, 'cqlVersion should be overridden');
+      assert.strictEqual(instance.poolConfig.limit, limit, 'limit should be overridden');
+      assert.strictEqual(instance.poolConfig.consistencyLevel, consistencyLevel, 'consistencyLevel should be overridden');
     });
   });
 
@@ -168,10 +261,12 @@ describe('lib/drivers/base-driver.js', function () {
 
     it('creates a connection for the default keyspace if keyspace is not supplied', function (done) {
       // arrange
+      driver.keyspace = 'defaultKeyspace';
+
       // act
       driver.connect(function (err, pool) {
         assert.notOk(err);
-        assert.equal(driver.pools.default, pool);
+        assert.equal(driver.pools[driver.keyspace], pool);
         done();
       });
     });
@@ -275,46 +370,6 @@ describe('lib/drivers/base-driver.js', function () {
     });
   });
 
-  // NOTE: All of the functions below are stubs for functionality that should be
-  //       provided by the inheriting driver classes. These tests are present solely for
-  //       code coverage purposes
-
-  it('BaseDriver#initProviderOptions() does nothing', function (done) {
-    // arrange
-    var driver = getDefaultInstance();
-
-    // act
-    driver.initProviderOptions();
-
-    done();
-  });
-
-  it('BaseDriver#getNormalizedResults() returns original argument', function (done) {
-    // arrange
-    var driver = getDefaultInstance();
-    var expected = [
-      {}
-    ];
-
-    // act
-    var actual = driver.getNormalizedResults(expected, {});
-
-    assert.deepEqual(expected, actual);
-    done();
-  });
-
-  it('BaseDriver#dataToCql() returns original argument', function (done) {
-    // arrange
-    var driver = getDefaultInstance();
-    var expected = 'myValue';
-
-    // act
-    var actual = driver.dataToCql(expected);
-
-    assert.strictEqual(expected, actual);
-    done();
-  });
-
   describe('BaseDriver#executeCqlStream()', function () {
 
     var cql, dataParams, options, stream, driver, pool;
@@ -379,14 +434,6 @@ describe('lib/drivers/base-driver.js', function () {
 
   });
 
-  it('BaseDriver#executeCqlOnDriver() calls callback', function (done) {
-    // arrange
-    var driver = getDefaultInstance();
-
-    // act
-    driver.executeCqlOnDriver(null, null, null, null, null, done);
-  });
-
   it('BaseDriver#canRetryError() returns false', function (done) {
     // arrange
     var driver = getDefaultInstance();
@@ -397,22 +444,6 @@ describe('lib/drivers/base-driver.js', function () {
     // assert
     assert.isFalse(result);
     done();
-  });
-
-  it('BaseDriver#closePool() calls callback', function (done) {
-    // arrange
-    var driver = getDefaultInstance();
-
-    // act
-    driver.closePool(null, done);
-  });
-
-  it('BaseDriver#createConnectionPool() calls callback', function (done) {
-    // arrange
-    var driver = getDefaultInstance();
-
-    // act
-    driver.createConnectionPool(null, false, done);
   });
 
   describe('BaseDriver#param()', function () {

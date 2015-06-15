@@ -51,13 +51,13 @@ gulp.task('unit', function () {
     .on('error', util.log);
 });
 
-gulp.task('integration', function () {
-  return gulp.src(TEST + path.sep + 'integration' + '/**/*.js')
-    .pipe(mocha({
-      reporter: MOCHA_REPORTER
-    }))
-    .on('error', util.log);
-});
+// gulp.task('integration', function () {
+//   return gulp.src(TEST + path.sep + 'integration' + '/**/*.js')
+//     .pipe(mocha({
+//       reporter: MOCHA_REPORTER
+//     }))
+//     .on('error', util.log);
+// });
 
 gulp.task('mocha', function () {
   return gulp.src(TEST + '/**/*.js')

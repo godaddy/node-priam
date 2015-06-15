@@ -5,16 +5,16 @@ var sinon        = require('sinon')
   , util         = require('util')
   , assert       = chai.assert
   , expect       = chai.expect
-  , Driver       = require('../../lib/driver')
-  , datastax     = require('../../lib/drivers/datastax')
+  , DriverFactory       = require('../../lib/driver-factory')
+  , Driver     = require('../../lib/driver')
   , parseVersion = require('../../lib/util/parse-version');
 
-describe('lib/driver.js', function () {
+describe('lib/driver-factory.js', function () {
 
   describe('interface', function () {
 
     it('is a constructor function', function () {
-      assert.strictEqual(typeof Driver, 'function', 'exports a constructor function');
+      assert.strictEqual(typeof DriverFactory, 'function', 'exports a constructor function');
     });
 
     it('returns latest datastax driver by default', function () {
@@ -23,21 +23,17 @@ describe('lib/driver.js', function () {
       var parsed = parseVersion('3.1.0');
 
       // act
-      var driver = Driver(context);
+      var driver = DriverFactory(context);
 
       // assert
       assert.strictEqual(driver.config.version, '3.1.0');
       assert.deepEqual(driver.config.parsedCqlVersion, parsed);
       assert.strictEqual(driver.config.protocol, 'binary');
-      assert.instanceOf(driver, datastax.DatastaxDriver);
+      assert.instanceOf(driver, Driver.DatastaxDriver);
     });
 
-    it('returns datastax driver if cqlVersion is equal to 3.0', function () {
-      testInstance('datastax', 'cqlVersion', '3.0.0', 'datastax', '3.0.0', 'binary', datastax.DatastaxDriver);
-    });
-
-    it('returns datastax driver if version is greater than 3.0', function () {
-      testInstance('datastax', 'version', '3.1.0', 'datastax', '3.1.0', 'binary', datastax.DatastaxDriver);
+    it('returns datastax driver set to version 3.0 if cqlVersion is equal to 3.0', function () {
+      testInstance('datastax', 'cqlVersion', '3.0.0', 'datastax', '3.0.0', 'binary', Driver.DatastaxDriver);
     });
 
     function testInstance(driver, versionPath, cqlVersion, expectedDriver, expectedVersion, expectedProtocol, expectedInstance) {
@@ -51,7 +47,7 @@ describe('lib/driver.js', function () {
       var parsed = parseVersion(expectedVersion);
 
       // act
-      var instance = Driver(context);
+      var instance = DriverFactory(context);
       var config = instance.config;
 
       // assert

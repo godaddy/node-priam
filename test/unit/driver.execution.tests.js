@@ -6,15 +6,15 @@ var sinon        = require('sinon')
   , assert       = chai.assert
   , expect       = chai.expect
   , through      = require('through2')
-  , FakeResolver = require('../../stubs/fake-resolver')
+  , FakeResolver = require('../stubs/fake-resolver')
   , _            = require('lodash')
   , path         = require('path');
 chai.use(require('sinon-chai'));
 
 var cql = require('cassandra-driver');
-var Driver = require('../../../lib/drivers/datastax');
+var Driver = require('../../lib/driver');
 
-describe('lib/drivers/datastax', function () {
+describe('lib/driver.js', function () {
 
   function getDefaultConfig() {
     return {
@@ -37,135 +37,11 @@ describe('lib/drivers/datastax', function () {
   }
 
   function getDefaultInstance() {
-    return Driver({
+    return new Driver({
       config: getDefaultConfig(),
       logger: getDefaultLogger()
     });
   }
-
-  describe('interface', function () {
-
-    var instance = getDefaultInstance();
-
-    function validateFunctionExists(name, argCount) {
-      // arrange
-      // act
-      // assert
-      assert.strictEqual(typeof instance[name], 'function');
-      assert.strictEqual(instance[name].length, argCount, name + ' takes ' + argCount + ' arguments');
-    }
-
-    it('is a constructor function', function () {
-      assert.strictEqual(typeof Driver, 'function', 'exports a constructor function');
-    });
-    it('instance provides a cql function', function () {
-      validateFunctionExists('cql', 4);
-    });
-    it('instance provides a streamCqlOnDriver function', function () {
-      validateFunctionExists('streamCqlOnDriver', 6);
-    });
-    it('instance provides a namedQuery function', function () {
-      validateFunctionExists('namedQuery', 4);
-    });
-    it('instance provides consistencyLevel object', function () {
-      assert.isDefined(instance.consistencyLevel);
-    });
-    it('instance provides a select function', function () {
-      validateFunctionExists('select', 4);
-    });
-    it('instance provides a insert function', function () {
-      validateFunctionExists('insert', 4);
-    });
-    it('instance provides a update function', function () {
-      validateFunctionExists('update', 4);
-    });
-    it('instance provides a delete function', function () {
-      validateFunctionExists('delete', 4);
-    });
-    it('instance provides a close function', function () {
-      validateFunctionExists('close', 1);
-    });
-  });
-
-  describe('DatastaxDriver#constructor', function () {
-    it('should throw exception if context is missing', function () {
-      // arrange
-      // act, assert
-      expect(function () {
-        new Driver();
-      }).to.throw(Error, /missing context /i);
-    });
-
-    it('should throw exception if config is missing from context', function () {
-      // arrange
-      // act, assert
-      expect(function () {
-        new Driver({});
-      }).to.throw(Error, /missing context.config /i);
-    });
-
-    it('should throw exception if config is missing from context', function () {
-      // arrange
-      // act, assert
-      expect(function () {
-        new Driver({});
-      }).to.throw(Error, /missing context.config /i);
-    });
-
-    it('sets the name property', function () {
-      // arrange
-      var config = _.extend({}, getDefaultConfig());
-      var configCopy = _.extend({}, config);
-      var consistencyLevel = cql.types.consistencies.one;
-
-      // act
-      var instance = new Driver({ config: config });
-
-      // assert
-      assert.strictEqual(instance.name, 'datastax');
-    });
-
-    it('sets default pool configuration', function () {
-      // arrange
-      var config = _.extend({}, getDefaultConfig());
-      var configCopy = _.extend({}, config);
-      var consistencyLevel = cql.types.consistencies.one;
-
-      // act
-      var instance = new Driver({ config: config });
-
-      // assert
-      assert.deepEqual(instance.poolConfig.contactPoints, configCopy.hosts, 'hosts should be passed through');
-      assert.strictEqual(instance.poolConfig.keyspace, configCopy.keyspace, 'keyspace should be passed through');
-      assert.strictEqual(instance.poolConfig.getAConnectionTimeout, configCopy.timeout, 'timeout should be passed through');
-      assert.strictEqual(instance.poolConfig.version, configCopy.cqlVersion, 'cqlVersion should be passed through');
-      assert.strictEqual(instance.poolConfig.limit, configCopy.limit, 'limit should be passed through');
-      assert.strictEqual(instance.poolConfig.consistencyLevel, consistencyLevel, 'consistencyLevel should default to ONE');
-    });
-
-    it('should override default pool config with additional store options', function () {
-      // arrange
-      var config = _.extend({}, getDefaultConfig());
-      var configCopy = _.extend({}, config);
-      var cqlVersion = '2.0.0';
-      var consistencyLevel = cql.types.consistencies.any;
-      var limit = 300;
-      config.cqlVersion = cqlVersion;
-      config.consistencyLevel = consistencyLevel;
-      config.limit = limit;
-
-      // act
-      var instance = new Driver({ config: config });
-
-      // assert
-      assert.deepEqual(instance.poolConfig.contactPoints, configCopy.hosts, 'hosts should be passed through');
-      assert.strictEqual(instance.poolConfig.getAConnectionTimeout, configCopy.timeout, 'timeout should be passed through');
-      assert.strictEqual(instance.poolConfig.keyspace, configCopy.keyspace, 'keyspace should be passed through');
-      assert.strictEqual(instance.poolConfig.version, cqlVersion, 'cqlVersion should be overridden');
-      assert.strictEqual(instance.poolConfig.limit, limit, 'limit should be overridden');
-      assert.strictEqual(instance.poolConfig.consistencyLevel, consistencyLevel, 'consistencyLevel should be overridden');
-    });
-  });
 
   function getPoolStub(config, isReady, err, data) {
     var storeConfig = _.extend({ consistencyLevel: 1, version: '3.1.0' }, config);
@@ -888,6 +764,107 @@ describe('lib/drivers/datastax', function () {
       });
     });
 
+    function testDataTypeTransformation(configValue, optionValue, shouldCoerce, done) {
+      // arrange
+      var cqlQuery = 'MyCqlStatement';
+      var params = ['param1', 'param2', 'param3'];
+      var consistency = cql.types.consistencies.one;
+      var err = null;
+      var data = {
+        rows: [
+          {
+            columns: [
+              // Numeric types
+              { name: 'field1', types: [2, null] },
+              { name: 'field2', types: [6, null] },
+              { name: 'field3', types: [14, null] },
+              // Uuid types
+              { name: 'field4', types: [12, null] },
+              { name: 'field5', types: [15, null] }
+            ],
+            field1: cql.types.Long.fromNumber(12345),
+            field2: new cql.types.BigDecimal(12345, 2),
+            field3: cql.types.Integer.fromNumber(54321),
+            field4: cql.types.Uuid.random(),
+            field5: cql.types.TimeUuid.now()
+          }
+        ]
+      };
+
+      var pool = getPoolStub(instance.config, true, err, data);
+      instance.pools = { myKeySpace: pool };
+      instance.config.coerceDataStaxTypes = configValue;
+
+      // act
+      instance.cql(cqlQuery, params, {
+        consistency: consistency,
+        coerceDataStaxTypes: optionValue,
+        resultHint: {
+          field1: instance.dataType.bigint,
+          field2: instance.dataType.decimal,
+          field3: instance.dataType.varint,
+          field4: instance.dataType.uuid,
+          field5: instance.dataType.timeuuid
+        }
+      }, function (error, returnData) {
+        if (error) { return void done(error); }
+
+        var call = pool.execute.getCall(0);
+        assert.strictEqual(call.args[0], cqlQuery, 'cql should be passed through');
+        assert.deepEqual(call.args[1], params, 'params should be passed through');
+        var record = returnData[0];
+        if (shouldCoerce) {
+          assert.strictEqual(typeof record.field1, 'number', 'first field should be a number');
+          assert.strictEqual(record.field1, 12345, 'first field value should match');
+          assert.strictEqual(typeof record.field2, 'number', 'second field should be a number');
+          assert.strictEqual(record.field2, 123.45, 'second field value should match');
+          assert.strictEqual(typeof record.field3, 'number', 'third field should be a number');
+          assert.strictEqual(record.field3, 54321, 'first field value should match');
+          assert.strictEqual(typeof record.field4, 'string', 'fourth field should be an string');
+          assert.strictEqual(record.field4, data.rows[0].field4.toString(), 'fourth field value should match');
+          assert.strictEqual(typeof record.field5, 'string', 'fifth field should be a string');
+          assert.strictEqual(record.field5, data.rows[0].field5.toString(), 'fifth field value should match');
+        }
+        else {
+          assert.isTrue(record.field1 instanceof cql.types.Long, 'first field should not be transformed');
+          assert.isTrue(record.field2 instanceof cql.types.BigDecimal, 'second field should not be transformed');
+          assert.isTrue(record.field3 instanceof cql.types.Integer, 'third field should not be transformed');
+          assert.isTrue(record.field4 instanceof cql.types.Uuid, 'fourth field should not be transformed');
+          assert.isTrue(record.field5 instanceof cql.types.TimeUuid, 'fifth field should not be transformed');
+        }
+
+        done();
+      });
+    }
+
+    it('coerces DataStax custom types back to strings and numbers if coerceDataStaxTypes is not set in options or config', function (done) {
+      testDataTypeTransformation(undefined, undefined, true, done);
+    });
+
+    it('coerces DataStax custom types back to strings and numbers if coerceDataStaxTypes is set to true in options but not in config', function (done) {
+      testDataTypeTransformation(undefined, true, true, done);
+    });
+
+    it('coerces DataStax custom types back to strings and numbers if coerceDataStaxTypes is set to true in config but not in options', function (done) {
+      testDataTypeTransformation(true, undefined, true, done);
+    });
+
+    it('coerces DataStax custom types back to strings and numbers if coerceDataStaxTypes is set to true in options but false in config', function (done) {
+      testDataTypeTransformation(false, true, true, done);
+    });
+
+    it('does not coerce DataStax custom types back to strings and numbers if coerceDataStaxTypes is set to false in options but not in config', function (done) {
+      testDataTypeTransformation(undefined, false, false, done);
+    });
+
+    it('does not coerce DataStax custom types back to strings and numbers if coerceDataStaxTypes is set to false in config but not in options', function (done) {
+      testDataTypeTransformation(false, undefined, false, done);
+    });
+
+    it('does not coerce DataStax custom types back to strings and numbers if coerceDataStaxTypes is set to false in options but true in config', function (done) {
+      testDataTypeTransformation(true, false, false, done);
+    });
+
     it('normalizes/deserializes the data in the resulting array', function (done) {
       // arrange
       var cqlQuery = 'MyCqlStatement';
@@ -1243,7 +1220,7 @@ describe('lib/drivers/datastax', function () {
         };
         resolverOptions = {
           config: {
-            connectionResolverPath: '../../test/stubs/fake-resolver',
+            connectionResolverPath: '../test/stubs/fake-resolver',
             cqlVersion: '3.1.0'
           }
         };
@@ -1877,7 +1854,7 @@ describe('lib/drivers/datastax', function () {
 
     function getNamedQueryInstance() {
       var config = getDefaultConfig();
-      config.queryDirectory = path.join(__dirname, '../../stubs/cql');
+      config.queryDirectory = path.join(__dirname, '../stubs/cql');
       return new Driver({ config: config });
     }
 
