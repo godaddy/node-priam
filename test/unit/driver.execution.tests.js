@@ -780,13 +780,29 @@ describe('lib/driver.js', function () {
               { name: 'field3', types: [14, null] },
               // Uuid types
               { name: 'field4', types: [12, null] },
-              { name: 'field5', types: [15, null] }
+              { name: 'field5', types: [15, null] },
+              { name: 'field6', types: [33, null] },
+              { name: 'field7', types: [33, null] },
+              { name: 'field8', types: [33, null] },
+              { name: 'field9', types: [33, null] },
+              { name: 'field10', types: [34, null] },
+              { name: 'field11', types: [34, null] },
+              { name: 'field12', types: [34, null] },
+              { name: 'field13', types: [34, null] }
             ],
             field1: cql.types.Long.fromNumber(12345),
             field2: new cql.types.BigDecimal(12345, 2),
             field3: cql.types.Integer.fromNumber(54321),
             field4: cql.types.Uuid.random(),
-            field5: cql.types.TimeUuid.now()
+            field5: cql.types.TimeUuid.now(),
+            field6: { nullKey: null, key: cql.types.Long.fromNumber(12345) },
+            field7: { nullKey: null, key: cql.types.Uuid.random() },
+            field8: { nullKey: null, key: 'value' },
+            field9: {},
+            field10: [null, cql.types.Long.fromNumber(12345)],
+            field11: [null, cql.types.Uuid.random()],
+            field12: [null, 'value'],
+            field13: []
           }
         ]
       };
@@ -804,7 +820,15 @@ describe('lib/driver.js', function () {
           field2: instance.dataType.decimal,
           field3: instance.dataType.varint,
           field4: instance.dataType.uuid,
-          field5: instance.dataType.timeuuid
+          field5: instance.dataType.timeuuid,
+          field6: instance.dataType.map,
+          field7: instance.dataType.map,
+          field8: instance.dataType.map,
+          field9: instance.dataType.map,
+          field10: instance.dataType.set,
+          field11: instance.dataType.set,
+          field12: instance.dataType.set,
+          field13: instance.dataType.set
         }
       }, function (error, returnData) {
         if (error) { return void done(error); }
@@ -814,6 +838,7 @@ describe('lib/driver.js', function () {
         assert.deepEqual(call.args[1], params, 'params should be passed through');
         var record = returnData[0];
         if (shouldCoerce) {
+          // Standard types
           assert.strictEqual(typeof record.field1, 'number', 'first field should be a number');
           assert.strictEqual(record.field1, 12345, 'first field value should match');
           assert.strictEqual(typeof record.field2, 'number', 'second field should be a number');
@@ -824,6 +849,30 @@ describe('lib/driver.js', function () {
           assert.strictEqual(record.field4, data.rows[0].field4.toString(), 'fourth field value should match');
           assert.strictEqual(typeof record.field5, 'string', 'fifth field should be a string');
           assert.strictEqual(record.field5, data.rows[0].field5.toString(), 'fifth field value should match');
+
+          // Maps
+          assert.strictEqual(typeof record.field6.key, 'number', 'sixth field key value should be a number');
+          assert.strictEqual(record.field6.key, 12345, 'sixth field key value should match');
+          assert.isNull(record.field6.nullKey, 'sixth field nullkey should be null');
+          assert.strictEqual(typeof record.field7.key, 'string', 'seventh field key value should be a string');
+          assert.strictEqual(record.field7.key, data.rows[0].field7.key.toString(), 'seventh field key value should match');
+          assert.isNull(record.field7.nullKey, 'seventh field nullkey should be null');
+          assert.strictEqual(typeof record.field8.key, 'string', 'eighth field key value should be a string');
+          assert.strictEqual(record.field8.key, 'value', 'eighth field key value should match');
+          assert.isNull(record.field8.nullKey, 'eighth field nullkey should be null');
+          assert.isTrue(Object.keys(record.field9).length === 0, 'ninth field should be an empty object');
+
+          // Sets
+          assert.isNull(record.field10[0], 'tenth field null index should be null');
+          assert.strictEqual(typeof record.field10[1], 'number', 'tenth field index value should be a number');
+          assert.strictEqual(record.field10[1], 12345, 'tenth field index value should match');
+          assert.isNull(record.field11[0], 'eleventh field null index should be null');
+          assert.strictEqual(typeof record.field11[1], 'string', 'eleventh field index value should be a string');
+          assert.strictEqual(record.field11[1], data.rows[0].field11[1].toString(), 'eleventh field index value should match');
+          assert.isNull(record.field12[0], 'twelfth field null index should be null');
+          assert.strictEqual(typeof record.field12[1], 'string', 'twelfth field index value should be a string');
+          assert.strictEqual(record.field12[1], 'value', 'twelfth field index value should match');
+          assert.isTrue(record.field13.length === 0, 'fourteenth field should be an empty array');
         }
         else {
           assert.isTrue(record.field1 instanceof cql.types.Long, 'first field should not be transformed');
@@ -831,6 +880,14 @@ describe('lib/driver.js', function () {
           assert.isTrue(record.field3 instanceof cql.types.Integer, 'third field should not be transformed');
           assert.isTrue(record.field4 instanceof cql.types.Uuid, 'fourth field should not be transformed');
           assert.isTrue(record.field5 instanceof cql.types.TimeUuid, 'fifth field should not be transformed');
+          assert.isTrue(record.field6.key instanceof cql.types.Long, 'sixth field key value should not be transformed');
+          assert.isTrue(record.field7.key instanceof cql.types.Uuid, 'seventh field key value should not be transformed');
+          assert.isTrue(typeof record.field8.key === 'string', 'eighth field key value should not be transformed');
+          assert.isTrue(Object.keys(record.field9).length === 0, 'ninth field should be an empty object');
+          assert.isTrue(record.field10[1] instanceof cql.types.Long, 'tenth field index value should not be transformed');
+          assert.isTrue(record.field11[1] instanceof cql.types.Uuid, 'eleventh field index value should not be transformed');
+          assert.isTrue(typeof record.field12[1] === 'string', 'twelfth field index value should not be transformed');
+          assert.isTrue(record.field13.length === 0, 'thirteenth field should be an empty array');
         }
 
         done();
