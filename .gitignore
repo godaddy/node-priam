@@ -32,3 +32,9 @@ node_modules/
 # Sublime Settings
 *.sublime-project
 *.sublime-workspace
+
+build
+
+*.iml
+
+.DS_Store

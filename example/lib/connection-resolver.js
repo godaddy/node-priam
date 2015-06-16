@@ -1,9 +1,9 @@
 'use strict';
 
-var EventEmitter = require('events').EventEmitter
-  , util = require('util')
-  , fs = require('fs')
-  , path = require('path')
+var EventEmitter          = require('events').EventEmitter
+  , util                  = require('util')
+  , fs                    = require('fs')
+  , path                  = require('path')
   , DEFAULT_POLL_INTERVAL = 30000; // 30 sec
 
 function SampleResolver() {
@@ -74,7 +74,7 @@ SampleResolver.prototype.resolveConnectionCallback = function resolveConnectionC
   }
 
   var parseError = null,
-    configData;
+      configData;
   try {
     configData = JSON.parse(record.toString('utf8'));
     self.localCache.cache = configData;

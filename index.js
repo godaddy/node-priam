@@ -25,5 +25,5 @@ if (global.zone) {
 }
 */
 
-var driver = require('./lib/driver');
+var driver = require('./lib/driver-factory');
 module.exports = driver;

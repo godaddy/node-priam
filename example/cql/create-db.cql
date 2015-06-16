@@ -1,3 +1,7 @@
+CREATE KEYSPACE priam_test_db WITH REPLICATION = { 'class' : 'SimpleStrategy', 'replication_factor' : 1 };
+
+USE priam_test_db;
+
 CREATE TABLE "priam_test" (
 	"column1" ascii,
 	"column2" ascii,
