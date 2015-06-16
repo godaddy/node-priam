@@ -89,7 +89,7 @@ describe('lib/util/query-cache.js', function () {
       queries.readQuery(queryName, function (err, data) {
         // assert
         assert.isUndefined(data, 'file contents are undefined');
-        assert.isObject(err, 'error should be populated');
+        assert.instanceOf(err, Error, 'error should be populated');
 
         done();
       });
