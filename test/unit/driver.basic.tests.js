@@ -458,6 +458,26 @@ describe('lib/driver.js', function () {
       expect(driver.param('foo')).to.equal('foo');
     });
 
+    it('removes the type hint from timeuuid values if the value is not a valid uuid', function () {
+      expect(driver.param('now()', 'timeuuid')).to.equal('now()');
+    });
+
+    it('does not remove the type hint from timeuuid values if the value is not a valid uuid', function () {
+      var param = driver.param('00000000-0000-0000-0000-000000000000', 'timeuuid');
+      expect(param.value).to.equal('00000000-0000-0000-0000-000000000000');
+      expect(param.hint).to.equal(cql.types.dataTypes.timeuuid);
+    });
+
+    it('removes the type hint from uuid values if the value is not a valid uuid', function () {
+      expect(driver.param('now()', 'uuid')).to.equal('now()');
+    });
+
+    it('does not remove the type hint from uuid values if the value is not a valid uuid', function () {
+      var param = driver.param('00000000-0000-0000-0000-000000000000', 'uuid');
+      expect(param.value).to.equal('00000000-0000-0000-0000-000000000000');
+      expect(param.hint).to.equal(cql.types.dataTypes.uuid);
+    });
+
     it('returns a hinted value wrapper if a type hint was provided', function () {
       var timestamp = new Date();
       var param = driver.param(timestamp, driver.dataType.timestamp);
