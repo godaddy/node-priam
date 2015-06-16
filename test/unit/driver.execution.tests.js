@@ -764,7 +764,7 @@ describe('lib/driver.js', function () {
       });
     });
 
-    function testDataTypeTransformation(configValue, optionValue, shouldCoerce, done) {
+    function testDataTypeTransformation(configValue, optionValue, nullOptions, shouldCoerce, done) {
       // arrange
       var cqlQuery = 'MyCqlStatement';
       var params = ['param1', 'param2', 'param3'];
@@ -781,14 +781,18 @@ describe('lib/driver.js', function () {
               // Uuid types
               { name: 'field4', types: [12, null] },
               { name: 'field5', types: [15, null] },
+              // Map types
               { name: 'field6', types: [33, null] },
               { name: 'field7', types: [33, null] },
               { name: 'field8', types: [33, null] },
               { name: 'field9', types: [33, null] },
-              { name: 'field10', types: [34, null] },
+              { name: 'field10', types: [33, null] },
+              // Set types
               { name: 'field11', types: [34, null] },
               { name: 'field12', types: [34, null] },
-              { name: 'field13', types: [34, null] }
+              { name: 'field13', types: [34, null] },
+              { name: 'field14', types: [34, null] },
+              { name: 'field15', types: [34, null] }
             ],
             field1: cql.types.Long.fromNumber(12345),
             field2: new cql.types.BigDecimal(12345, 2),
@@ -799,10 +803,12 @@ describe('lib/driver.js', function () {
             field7: { nullKey: null, key: cql.types.Uuid.random() },
             field8: { nullKey: null, key: 'value' },
             field9: {},
-            field10: [null, cql.types.Long.fromNumber(12345)],
-            field11: [null, cql.types.Uuid.random()],
-            field12: [null, 'value'],
-            field13: []
+            field10: { nullKey: null },
+            field11: [null, cql.types.Long.fromNumber(12345)],
+            field12: [null, cql.types.Uuid.random()],
+            field13: [null, 'value'],
+            field14: [],
+            field15: [null]
           }
         ]
       };
@@ -812,7 +818,7 @@ describe('lib/driver.js', function () {
       instance.config.coerceDataStaxTypes = configValue;
 
       // act
-      instance.cql(cqlQuery, params, {
+      instance.cql(cqlQuery, params, nullOptions ? null : {
         consistency: consistency,
         coerceDataStaxTypes: optionValue,
         resultHint: {
@@ -825,10 +831,12 @@ describe('lib/driver.js', function () {
           field7: instance.dataType.map,
           field8: instance.dataType.map,
           field9: instance.dataType.map,
-          field10: instance.dataType.set,
+          field10: instance.dataType.map,
           field11: instance.dataType.set,
           field12: instance.dataType.set,
-          field13: instance.dataType.set
+          field13: instance.dataType.set,
+          field14: instance.dataType.set,
+          field15: instance.dataType.set
         }
       }, function (error, returnData) {
         if (error) { return void done(error); }
@@ -861,18 +869,22 @@ describe('lib/driver.js', function () {
           assert.strictEqual(record.field8.key, 'value', 'eighth field key value should match');
           assert.isNull(record.field8.nullKey, 'eighth field nullkey should be null');
           assert.isTrue(Object.keys(record.field9).length === 0, 'ninth field should be an empty object');
+          assert.isTrue(Object.keys(record.field10).length === 1, 'tenth field should contain only nullKey');
+          assert.isNull(record.field10.nullKey, 'tenth field nullkey should be null');
 
           // Sets
-          assert.isNull(record.field10[0], 'tenth field null index should be null');
-          assert.strictEqual(typeof record.field10[1], 'number', 'tenth field index value should be a number');
-          assert.strictEqual(record.field10[1], 12345, 'tenth field index value should match');
           assert.isNull(record.field11[0], 'eleventh field null index should be null');
-          assert.strictEqual(typeof record.field11[1], 'string', 'eleventh field index value should be a string');
-          assert.strictEqual(record.field11[1], data.rows[0].field11[1].toString(), 'eleventh field index value should match');
+          assert.strictEqual(typeof record.field11[1], 'number', 'eleventh field index value should be a number');
+          assert.strictEqual(record.field11[1], 12345, 'eleventh field index value should match');
           assert.isNull(record.field12[0], 'twelfth field null index should be null');
           assert.strictEqual(typeof record.field12[1], 'string', 'twelfth field index value should be a string');
-          assert.strictEqual(record.field12[1], 'value', 'twelfth field index value should match');
-          assert.isTrue(record.field13.length === 0, 'fourteenth field should be an empty array');
+          assert.strictEqual(record.field12[1], data.rows[0].field12[1].toString(), 'twelfth field index value should match');
+          assert.isNull(record.field13[0], 'thirteenth field null index should be null');
+          assert.strictEqual(typeof record.field13[1], 'string', 'thirteenth field index value should be a string');
+          assert.strictEqual(record.field13[1], 'value', 'thirteenth field index value should match');
+          assert.isTrue(record.field14.length === 0, 'fourteenth field should be an empty array');
+          assert.isTrue(record.field15.length === 1, 'fifteenth field should contain only null');
+          assert.isNull(record.field15[0], 'fifteenth field null index should be null');
         }
         else {
           assert.isTrue(record.field1 instanceof cql.types.Long, 'first field should not be transformed');
@@ -884,10 +896,12 @@ describe('lib/driver.js', function () {
           assert.isTrue(record.field7.key instanceof cql.types.Uuid, 'seventh field key value should not be transformed');
           assert.isTrue(typeof record.field8.key === 'string', 'eighth field key value should not be transformed');
           assert.isTrue(Object.keys(record.field9).length === 0, 'ninth field should be an empty object');
-          assert.isTrue(record.field10[1] instanceof cql.types.Long, 'tenth field index value should not be transformed');
-          assert.isTrue(record.field11[1] instanceof cql.types.Uuid, 'eleventh field index value should not be transformed');
-          assert.isTrue(typeof record.field12[1] === 'string', 'twelfth field index value should not be transformed');
-          assert.isTrue(record.field13.length === 0, 'thirteenth field should be an empty array');
+          assert.isTrue(Object.keys(record.field10).length === 1, 'tenth field should contain only nullKey');
+          assert.isTrue(record.field11[1] instanceof cql.types.Long, 'eleventh field index value should not be transformed');
+          assert.isTrue(record.field12[1] instanceof cql.types.Uuid, 'twelfth field index value should not be transformed');
+          assert.isTrue(typeof record.field13[1] === 'string', 'thirteenth field index value should not be transformed');
+          assert.isTrue(record.field14.length === 0, 'fourteenth field should be an empty array');
+          assert.isTrue(record.field15.length === 1, 'fifteenth field should not be transformed');
         }
 
         done();
@@ -895,31 +909,35 @@ describe('lib/driver.js', function () {
     }
 
     it('coerces DataStax custom types back to strings and numbers if coerceDataStaxTypes is not set in options or config', function (done) {
-      testDataTypeTransformation(undefined, undefined, true, done);
+      testDataTypeTransformation(undefined, undefined, false, true, done);
+    });
+
+    it('coerces DataStax custom types back to strings and numbers if coerceDataStaxTypes is not set in config and options are not passed', function (done) {
+      testDataTypeTransformation(undefined, undefined, true, true, done);
     });
 
     it('coerces DataStax custom types back to strings and numbers if coerceDataStaxTypes is set to true in options but not in config', function (done) {
-      testDataTypeTransformation(undefined, true, true, done);
+      testDataTypeTransformation(undefined, true, false, true, done);
     });
 
     it('coerces DataStax custom types back to strings and numbers if coerceDataStaxTypes is set to true in config but not in options', function (done) {
-      testDataTypeTransformation(true, undefined, true, done);
+      testDataTypeTransformation(true, undefined, false, true, done);
     });
 
     it('coerces DataStax custom types back to strings and numbers if coerceDataStaxTypes is set to true in options but false in config', function (done) {
-      testDataTypeTransformation(false, true, true, done);
+      testDataTypeTransformation(false, true, false, true, done);
     });
 
     it('does not coerce DataStax custom types back to strings and numbers if coerceDataStaxTypes is set to false in options but not in config', function (done) {
-      testDataTypeTransformation(undefined, false, false, done);
+      testDataTypeTransformation(undefined, false, false, false, done);
     });
 
     it('does not coerce DataStax custom types back to strings and numbers if coerceDataStaxTypes is set to false in config but not in options', function (done) {
-      testDataTypeTransformation(false, undefined, false, done);
+      testDataTypeTransformation(false, undefined, false, false, done);
     });
 
     it('does not coerce DataStax custom types back to strings and numbers if coerceDataStaxTypes is set to false in options but true in config', function (done) {
-      testDataTypeTransformation(true, false, false, done);
+      testDataTypeTransformation(true, false, false, false, done);
     });
 
     it('normalizes/deserializes the data in the resulting array', function (done) {
