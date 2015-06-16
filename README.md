@@ -571,7 +571,7 @@ var db = require('priam')({
 
 Release Notes
 -------------
- - `2.0.0`: Updated `cassandra-driver` to latest version, handle new data type coercion. BREAKING: Removed `helenus` dependency (deprecated in `1.2.0`).
+ - `2.0.0`: Updated `cassandra-driver` to latest version, handle new data type coercion. **Breaking Change:** Removed `helenus` dependency (deprecated in `1.2.0`).
  - `1.2.1`: Added retry module from PR #47.
  - `1.2.0`: Resolved #44 (issue with `USING TIMESTAMP` on individual statementes within batch queries).
             Fixed an issue with subtypes being dropped from collection type hints.
