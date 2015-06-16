@@ -9,16 +9,12 @@ priam
 =====
 
 A simple [Cassandra](http://cassandra.apache.org/) driver for [NodeJS](http://nodejs.org). It wraps the
-[helenus](https://github.com/simplereach/helenus) and
 [cassandra-driver](https://github.com/datastax/nodejs-driver) modules with additional error/retry handling, external
 `.cql` file support, connection option resolution from an external source, and query composition, among other improvements.
 
-By default, the driver uses [cassandra-driver](https://github.com/datastax/nodejs-driver) over a binary-protocol connection.
-If a Thrift connection is desired, simply specify the [helenus](https://github.com/simplereach/helenus) driver option
-in config. [Priam](https://github.com/godaddy/node-priam) uses internal aliases to map
-[helenus](https://github.com/simplereach/helenus) and [cassandra-driver](https://github.com/datastax/nodejs-driver)
-options to facilitate easily switching between the two drivers. Specifying the appropriate `cqlVersion` for your database
-will ensure that the appropriate driver is selected.
+The driver uses [cassandra-driver](https://github.com/datastax/nodejs-driver) over a binary-protocol connection.
+If a Thrift connection is desired, please use [the latest 1.X release](https://github.com/godaddy/node-priam/releases/tag/1.2.1)
+and simply specify the [helenus](https://github.com/simplereach/helenus) driver option in config.
 
 [Priam](https://github.com/godaddy/node-priam) is designed to be used as a single instance in order to preserve the
 connection pools. As an example, in an [Express](http://expressjs.com/) application,
@@ -43,12 +39,11 @@ var db = require('priam')({
     timeout: 4000, /* optional, defaults to 4000 */
     poolSize: 2, /* optional, defaults to 1 */
     consistencyLevel: 'one', /* optional, defaults to one. Will throw if not a valid Cassandra consistency level*/
-    driver: 'helenus', /* optional, defaults to 'datastax' */,
-    protocol: 'thrift', /* optional, defaults to 'binary' */,
     numRetries: 3, /* optional, defaults to 0. Retries occur on connection failures. Deprecated, use retryOptions instead. */
     retryDelay: 100, /* optional, defaults to 100ms. Used on consistency fallback retry */
     retryOptions: { retries: 0 }, /* optional. See https://www.npmjs.com/package/retry for options */
     enableConsistencyFailover: true, /* optional, defaults to true */
+    coerceDataStaxTypes: false, /* optional, defaults to true */
     queryDirectory: path.join(__dirname, 'path/to/your/cql/files'), /* optional, required to use #namedQuery() */
     user: '<your_username>',
     password: '<your_password>',
@@ -87,7 +82,6 @@ stringified prior to being sent to [Cassandra](http://cassandra.apache.org/), wh
 
 The `executeAsPrepared` option informs the [node-cassandra-cql](https://github.com/jorgebay/node-cassandra-cql) driver
 to execute the given CQL as a prepared statement, which will boost performance if the query is executed multiple times.
-*This option is currently ignored if using the [helenus](https://github.com/simplereach/helenus) thrift driver.*
 
 The `queryName` option allows metrics to be captured for the given query, assuming a `metrics` object was passed into
 the constructor. See the [Monitoring / Instrumentation](#monitoring--instrumentation) section for more information.
@@ -100,9 +94,16 @@ of `objectAscii` and `objectText` are available for this purpose. If these data 
 field, they will be automatically mapped to the corresponding data type (e.g. `ascii` or `text) prior to executing the
 cql statement.
 
-The `deserializeJsonStrings` option informs Priam to inspect any string results coming back from the driver and call
-`JSON.parse()` before returning the value back to you. This works similar to providing `resultHint` options for specific
-columns, but instead it applies to the entire set of columns. *This was the default behavior prior to the 0.7.0 release.*
+The `deserializeJsonStrings` option informs [Priam](https://github.com/godaddy/node-priam) to inspect any string results
+coming back from the driver and call `JSON.parse()` before returning the value back to you. This works similar to providing
+`resultHint` options for specific columns, but instead it applies to the entire set of columns.
+*This was the default behavior prior to the 0.7.0 release.*
+
+The `coerceDataStaxTypes` option informs [Priam](https://github.com/godaddy/node-priam) to convert any of the custom
+[DataStax data types](http://docs.datastax.com/en/developer/nodejs-driver/2.1/nodejs-driver/reference/nodejs2Cql3Datatypes.html)
+to standard JavaScript types (`string`, `number`). This is recommended if you are upgrading from a previous version of
+[Priam](https://github.com/godaddy/node-priam) and need to keep backwards-compatibility in your codebase with the previous
+versin of the [DataStax cassandra-driver module](https://github.com/datastax/nodejs-driver).
 
 The `keyspace` option allows you to specify another keyspace to execute a query against. This will override the default
 keyspace set in the connection information.
@@ -110,12 +111,10 @@ keyspace set in the connection information.
 The `suppressDebugLog` option allows you to disable debug logging of CQL for an individual query. This is useful for
 queries that may contain sensitive data that you do not wish to show up in debug logs.
 
-When using the [cassandra-driver](https://github.com/datastax/nodejs-driver) driver,
 [hinted parameters](http://www.datastax.com/drivers/nodejs/1.0/types.js.html#line28) are supported.
 Instead of the driver inferring the data type, it can be explicitly specified by using a
 [specially formatted object](http://www.datastax.com/documentation/developer/nodejs-driver/1.0/nodejs-driver/reference/nodejs2Cql3Datatypes.html).
 Similar to consistencies, data types are exposed via the `<instance>.dataType` object.
-*Other than type `uuid`, parameter hints will be ignored when using the [helenus](https://github.com/simplereach/helenus) driver.*
 
 There is also a `param(value [object], type [string])` helper method for creating hinted parameters, as shown below:
 
@@ -572,6 +571,7 @@ var db = require('priam')({
 
 Release Notes
 -------------
+ - `2.0.0`: Updated `cassandra-driver` to latest version, handle new data type coercion. BREAKING: Removed `helenus` dependency (deprecated in `1.2.0`).
  - `1.2.1`: Added retry module from PR #47.
  - `1.2.0`: Resolved #44 (issue with `USING TIMESTAMP` on individual statementes within batch queries).
             Fixed an issue with subtypes being dropped from collection type hints.
