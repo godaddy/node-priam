@@ -36,6 +36,12 @@ describe('lib/driver-factory.js', function () {
       testInstance('datastax', 'cqlVersion', '3.0.0', 'datastax', '3.0.0', 'binary', Driver.DatastaxDriver);
     });
 
+    it('exposes DataStax types and consistencies', function () {
+      expect(DriverFactory.consistencies).to.be.an.object;
+      expect(DriverFactory.dataTypes).to.be.an.object;
+      expect(DriverFactory.valueTypes).to.be.an.object;
+    });
+
     function testInstance(driver, versionPath, cqlVersion, expectedDriver, expectedVersion, expectedProtocol, expectedInstance) {
       // arrange
       var context = {
