@@ -19,7 +19,7 @@
   },
   "dependencies": {
     "async": "^1.2.1",
-    "cassandra-driver": "^2.2.0",
+    "cassandra-driver": "^3.0.2",
     "isstream": "^0.1.2",
     "lodash": "^3.9.3",
     "q": "^1.4.1",
