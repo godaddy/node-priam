@@ -626,3 +626,7 @@ Release Notes
  - `0.6.4`: Added `#param()` helper method for hinted parameters.
  - `0.6.3`: Dependency updates, test Travis CI hooks.
  - `0.6.2`: Initial Public Release
+
+
+[![Bitdeli Badge](https://d2weczhvl823v0.cloudfront.net/godaddy/node-priam/trend.png)](https://bitdeli.com/free "Bitdeli Badge")
+
