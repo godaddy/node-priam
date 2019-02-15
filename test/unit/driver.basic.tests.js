@@ -308,7 +308,8 @@ describe('lib/driver.js', function () {
       expect(driver.execCql.args[0][0]).to.equal(cql);
       expect(driver.execCql.args[0][1]).to.deep.equal(params);
       expect(driver.execCql.args[0][2]).to.deep.equal(options);
-      expect(driver.execCql.args[0][3]).to.be.a.function;
+      expect(driver.execCql.args[0][3]).to.be.a('string');
+      expect(driver.execCql.args[0][4]).to.be.a('function');
       expect(driver.execCqlStream.called).to.be.false;
     });
 
