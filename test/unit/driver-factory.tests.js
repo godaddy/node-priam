@@ -37,9 +37,9 @@ describe('lib/driver-factory.js', function () {
     });
 
     it('exposes DataStax types and consistencies', function () {
-      expect(DriverFactory.consistencies).to.be.an.object;
-      expect(DriverFactory.dataTypes).to.be.an.object;
-      expect(DriverFactory.valueTypes).to.be.an.object;
+      expect(DriverFactory.consistencies).to.be.an('object');
+      expect(DriverFactory.dataTypes).to.be.an('object');
+      expect(DriverFactory.valueTypes).to.be.an('object');
     });
 
     function testInstance(driver, versionPath, cqlVersion, expectedDriver, expectedVersion, expectedProtocol, expectedInstance) {
