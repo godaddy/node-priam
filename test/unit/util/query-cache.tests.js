@@ -1,6 +1,4 @@
-'use strict';
-
-var sinon = require('sinon'),
+var
   chai = require('chai'),
   assert = chai.assert,
   expect = chai.expect,
@@ -19,18 +17,14 @@ describe('lib/util/query-cache.js', function () {
 
     it('throws error if options not provided', function (done) {
       // act
-      expect(function () {
-        var qc = new QueryCache();
-      }).to.throw(Error);
+      expect(function () { new QueryCache(); }).to.throw(Error);
 
       done();
     });
 
     it('throws error if queryDirectory not provided', function (done) {
       // act
-      expect(function () {
-        var qc = new QueryCache({});
-      }).to.throw(Error);
+      expect(function () { new QueryCache({}); }).to.throw(Error);
 
       done();
     });

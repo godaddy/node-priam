@@ -1,10 +1,7 @@
-'use strict';
-
-var sut = require('../../../lib/util/parse-version'),
-  sinon = require('sinon'),
+var
+  sut = require('../../../lib/util/parse-version'),
   chai = require('chai'),
-  assert = chai.assert,
-  expect = chai.expect;
+  assert = chai.assert;
 
 describe('lib/util/parse-version.js', function () {
 

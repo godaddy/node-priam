@@ -1,10 +1,8 @@
-'use strict';
-
-var logger = require('../../../lib/util/fake-logger'),
+var
+  logger = require('../../../lib/util/fake-logger'),
   sinon = require('sinon'),
   chai = require('chai'),
-  assert = chai.assert,
-  expect = chai.expect;
+  assert = chai.assert;
 
 describe('lib/util/fake-logger.js', function () {
 

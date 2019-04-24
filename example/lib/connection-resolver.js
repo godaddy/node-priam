@@ -1,10 +1,10 @@
-'use strict';
 
-var EventEmitter          = require('events').EventEmitter
-  , util                  = require('util')
-  , fs                    = require('fs')
-  , path                  = require('path')
-  , DEFAULT_POLL_INTERVAL = 30000; // 30 sec
+
+var EventEmitter          = require('events').EventEmitter,
+  util                  = require('util'),
+  fs                    = require('fs'),
+  path                  = require('path'),
+  DEFAULT_POLL_INTERVAL = 30000; // 30 sec
 
 function SampleResolver() {
   if (!(this instanceof SampleResolver)) {
@@ -44,8 +44,7 @@ SampleResolver.prototype.resolveConnection = function resolveConnection(config, 
 
     // retrieve credentials
     self.fetch(config, callback);
-  }
-  else {
+  } else {
     // retrieve from cache
     callback(null, self.localCache.cache);
   }
@@ -74,12 +73,11 @@ SampleResolver.prototype.resolveConnectionCallback = function resolveConnectionC
   }
 
   var parseError = null,
-      configData;
+    configData;
   try {
     configData = JSON.parse(record.toString('utf8'));
     self.localCache.cache = configData;
-  }
-  catch (e) {
+  } catch (e) {
     parseError = e;
     configData = undefined;
   }

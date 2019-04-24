@@ -1,21 +1,20 @@
-var path        = require('path'),
-    gulp        = require('gulp'),
-    mocha       = require('gulp-mocha'),
-    util        = require('gulp-util'),
-    jshint      = require('gulp-jshint'),
-    map         = require('map-stream'),
-    del         = require('del'),
-    jsdoc       = require('gulp-jsdoc'),
-    sonar       = require('gulp-sonar'),
-    istanbul    = require('gulp-istanbul'),
-    runSequence = require('run-sequence'),
-    minimist    = require('minimist'),
-    jscs        = require('gulp-jscs');
+var
+  path        = require('path'),
+  gulp        = require('gulp'),
+  eslint      = require('gulp-eslint'),
+  mocha       = require('gulp-mocha'),
+  util        = require('gulp-util'),
+  del         = require('del'),
+  jsdoc       = require('gulp-jsdoc3'),
+  sonar       = require('gulp-sonar2'),
+  istanbul    = require('gulp-istanbul'),
+  runSequence = require('run-sequence'),
+  minimist    = require('minimist');
 
 var MOCHA_REPORTER = 'spec';
 var SRC = 'lib';
 var TEST = 'test';
-var BUILD = 'build'
+var BUILD = 'build';
 var API_DOCS = 'build' + path.sep + 'api';
 
 var knownOptions = {
@@ -26,38 +25,17 @@ var knownOptions = {
 var options = minimist(process.argv.slice(2), knownOptions);
 var pkg = require('./package.json');
 
-var jshintReporter = map(function (file, cb) {
-  if (!file.jshint.success) {
-    console.error('JSHINT fail in ' + file.path);
-    file.jshint.results.forEach(function (err) {
-      if (err) {
-        console.error(' ' + file.path + ': line ' + err.line + ', col ' + err.character + ', code ' + err.code + ', ' + err.reason);
-      }
-    });
-  }
-  cb(null, file);
-});
-
-
 gulp.task('clean', function (cb) {
   del([BUILD, '.sonar'], cb);
 });
 
 gulp.task('unit', function () {
-  return gulp.src(TEST + path.sep + 'unit' + '/**/*.js')
+  return gulp.src(TEST + path.sep + 'unit/**/*.js')
     .pipe(mocha({
       reporter: MOCHA_REPORTER
     }))
     .on('error', util.log);
 });
-
-// gulp.task('integration', function () {
-//   return gulp.src(TEST + path.sep + 'integration' + '/**/*.js')
-//     .pipe(mocha({
-//       reporter: MOCHA_REPORTER
-//     }))
-//     .on('error', util.log);
-// });
 
 gulp.task('mocha', function () {
   return gulp.src(TEST + '/**/*.js')
@@ -74,23 +52,18 @@ gulp.task('watch', function () {
 
 gulp.task('lint', function () {
   return gulp.src(SRC + '/**/*.js')
-    .pipe(jshint())
-    .pipe(jshint.reporter('jshint-stylish'))
-//    .pipe(jshint.reporter('fail'))
-    .pipe(jshintReporter);
+    .pipe(eslint({ fix: true }));
 });
 
-gulp.task('apidocs', function () {
-  gulp.src(SRC + '/**/*.js')
-    .pipe(jsdoc.parser())
-    .pipe(jsdoc.generator(API_DOCS));
+gulp.task('apidocs', function (cb) {
+  gulp
+    .src(SRC + '/**/*.js')
+    .pipe(jsdoc({
+      opts: {
+        destination: API_DOCS
+      }
+    }, cb));
 });
-
-gulp.task('jscs', function () {
-  return gulp.src(SRC + '/**/*.js')
-    .pipe(jscs());
-});
-
 
 gulp.task('test', function (cb) {
   gulp.src([SRC + '/**/*.js'])
@@ -107,8 +80,7 @@ gulp.task('test', function (cb) {
     });
 });
 
-gulp.task('sonar', function (cb) {
-  console.log(options);
+gulp.task('sonar', function () {
   var sonarOptions = {
     sonar: {
       host: {
@@ -138,10 +110,10 @@ gulp.task('default', function (cb) {
 });
 
 gulp.task('build', function (cb) {
-  runSequence('clean', 'lint', 'jscs', 'test', cb);
+  runSequence('clean', 'lint', 'test', cb);
 });
 
 gulp.task('full', function (cb) {
-  runSequence('clean', 'lint', 'jscs', 'test', 'apidocs', 'sonar', cb);
+  runSequence('clean', 'lint', 'test', 'apidocs', 'sonar', cb);
 });
 

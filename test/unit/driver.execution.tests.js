@@ -1,14 +1,13 @@
-'use strict';
 
-var sinon        = require('sinon')
-  , chai         = require('chai')
-  , util         = require('util')
-  , assert       = chai.assert
-  , expect       = chai.expect
-  , through      = require('through2')
-  , FakeResolver = require('../stubs/fake-resolver')
-  , _            = require('lodash')
-  , path         = require('path');
+
+var sinon        = require('sinon'),
+  chai         = require('chai'),
+  assert       = chai.assert,
+  expect       = chai.expect,
+  through      = require('through2'),
+  FakeResolver = require('../stubs/fake-resolver'),
+  _            = require('lodash'),
+  path         = require('path');
 chai.use(require('sinon-chai'));
 
 var cql = require('cassandra-driver');
@@ -187,8 +186,8 @@ describe('lib/driver.js', function () {
         assert.ok(cql.Client.calledWithMatch({
           pooling: {
             coreConnectionsPerHost: {
-              '0': 5,
-              '1': 3
+              0: 5,
+              1: 3
             }
           }
         }), 'pooling should be set');
@@ -260,7 +259,6 @@ describe('lib/driver.js', function () {
     it('just calls callback if pool does not yet exist', function (done) {
       // arrange
       instance.pools = {};
-      var closedHandler = sinon.stub();
 
       // act
       instance.close(done);
@@ -271,7 +269,7 @@ describe('lib/driver.js', function () {
   describe('DatastaxDriver#cql()', function () {
 
     var instance     = null,
-        fakeResolver = null;
+      fakeResolver = null;
 
     beforeEach(function () {
       fakeResolver = new FakeResolver();
@@ -304,8 +302,8 @@ describe('lib/driver.js', function () {
       sinon.stub(cql, 'Client').returns(pool);
       instance.pools = {};
       var connectionOpeningHandler = sinon.stub(),
-          connectionOpenedHandler  = sinon.stub(),
-          queryStartedHandler      = sinon.stub();
+        connectionOpenedHandler  = sinon.stub(),
+        queryStartedHandler      = sinon.stub();
       instance
         .on('connectionOpening', connectionOpeningHandler)
         .on('connectionOpened', connectionOpenedHandler)
@@ -459,7 +457,7 @@ describe('lib/driver.js', function () {
 
         // handler act
         var message  = 'Error',
-            metaData = errorData;
+          metaData = errorData;
         errorCb(logLevel, message, metaData);
 
         // handler assert
@@ -476,8 +474,7 @@ describe('lib/driver.js', function () {
         if (expectedLevel) {
           assert.strictEqual(instance.logger[expectedLevel].args[0][0], 'priam.Driver.' + expectedMessage);
           assert.deepEqual(instance.logger[expectedLevel].args[0][1], expectedData);
-        }
-        else {
+        } else {
           assert.notOk(instance.logger.info.called);
           assert.notOk(instance.logger.warn.called);
           assert.notOk(instance.logger.error.called);
@@ -743,15 +740,15 @@ describe('lib/driver.js', function () {
         var expectedHints = [];
         expectedHints[2] = instance.dataType.ascii;
         expectedHints[3] = {
-          "code": 33,
-          "info": [
-            { "code": 10, "info": null },
-            { "code": 4, "info": null }
+          code: 33,
+          info: [
+            { code: 10, info: null },
+            { code: 4, info: null }
           ]
         };
         expectedHints[4] = {
-          "code": 9,
-          "info": null
+          code: 9,
+          info: null
         };
         assert.deepEqual(call.args[2].hints, expectedHints, 'hints should be passed through');
 
@@ -890,8 +887,7 @@ describe('lib/driver.js', function () {
           assert.isTrue(record.field15.length === 0, 'fifteenth field should be an empty array');
           assert.isTrue(record.field16.length === 1, 'sixteenth field should contain only null');
           assert.isNull(record.field16[0], 'sixteenth field null index should be null');
-        }
-        else {
+        } else {
           assert.isTrue(record.field1 instanceof cql.types.Long, 'first field should not be transformed');
           assert.isTrue(record.field2 instanceof cql.types.BigDecimal, 'second field should not be transformed');
           assert.isTrue(record.field3 instanceof cql.types.Integer, 'third field should not be transformed');
@@ -988,7 +984,7 @@ describe('lib/driver.js', function () {
           field4: instance.dataType.objectText,
           field5: instance.dataType.objectAscii,
           field6: instance.dataType.boolean
-          //field7 intentionally omitted
+          // field7 intentionally omitted
         }
       }, function (error, returnData) {
         var call = pool.execute.getCall(0);
@@ -1072,8 +1068,7 @@ describe('lib/driver.js', function () {
           if (callCount === 1) {
             var err = new cql.errors[errorName](errorCode, 'error message');
             cb(err);
-          }
-          else {
+          } else {
             cb(null, data);
           }
         });
@@ -1091,8 +1086,7 @@ describe('lib/driver.js', function () {
             assert.notEqual(call1.args[1], call2.args[1], 'parameters should be cloned');
             assert.deepEqual(call1.args[1], call2.args[1], 'parameters should be cloned');
             assert.deepEqual(returnData, data, 'data should match cql output');
-          }
-          else {
+          } else {
             assert.strictEqual(pool.execute.callCount, 1, 'execute should be called once');
           }
 
@@ -1120,8 +1114,7 @@ describe('lib/driver.js', function () {
         callCount++;
         if (callCount === 1) {
           cb(new Error('throws error on ALL'));
-        }
-        else {
+        } else {
           cb(null, data);
         }
       });
@@ -1154,8 +1147,7 @@ describe('lib/driver.js', function () {
         if (callCount === 1) {
           var err = new cql.errors.ResponseError(0x1200, 'timeout on read');
           cb(err);
-        }
-        else {
+        } else {
           cb(null, data);
         }
       });
@@ -1189,8 +1181,7 @@ describe('lib/driver.js', function () {
         if (callCount === 1) {
           var err = new cql.errors.ResponseError(0x1200, 'timeout on read');
           cb(err);
-        }
-        else {
+        } else {
           cb(null, data);
         }
       });
@@ -1224,8 +1215,7 @@ describe('lib/driver.js', function () {
         callCount++;
         if (callCount === 1) {
           cb(err);
-        }
-        else {
+        } else {
           cb(null, data);
         }
       });
@@ -1233,9 +1223,7 @@ describe('lib/driver.js', function () {
       instance.config.retryDelay = 1;
 
       // act
-      instance.cql(cqlQuery, params, { consistency: consistency }, function (error, returnData) {
-        var call1 = pool.execute.getCall(0);
-        var call2 = pool.execute.getCall(1);
+      instance.cql(cqlQuery, params, { consistency: consistency }, function (error) {
         // assert
         assert.strictEqual(pool.execute.callCount, 1, 'cql should be called once');
         assert.equal(error, err);
@@ -1430,11 +1418,11 @@ describe('lib/driver.js', function () {
           assert.ok(logger.error.calledOnce, 'error log is called once');
           expect(connectionResolvedErrorHandler).to.have.been.calledWithMatch(sinon.match.string, err);
 
-//                    setTimeout(function () {
-//                        assert.notOk(logger.error.calledTwice, 'error logger should only be called once');
-//
-//                        done();
-//                    }, 5);
+          //                    setTimeout(function () {
+          //                        assert.notOk(logger.error.calledTwice, 'error logger should only be called once');
+          //
+          //                        done();
+          //                    }, 5);
           done();
         });
       });
@@ -1547,7 +1535,7 @@ describe('lib/driver.js', function () {
 
   describe('DatastaxDriver#streamCqlOnDriver()', function () {
     var pool, cqlStatement, params, consistency, options, stream,
-        resultStream, fakeThroughObj, instance;
+      resultStream, fakeThroughObj, instance;
     beforeEach(function () {
       instance = getDefaultInstance();
       cqlStatement = 'myCqlStatement';
@@ -1676,7 +1664,7 @@ describe('lib/driver.js', function () {
           // arrange
           var dt = new Date();
           var buffer = new Buffer(4096);
-          var hinted = { value: 'bar', hint: 1 /*ascii*/ };
+          var hinted = { value: 'bar', hint: 1 /* ascii*/ };
           buffer.write('This is a string buffer', 'utf-8');
           var params = [1, 'myString', dt, [1, 2, 3, 4], { myObjectKey: 'value' }, buffer, hinted];
 
@@ -1881,41 +1869,40 @@ describe('lib/driver.js', function () {
     function validateQueryCalls(asPromise) {
       it('#execute() executes cq ' +
         (asPromise ? 'with promise syntax' : 'with callback syntax'),
-        function (done) {
-          // arrange
-          var cqlQuery = 'SELECT * FROM users WHERE name = ?;';
+      function (done) {
+        // arrange
+        var cqlQuery = 'SELECT * FROM users WHERE name = ?;';
 
-          // act
-          var query = instance
-            .beginQuery()
-            .query(cqlQuery)
-            .param('name', 'text');
+        // act
+        var query = instance
+          .beginQuery()
+          .query(cqlQuery)
+          .param('name', 'text');
 
-          if (asPromise) {
-            query
-              .execute()
-              .then(function () {
-                asserts(done);
-              });
-          }
-          else {
-            query.execute(function () {
+        if (asPromise) {
+          query
+            .execute()
+            .then(function () {
               asserts(done);
             });
-          }
+        } else {
+          query.execute(function () {
+            asserts(done);
+          });
+        }
 
-          function asserts(done) {
-            var call = instance.execCql.getCall(0);
+        function asserts(done) {
+          var call = instance.execCql.getCall(0);
 
-            // assert
-            assert.equal(call.args[0], cqlQuery, 'cql should be passed through');
-            assert.equal(call.args[1], query.context.params, 'params should be passed through');
-            assert.equal(call.args[2], query.context.options, 'options should be passed through');
+          // assert
+          assert.equal(call.args[0], cqlQuery, 'cql should be passed through');
+          assert.equal(call.args[1], query.context.params, 'params should be passed through');
+          assert.equal(call.args[2], query.context.options, 'options should be passed through');
 
-            done();
-          }
+          done();
+        }
 
-        });
+      });
     }
 
     validateQueryCalls(false);
@@ -1948,7 +1935,7 @@ describe('lib/driver.js', function () {
       // act
       instance.namedQuery(queryName, params, { consistency: consistency }, function () {
         var call = instance.execCql.getCall(0),
-            opts = call.args[2];
+          opts = call.args[2];
 
         // assert
         assert.strictEqual(call.args[0], instance.queryCache.fileCache[queryName], 'cql should be read from query cache');
@@ -1982,7 +1969,7 @@ describe('lib/driver.js', function () {
       // act
       instance.namedQuery(queryName, params, { consistency: consistency, executeAsPrepared: false }, function () {
         var call = instance.execCql.getCall(0),
-            opts = call.args[2];
+          opts = call.args[2];
 
         // assert
         assert.strictEqual(opts.executeAsPrepared, false, 'executeAsPrepared should be set to true');

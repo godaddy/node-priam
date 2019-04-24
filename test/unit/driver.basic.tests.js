@@ -1,13 +1,13 @@
-'use strict';
 
-var sinon  = require('sinon')
-  , chai   = require('chai')
-  , assert = chai.assert
-  , expect = chai.expect
-  , Stream = require('stream')
-  , _ = require('lodash')
-  , Query  = require('../../lib/util/query')
-  , Batch  = require('../../lib/util/batch');
+
+var sinon  = require('sinon'),
+  chai   = require('chai'),
+  assert = chai.assert,
+  expect = chai.expect,
+  Stream = require('stream'),
+  _ = require('lodash'),
+  Query  = require('../../lib/util/query'),
+  Batch  = require('../../lib/util/batch');
 
 var EventEmitter = require('events').EventEmitter;
 
@@ -163,8 +163,6 @@ describe('lib/driver.js', function () {
     it('sets the name property', function () {
       // arrange
       var config = _.extend({}, getDefaultConfig());
-      var configCopy = _.extend({}, config);
-      var consistencyLevel = cql.types.consistencies.one;
 
       // act
       var instance = new Driver({ config: config });
@@ -344,8 +342,8 @@ describe('lib/driver.js', function () {
 
       it('called if results', function (done) {
         var transformer = sinon.stub(),
-            results     = [{ test: true }];
-        testTransformers([transformer], results, function (err, results) {
+          results     = [{ test: true }];
+        testTransformers([transformer], results, function () {
           assert.ok(transformer.calledOnce);
           done();
         });
@@ -353,8 +351,8 @@ describe('lib/driver.js', function () {
 
       it('does not call unless results', function (done) {
         var transformer = sinon.stub(),
-            results;
-        testTransformers([transformer], results, function (err, results) {
+          results = [];
+        testTransformers([transformer], results, function () {
           assert.notOk(transformer.called);
           done();
         });
@@ -362,8 +360,8 @@ describe('lib/driver.js', function () {
 
       it('does not call unless results.length', function (done) {
         var transformer = sinon.stub(),
-            results     = [];
-        testTransformers([transformer], results, function (err, results) {
+          results     = [];
+        testTransformers([transformer], results, function () {
           assert.notOk(transformer.called);
           done();
         });

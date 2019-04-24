@@ -1,0 +1,15 @@
+{
+  "root": true,
+  "extends": "godaddy",
+  "rules": {
+    "no-mixed-requires": "warn",
+    "callback-return": "warn",
+    "no-undefined": "off",
+    "max-params": "warn",
+    "id-length": "warn",
+    "new-cap": "warn",
+    "no-sync": "warn",
+    "no-use-before-define": "warn",
+    "no-cond-assign": "warn"
+  }
+}

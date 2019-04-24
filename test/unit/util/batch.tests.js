@@ -1,4 +1,4 @@
-'use strict';
+
 
 var sinon = require('sinon'),
   chai = require('chai'),
@@ -19,7 +19,7 @@ describe('lib/util/batch.js', function () {
       poolConfig: {},
       config: { parsedCqlVersion: { major: 3, minor: 1, patch: 0 } },
       param: function (value, hint) {
-        return { value: value, hint: hint};
+        return { value: value, hint: hint };
       },
       consistencyLevel: { // from helenus: cassandra_types.js
         one: 1,
@@ -43,9 +43,7 @@ describe('lib/util/batch.js', function () {
 
     it('throws error if db not provided', function (done) {
       // act
-      expect(function () {
-        var b = new Batch();
-      }).to.throw(Error);
+      expect(function () { new Batch(); }).to.throw(Error);
 
       done();
     });
@@ -430,7 +428,7 @@ describe('lib/util/batch.js', function () {
       batch.options({ two: 2 });
 
       // assert
-      assert.deepEqual(batch.context.options, { one: 'one', two: 2}, 'options is populated');
+      assert.deepEqual(batch.context.options, { one: 'one', two: 2 }, 'options is populated');
       done();
     });
 
@@ -502,8 +500,7 @@ describe('lib/util/batch.js', function () {
       batch.context.queries = [query1, query2];
 
       // act
-      var result = batch.execute(function (err, data) {
-      });
+      var result = batch.execute(function () { });
 
       // assert
       assert.equal(result, void 0, 'returns void');
@@ -535,8 +532,7 @@ describe('lib/util/batch.js', function () {
 
           // act
           if (isPromise) {
-            var e = null,
-              result = null;
+            var e = null;
             batch
               .execute()
               .catch(function (error) {
@@ -545,8 +541,7 @@ describe('lib/util/batch.js', function () {
               .done(function (data) {
                 asserts(e, data);
               });
-          }
-          else {
+          } else {
             batch.execute(asserts);
           }
 
@@ -569,8 +564,7 @@ describe('lib/util/batch.js', function () {
 
           // act
           if (isPromise) {
-            var e = null,
-              result = null;
+            var e = null;
             batch
               .execute()
               .catch(function (error) {
@@ -579,13 +573,11 @@ describe('lib/util/batch.js', function () {
               .done(function (data) {
                 if (e) {
                   asserts(e);
-                }
-                else {
+                } else {
                   asserts(null, data);
                 }
               });
-          }
-          else {
+          } else {
             batch.execute(asserts);
           }
 
@@ -600,7 +592,7 @@ describe('lib/util/batch.js', function () {
         it('yields multiple errors if triggered', function (done) {
           // arrange
           var query1 = new Query(db),
-            query2 = { not: 'a query'};
+            query2 = { not: 'a query' };
           query1.context.cql = 'myCqlQuery1';
           db.cql = sinon.stub().yields(new Error('Cassandra error'));
           batch.addQuery(query1);
@@ -608,8 +600,7 @@ describe('lib/util/batch.js', function () {
 
           // act
           if (isPromise) {
-            var e = null,
-              result = null;
+            var e = null;
             batch
               .execute()
               .catch(function (error) {
@@ -618,13 +609,11 @@ describe('lib/util/batch.js', function () {
               .done(function (data) {
                 if (e) {
                   asserts(e);
-                }
-                else {
+                } else {
                   asserts(null, data);
                 }
               });
-          }
-          else {
+          } else {
             batch.execute(asserts);
           }
 
@@ -652,8 +641,7 @@ describe('lib/util/batch.js', function () {
 
           // act
           if (isPromise) {
-            var e = null,
-              result = null;
+            var e = null;
             batch
               .execute()
               .catch(function (error) {
@@ -662,13 +650,11 @@ describe('lib/util/batch.js', function () {
               .done(function (data) {
                 if (e) {
                   asserts(e);
-                }
-                else {
+                } else {
                   asserts(null, data);
                 }
               });
-          }
-          else {
+          } else {
             batch.execute(asserts);
           }
 
@@ -694,8 +680,7 @@ describe('lib/util/batch.js', function () {
 
           // act
           if (isPromise) {
-            var e = null,
-              result = null;
+            var e = null;
             batch
               .execute()
               .catch(function (error) {
@@ -704,13 +689,11 @@ describe('lib/util/batch.js', function () {
               .done(function (data) {
                 if (e) {
                   asserts(e);
-                }
-                else {
+                } else {
                   asserts(null, data);
                 }
               });
-          }
-          else {
+          } else {
             batch.execute(asserts);
           }
 
@@ -751,8 +734,7 @@ describe('lib/util/batch.js', function () {
 
           // act
           if (isPromise) {
-            var e = null,
-              result = null;
+            var e = null;
             batch
               .execute()
               .catch(function (error) {
@@ -761,13 +743,11 @@ describe('lib/util/batch.js', function () {
               .done(function (data) {
                 if (e) {
                   asserts(e);
-                }
-                else {
+                } else {
                   asserts(null, data);
                 }
               });
-          }
-          else {
+          } else {
             batch.execute(asserts);
           }
 
@@ -796,10 +776,10 @@ describe('lib/util/batch.js', function () {
             {}
           ];
           var query = new Query(db)
-              .query('myCqlQuery1')
-              .consistency('localQuorum')
-              .param('param1', 'ascii')
-              .param('param2', 'ascii');
+            .query('myCqlQuery1')
+            .consistency('localQuorum')
+            .param('param1', 'ascii')
+            .param('param2', 'ascii');
 
           batch.add(query);
           batch.add(new Batch(db));
@@ -809,8 +789,7 @@ describe('lib/util/batch.js', function () {
 
           // act
           if (isPromise) {
-            var e = null,
-              result = null;
+            var e = null;
             batch
               .execute()
               .catch(function (error) {
@@ -819,13 +798,11 @@ describe('lib/util/batch.js', function () {
               .done(function (data) {
                 if (e) {
                   asserts(e);
-                }
-                else {
+                } else {
                   asserts(null, data);
                 }
               });
-          }
-          else {
+          } else {
             batch.execute(asserts);
           }
 
@@ -840,7 +817,7 @@ describe('lib/util/batch.js', function () {
             assert.equal(data, result, 'result is populated');
             assert.equal(queryParams[2].value, 1234567, 'timestamp param is populated');
             for (var i = 0; i < queryParams.length - 1; i++) {
-              assert.equal(queryParams[i].value, 'param' + (i+1), 'query param ' + (i+1) + ' is populated');
+              assert.equal(queryParams[i].value, 'param' + (i + 1), 'query param ' + (i + 1) + ' is populated');
             }
             done();
           }
@@ -865,8 +842,7 @@ describe('lib/util/batch.js', function () {
 
           // act
           if (isPromise) {
-            var e = null,
-              result = null;
+            var e = null;
             batch
               .execute()
               .catch(function (error) {
@@ -875,13 +851,11 @@ describe('lib/util/batch.js', function () {
               .done(function (data) {
                 if (e) {
                   asserts(e);
-                }
-                else {
+                } else {
                   asserts(null, data);
                 }
               });
-          }
-          else {
+          } else {
             batch.execute(asserts);
           }
 
@@ -921,8 +895,7 @@ describe('lib/util/batch.js', function () {
 
           // act
           if (isPromise) {
-            var e = null,
-              result = null;
+            var e = null;
             batch
               .execute()
               .catch(function (error) {
@@ -931,13 +904,11 @@ describe('lib/util/batch.js', function () {
               .done(function (data) {
                 if (e) {
                   asserts(e);
-                }
-                else {
+                } else {
                   asserts(null, data);
                 }
               });
-          }
-          else {
+          } else {
             batch.execute(asserts);
           }
 
@@ -976,8 +947,7 @@ describe('lib/util/batch.js', function () {
 
           // act
           if (isPromise) {
-            var e = null,
-              result = null;
+            var e = null;
             batch
               .execute()
               .catch(function (error) {
@@ -986,13 +956,11 @@ describe('lib/util/batch.js', function () {
               .done(function (data) {
                 if (e) {
                   asserts(e);
-                }
-                else {
+                } else {
                   asserts(null, data);
                 }
               });
-          }
-          else {
+          } else {
             batch.execute(asserts);
           }
 
@@ -1019,14 +987,13 @@ describe('lib/util/batch.js', function () {
             .param('param2', 'ascii');
 
           batch.context.queries = [query1];
-          batch.context.batchType = 123456789; //invalid
+          batch.context.batchType = 123456789; // invalid
 
           db.cql = sinon.stub().yields(null, data);
 
           // act
           if (isPromise) {
-            var e = null,
-              result = null;
+            var e = null;
             batch
               .execute()
               .catch(function (error) {
@@ -1035,13 +1002,11 @@ describe('lib/util/batch.js', function () {
               .done(function (data) {
                 if (e) {
                   asserts(e);
-                }
-                else {
+                } else {
                   asserts(null, data);
                 }
               });
-          }
-          else {
+          } else {
             batch.execute(asserts);
           }
 
@@ -1088,8 +1053,7 @@ describe('lib/util/batch.js', function () {
 
           // act
           if (isPromise) {
-            var e = null,
-              result = null;
+            var e = null;
             batch
               .execute()
               .catch(function (error) {
@@ -1098,13 +1062,11 @@ describe('lib/util/batch.js', function () {
               .done(function (data) {
                 if (e) {
                   asserts(e);
-                }
-                else {
+                } else {
                   asserts(null, data);
                 }
               });
-          }
-          else {
+          } else {
             batch.execute(asserts);
           }
 
@@ -1161,8 +1123,7 @@ describe('lib/util/batch.js', function () {
 
           // act
           if (isPromise) {
-            var e = null,
-              result = null;
+            var e = null;
             batch
               .execute()
               .catch(function (error) {
@@ -1171,13 +1132,11 @@ describe('lib/util/batch.js', function () {
               .done(function (data) {
                 if (e) {
                   asserts(e);
-                }
-                else {
+                } else {
                   asserts(null, data);
                 }
               });
-          }
-          else {
+          } else {
             batch.execute(asserts);
           }
 
@@ -1236,8 +1195,7 @@ describe('lib/util/batch.js', function () {
 
           // act
           if (isPromise) {
-            var e = null,
-              result = null;
+            var e = null;
             batch
               .execute()
               .catch(function (error) {
@@ -1246,13 +1204,11 @@ describe('lib/util/batch.js', function () {
               .done(function (data) {
                 if (e) {
                   asserts(e);
-                }
-                else {
+                } else {
                   asserts(null, data);
                 }
               });
-          }
-          else {
+          } else {
             batch.execute(asserts);
           }
 
@@ -1309,8 +1265,7 @@ describe('lib/util/batch.js', function () {
 
           // act
           if (isPromise) {
-            var e = null,
-              result = null;
+            var e = null;
             batch
               .execute()
               .catch(function (error) {
@@ -1319,13 +1274,11 @@ describe('lib/util/batch.js', function () {
               .done(function (data) {
                 if (e) {
                   asserts(e);
-                }
-                else {
+                } else {
                   asserts(null, data);
                 }
               });
-          }
-          else {
+          } else {
             batch.execute(asserts);
           }
 
@@ -1371,8 +1324,7 @@ describe('lib/util/batch.js', function () {
 
           // act
           if (isPromise) {
-            var e = null,
-              result = null;
+            var e = null;
             batch
               .execute()
               .catch(function (error) {
@@ -1381,13 +1333,11 @@ describe('lib/util/batch.js', function () {
               .done(function (data) {
                 if (e) {
                   asserts(e);
-                }
-                else {
+                } else {
                   asserts(null, data);
                 }
               });
-          }
-          else {
+          } else {
             batch.execute(asserts);
           }
 
@@ -1449,8 +1399,7 @@ describe('lib/util/batch.js', function () {
 
           // act
           if (isPromise) {
-            var e = null,
-              result = null;
+            var e = null;
             batch
               .execute()
               .catch(function (error) {
@@ -1459,13 +1408,11 @@ describe('lib/util/batch.js', function () {
               .done(function (data) {
                 if (e) {
                   asserts(e);
-                }
-                else {
+                } else {
                   asserts(null, data);
                 }
               });
-          }
-          else {
+          } else {
             batch.execute(asserts);
           }
 
@@ -1523,13 +1470,12 @@ describe('lib/util/batch.js', function () {
           batch.addBatch(childBatch);
           batch.timestamp(7654321);
 
-          db.config.parsedCqlVersion = {major: 3, minor: 0, patch: 0};
+          db.config.parsedCqlVersion = { major: 3, minor: 0, patch: 0 };
           db.cql = sinon.stub().yields(null, data);
 
           // act
           if (isPromise) {
-            var e = null,
-              result = null;
+            var e = null;
             batch
               .execute()
               .catch(function (error) {
@@ -1538,13 +1484,11 @@ describe('lib/util/batch.js', function () {
               .done(function (data) {
                 if (e) {
                   asserts(e);
-                }
-                else {
+                } else {
                   asserts(null, data);
                 }
               });
-          }
-          else {
+          } else {
             batch.execute(asserts);
           }
 
@@ -1604,8 +1548,7 @@ describe('lib/util/batch.js', function () {
 
           // act
           if (isPromise) {
-            var e = null,
-              result = null;
+            var e = null;
             batch
               .execute()
               .catch(function (error) {
@@ -1614,13 +1557,11 @@ describe('lib/util/batch.js', function () {
               .done(function (data) {
                 if (e) {
                   asserts(e);
-                }
-                else {
+                } else {
                   asserts(null, data);
                 }
               });
-          }
-          else {
+          } else {
             batch.execute(asserts);
           }
 
@@ -1692,8 +1633,7 @@ describe('lib/util/batch.js', function () {
 
           // act
           if (isPromise) {
-            var e = null,
-              result = null;
+            var e = null;
             batch
               .execute()
               .catch(function (error) {
@@ -1702,13 +1642,11 @@ describe('lib/util/batch.js', function () {
               .done(function (data) {
                 if (e) {
                   asserts(e);
-                }
-                else {
+                } else {
                   asserts(null, data);
                 }
               });
-          }
-          else {
+          } else {
             batch.execute(asserts);
           }
 

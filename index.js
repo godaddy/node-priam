@@ -1,4 +1,4 @@
-'use strict';
+
 
 /*
 // wire up zones if available
