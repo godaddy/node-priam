@@ -1,13 +1,10 @@
-'use strict';
-
-var sinon        = require('sinon')
-  , chai         = require('chai')
-  , util         = require('util')
-  , assert       = chai.assert
-  , expect       = chai.expect
-  , DriverFactory       = require('../../lib/driver-factory')
-  , Driver     = require('../../lib/driver')
-  , parseVersion = require('../../lib/util/parse-version');
+var
+  chai         = require('chai'),
+  assert       = chai.assert,
+  expect       = chai.expect,
+  DriverFactory       = require('../../lib/driver-factory'),
+  Driver     = require('../../lib/driver'),
+  parseVersion = require('../../lib/util/parse-version');
 
 describe('lib/driver-factory.js', function () {
 

@@ -1,0 +1,8 @@
+{
+  "root": false,
+  "rules": {
+    "no-new": "off",
+    "max-nested-callbacks": "off",
+    "handle-callback-err": "warn"
+  }
+}

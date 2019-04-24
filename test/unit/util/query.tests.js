@@ -1,11 +1,9 @@
-'use strict';
-
-var sinon = require('sinon'),
+var
+  sinon = require('sinon'),
   chai = require('chai'),
   assert = chai.assert,
   expect = chai.expect,
   isStream = require('isstream'),
-  path = require('path'),
   q = require('q');
 
 var Query = require('../../../lib/util/query');
@@ -13,8 +11,8 @@ var Query = require('../../../lib/util/query');
 describe('lib/util/query.js', function () {
 
   var query,
-      context,
-      db;
+    context,
+    db;
 
   beforeEach(function () {
     db = {
@@ -41,7 +39,7 @@ describe('lib/util/query.js', function () {
     it('throws error if db not provided', function (done) {
       // act
       expect(function () {
-        var q = new Query();
+        new Query();
       }).to.throw(Error);
 
       done();
@@ -58,12 +56,12 @@ describe('lib/util/query.js', function () {
 
     it('applies provided settings to its context', function () {
       // arrange
-      var resultTransformer = function(obj){return obj;};
+      var resultTransformer = function (obj) {return obj;};
 
       // act
       query = new Query(db, {
         resultTransformers: [resultTransformer],
-        options: {consistency: 1}
+        options: { consistency: 1 }
       });
 
       // assert
@@ -262,7 +260,7 @@ describe('lib/util/query.js', function () {
   describe('#param()', function () {
     it('adds a parameter to the context', function (done) {
       // arrange
-      var param1 = { value: 'myVal1', hint: 'ascii'};
+      var param1 = { value: 'myVal1', hint: 'ascii' };
       var param2 = { value: 12345, hint: 'int' };
 
       // act
@@ -282,7 +280,7 @@ describe('lib/util/query.js', function () {
 
     it('returns self', function (done) {
       // arrange
-      var param1 = { value: 'myVal1', hint: 'ascii'};
+      var param1 = { value: 'myVal1', hint: 'ascii' };
 
       // act
       var result = query.param(param1.value, param1.hint);
@@ -296,8 +294,8 @@ describe('lib/util/query.js', function () {
   describe('#param()', function () {
     it('adds parameters to the context', function (done) {
       // arrange
-      var param1 = { value: 'myVal1', hint: 'ascii'};
-      var param2 = { value: 12345, hint: 'int'};
+      var param1 = { value: 'myVal1', hint: 'ascii' };
+      var param2 = { value: 12345, hint: 'int' };
 
       // act
       query.params([param1, param2]);
@@ -313,7 +311,7 @@ describe('lib/util/query.js', function () {
 
     it('returns self', function (done) {
       // arrange
-      var param1 = { value: 'myVal1', hint: 'ascii'};
+      var param1 = { value: 'myVal1', hint: 'ascii' };
 
       // act
       var result = query.params([param1]);
@@ -364,7 +362,7 @@ describe('lib/util/query.js', function () {
       query.options({ two: 2 });
 
       // assert
-      assert.deepEqual(query.context.options, { one: 'one', two: 2}, 'options is populated');
+      assert.deepEqual(query.context.options, { one: 'one', two: 2 }, 'options is populated');
       done();
     });
 
@@ -415,8 +413,7 @@ describe('lib/util/query.js', function () {
       query.context.cql = 'myCqlQuery';
 
       // act
-      var result = query.execute(function (err, data) {
-      });
+      var result = query.execute(function () {});
 
       // assert
       assert.equal(result, void 0, 'returns void');
@@ -443,8 +440,7 @@ describe('lib/util/query.js', function () {
 
           // act
           if (isPromise) {
-            var e = null,
-              result = null;
+            var e = null;
             query
               .execute()
               .catch(function (error) {
@@ -453,13 +449,11 @@ describe('lib/util/query.js', function () {
               .done(function (data) {
                 if (e) {
                   asserts(e);
-                }
-                else {
+                } else {
                   asserts(null, data);
                 }
               });
-          }
-          else {
+          } else {
             query.execute(asserts);
           }
 
@@ -478,8 +472,7 @@ describe('lib/util/query.js', function () {
 
           // act
           if (isPromise) {
-            var e = null,
-              result = null;
+            var e = null;
             query
               .execute()
               .catch(function (error) {
@@ -488,13 +481,11 @@ describe('lib/util/query.js', function () {
               .done(function (data) {
                 if (e) {
                   asserts(e);
-                }
-                else {
+                } else {
                   asserts(null, data);
                 }
               });
-          }
-          else {
+          } else {
             query.execute(asserts);
           }
 
@@ -517,8 +508,7 @@ describe('lib/util/query.js', function () {
 
           // act
           if (isPromise) {
-            var e = null,
-              result = null;
+            var e = null;
             query
               .execute()
               .catch(function (error) {
@@ -527,13 +517,11 @@ describe('lib/util/query.js', function () {
               .done(function (data) {
                 if (e) {
                   asserts(e);
-                }
-                else {
+                } else {
                   asserts(null, data);
                 }
               });
-          }
-          else {
+          } else {
             query.execute(asserts);
           }
 
@@ -557,8 +545,7 @@ describe('lib/util/query.js', function () {
 
           // act
           if (isPromise) {
-            var e = null,
-              result = null;
+            var e = null;
             query
               .execute()
               .catch(function (error) {
@@ -567,13 +554,11 @@ describe('lib/util/query.js', function () {
               .done(function (data) {
                 if (e) {
                   asserts(e);
-                }
-                else {
+                } else {
                   asserts(null, data);
                 }
               });
-          }
-          else {
+          } else {
             query.execute(asserts);
           }
 
@@ -594,8 +579,7 @@ describe('lib/util/query.js', function () {
 
           // act
           if (isPromise) {
-            var e = null,
-              result = null;
+            var e = null;
             query
               .execute()
               .catch(function (error) {
@@ -604,19 +588,17 @@ describe('lib/util/query.js', function () {
               .done(function (data) {
                 if (e) {
                   asserts(e);
-                }
-                else {
+                } else {
                   asserts(null, data);
                 }
               });
-          }
-          else {
+          } else {
             query.execute(asserts);
           }
 
           // assert
-          function asserts(err, data) {
-            assert.ok(db.cql.calledWith(sinon.match.any, sinon.match.any, sinon.match({resultTransformers: ['foo']})));
+          function asserts() {
+            assert.ok(db.cql.calledWith(sinon.match.any, sinon.match.any, sinon.match({ resultTransformers: ['foo'] })));
             done();
           }
         });
@@ -631,8 +613,7 @@ describe('lib/util/query.js', function () {
 
           // act
           if (isPromise) {
-            var e = null,
-              result = null;
+            var e = null;
             query
               .execute()
               .catch(function (error) {
@@ -641,13 +622,11 @@ describe('lib/util/query.js', function () {
               .done(function (data) {
                 if (e) {
                   asserts(e);
-                }
-                else {
+                } else {
                   asserts(null, data);
                 }
               });
-          }
-          else {
+          } else {
             query.execute(asserts);
           }
 
@@ -669,8 +648,7 @@ describe('lib/util/query.js', function () {
 
           // act
           if (isPromise) {
-            var e = null,
-              result = null;
+            var e = null;
             query
               .execute()
               .catch(function (error) {
@@ -679,13 +657,11 @@ describe('lib/util/query.js', function () {
               .done(function (data) {
                 if (e) {
                   asserts(e);
-                }
-                else {
+                } else {
                   asserts(null, data);
                 }
               });
-          }
-          else {
+          } else {
             query.execute(asserts);
           }
 
@@ -707,8 +683,7 @@ describe('lib/util/query.js', function () {
 
           // act
           if (isPromise) {
-            var e = null,
-              result = null;
+            var e = null;
             query
               .execute()
               .catch(function (error) {
@@ -717,13 +692,11 @@ describe('lib/util/query.js', function () {
               .done(function (data) {
                 if (e) {
                   asserts(e);
-                }
-                else {
+                } else {
                   asserts(null, data);
                 }
               });
-          }
-          else {
+          } else {
             query.execute(asserts);
           }
 
@@ -744,8 +717,7 @@ describe('lib/util/query.js', function () {
 
           // act
           if (isPromise) {
-            var e = null,
-              result = null;
+            var e = null;
             query
               .execute()
               .catch(function (error) {
@@ -754,13 +726,11 @@ describe('lib/util/query.js', function () {
               .done(function (data) {
                 if (e) {
                   asserts(e);
-                }
-                else {
+                } else {
                   asserts(null, data);
                 }
               });
-          }
-          else {
+          } else {
             query.execute(asserts);
           }
 
@@ -781,8 +751,7 @@ describe('lib/util/query.js', function () {
 
           // act
           if (isPromise) {
-            var e = null,
-              result = null;
+            var e = null;
             query
               .execute()
               .catch(function (error) {
@@ -791,13 +760,11 @@ describe('lib/util/query.js', function () {
               .done(function (data) {
                 if (e) {
                   asserts(e);
-                }
-                else {
+                } else {
                   asserts(null, data);
                 }
               });
-          }
-          else {
+          } else {
             query.execute(asserts);
           }
 
@@ -860,9 +827,9 @@ describe('lib/util/query.js', function () {
     });
   });
 
-  describe('#addResultTransformer()', function(){
-    it('adds a transformer to the context', function(){
-      var transformer = function(obj){return obj;};
+  describe('#addResultTransformer()', function () {
+    it('adds a transformer to the context', function () {
+      var transformer = function (obj) {return obj;};
       query.addResultTransformer(transformer);
       assert.strictEqual(query.context.resultTransformers.length, 1, 'resultTransformer added');
       assert.strictEqual(typeof query.context.resultTransformers[0], 'function', 'resultTransformer is a function');
@@ -874,9 +841,9 @@ describe('lib/util/query.js', function () {
     });
   });
 
-  describe('#clearResultTransformers()', function(){
-    it('removes transformers from the context', function(){
-      var transformer = function(obj){return obj;};
+  describe('#clearResultTransformers()', function () {
+    it('removes transformers from the context', function () {
+      var transformer = function (obj) {return obj;};
       query.addResultTransformer(transformer);
       query.addResultTransformer(transformer);
       query.clearResultTransformers();

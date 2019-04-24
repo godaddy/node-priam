@@ -1,44 +1,44 @@
-'use strict';
+
 
 var http               = require('http'),
-    util               = require('util'),
-    url                = require('url'),
-    path               = require('path'),
-    ConnectionResolver = require('./lib/connection-resolver'),
-    MetricsClient      = require('./lib/metrics-client'),
-    winston            = require('winston'),
-    _                  = require('lodash'),
-    logger             = new (winston.Logger)({
-      transports: [
-        new (winston.transports.Console)({ level: 'debug' })
+  util               = require('util'),
+  url                = require('url'),
+  path               = require('path'),
+  ConnectionResolver = require('./lib/connection-resolver'),
+  MetricsClient      = require('./lib/metrics-client'),
+  winston            = require('winston'),
+  _                  = require('lodash'),
+  logger             = new (winston.Logger)({
+    transports: [
+      new (winston.transports.Console)({ level: 'debug' })
+    ]
+  }),
+  metrics            = new MetricsClient({ logger: logger }),
+  db                 = require('../index' /* "priam"*/)({
+    config: {
+      protocol: 'binary',
+      cqlVersion: '3.1',
+      queryDirectory: path.join(__dirname, 'cql'),
+
+      // If using config-based connection, use these options
+      user: 'admin',
+      password: 'admin',
+      // keyspace: 'priam_test_db',
+      hosts: [
+        '127.0.0.1', // your host IP's should be here
+        '127.0.0.2',
+        '127.0.0.3',
+        '127.0.0.4',
+        '127.0.0.5'
       ]
-    }),
-    metrics            = new MetricsClient({ logger: logger }),
-    db                 = require('../index' /*"priam"*/)({
-      config: {
-        protocol: 'binary',
-        cqlVersion: '3.1',
-        queryDirectory: path.join(__dirname, 'cql'),
+    },
+    logger: logger, // optional
+    metrics: metrics, // optional
 
-        // If using config-based connection, use these options
-        user: 'admin',
-        password: 'admin',
-        //keyspace: 'priam_test_db',
-        hosts: [
-          '127.0.0.1', // your host IP's should be here
-          '127.0.0.2',
-          '127.0.0.3',
-          '127.0.0.4',
-          '127.0.0.5'
-        ]
-      },
-      logger: logger, // optional
-      metrics: metrics, // optional
-
-      // If using resolver-based connection, use this option
-      connectionResolver: new ConnectionResolver({ pollInterval: 3000 }) // this will override any matching config options
-    }),
-    port               = 8080;
+    // If using resolver-based connection, use this option
+    connectionResolver: new ConnectionResolver({ pollInterval: 3000 }) // this will override any matching config options
+  }),
+  port               = 8080;
 
 console.log(util.inspect(db, { showHidden: true, depth: null, colors: true }));
 
@@ -58,8 +58,7 @@ http.createServer(function (req, res) {
           message += JSON.stringify({ message: innerErr.name, info: innerErr.info, stack: innerErr.stack });
           message += '\n';
         });
-      }
-      else {
+      } else {
         message += '------------------------\n';
         message += JSON.stringify({ message: err.name, info: err.info, stack: err.stack });
       }
@@ -74,16 +73,16 @@ http.createServer(function (req, res) {
       .param('hello from Priam - batch query 1', 'ascii') // maps to 'column1' placeholder in 'addTimestamp.cql'
       .param((new Date()).toISOString(), 'ascii') // maps to 'column2' placeholder in 'addTimestamp.cql'
       .namedQuery('add-timestamp')
-  ).addQuery(db.beginQuery()
+    ).addQuery(db.beginQuery()
       .param('hello from Priam - batch query 2', 'ascii') // maps to 'column1' placeholder in 'addTimestamp.cql'
       .param((new Date()).toISOString(), 'ascii') // maps to 'column2' placeholder in 'addTimestamp.cql'
       .namedQuery('add-timestamp')
-  ).addQuery(db.beginQuery()
-      .param({ 'key3': (new Date()).toISOString() }, 'map<text, text>') // maps to 'column3' placeholder in 'updateWorld.cql'
+    ).addQuery(db.beginQuery()
+      .param({ key3: (new Date()).toISOString() }, 'map<text, text>') // maps to 'column3' placeholder in 'updateWorld.cql'
       .param('hello', 'ascii') // maps to 'column1' placeholder in 'updateWorld.cql'
       .param('world', 'ascii') // maps to 'column2' placeholder in 'updateWorld.cql'
       .namedQuery('update-world')
-  ).timestamp()
+    ).timestamp()
     .options({ queryName: 'hello-world-writes' })
     .execute() // This will execute the two inserts above in a single batch
     .fail(errorHandler)
@@ -110,8 +109,7 @@ http.createServer(function (req, res) {
             res.writeHead(200, { 'Content-Type': 'text/plain' });
             res.end(message);
           });
-      }
-      else {
+      } else {
         // Read the data from a Promise!
         db.beginQuery()
           .param('hello', 'ascii', true) // maps to 'column1' placeholder in 'helloWorld.cql'
