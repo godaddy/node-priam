@@ -53,7 +53,8 @@ var db = require('priam')({
       '123.456.789.011:9042',
       '123.456.789.012:9042',
       '123.456.789.013:9042'
-    ]
+    ],
+    localDataCenter: 'some_dc' /* optional; used for selecting preferred nodes during load balancing */ 
   }
 });
 ```
@@ -519,7 +520,7 @@ var resolver = new MyConnectionResolver();
 var db = require('priam')({
   config: {
     /* ... connection options ... */
-  }
+  },
   connectionResolver: resolver
 });
 ```

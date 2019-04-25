@@ -1,18 +1,13 @@
-
-
-var sinon  = require('sinon'),
-  chai   = require('chai'),
-  assert = chai.assert,
-  expect = chai.expect,
+const
   Stream = require('stream'),
+  { EventEmitter } = require('events'),
+  sinon = require('sinon'),
+  { assert, expect } = require('chai'),
   _ = require('lodash'),
-  Query  = require('../../lib/util/query'),
-  Batch  = require('../../lib/util/batch');
-
-var EventEmitter = require('events').EventEmitter;
-
-var cql = require('cassandra-driver');
-var Driver = require('../../lib/driver');
+  cql = require('cassandra-driver'),
+  Driver = require('../../lib/driver'),
+  Query = require('../../lib/util/query'),
+  Batch = require('../../lib/util/batch');
 
 describe('lib/driver.js', function () {
 
@@ -42,10 +37,8 @@ describe('lib/driver.js', function () {
   }
 
   function getDefaultInstance() {
-    var context = getDefaultContext();
-    var instance = new Driver(context);
-
-    return instance;
+    const context = getDefaultContext();
+    return new Driver(context);
   }
 
   beforeEach(function () {
@@ -62,7 +55,7 @@ describe('lib/driver.js', function () {
 
   describe('interface', function () {
 
-    var instance = getDefaultInstance();
+    const instance = getDefaultInstance();
 
     function validateFunctionExists(name, argCount) {
       // arrange
@@ -111,7 +104,9 @@ describe('lib/driver.js', function () {
     it('throws an error if context not provided', function () {
       // arrange
       // act
-      var initWithNoContext = function () { new Driver(); };
+      const initWithNoContext = function () {
+        new Driver();
+      };
 
       // assert
       expect(initWithNoContext).to.throw(Error, /missing context/);
@@ -120,7 +115,9 @@ describe('lib/driver.js', function () {
     it('throws an error if context.config not provided', function () {
       // arrange
       // act
-      var initWithNoConfig = function () { new Driver({}); };
+      const initWithNoConfig = function () {
+        new Driver({});
+      };
 
       // assert
       expect(initWithNoConfig).to.throw(Error, /missing context\.config/);
@@ -129,7 +126,7 @@ describe('lib/driver.js', function () {
     it('sets default values', function () {
       // arrange
       // act
-      var instance = new Driver(getDefaultContext());
+      const instance = new Driver(getDefaultContext());
 
       // assert
       assert.ok(instance.consistencyLevel);
@@ -139,7 +136,7 @@ describe('lib/driver.js', function () {
     it('converts consistency levels to DB codes', function () {
       // arrange
       // act
-      var instance = new Driver(getDefaultContext());
+      const instance = new Driver(getDefaultContext());
       instance.consistencyLevel = { one: 1 };
       instance.init({ config: { consistency: 'one' } });
 
@@ -150,9 +147,9 @@ describe('lib/driver.js', function () {
     it('throws an error if given an invalid consistency level', function () {
       // arrange
       // act
-      var instance = new Driver(getDefaultContext());
+      const instance = new Driver(getDefaultContext());
       instance.consistencyLevel = { one: 1 };
-      var initWithInvalidConsistency = function () {
+      const initWithInvalidConsistency = function () {
         instance.init({ config: { consistency: 'invalid consistency level' } });
       };
 
@@ -162,10 +159,10 @@ describe('lib/driver.js', function () {
 
     it('sets the name property', function () {
       // arrange
-      var config = _.extend({}, getDefaultConfig());
+      const config = _.extend({}, getDefaultConfig());
 
       // act
-      var instance = new Driver({ config: config });
+      const instance = new Driver({ config: config });
 
       // assert
       assert.strictEqual(instance.name, 'datastax');
@@ -173,12 +170,12 @@ describe('lib/driver.js', function () {
 
     it('sets default pool configuration', function () {
       // arrange
-      var config = _.extend({}, getDefaultConfig());
-      var configCopy = _.extend({}, config);
-      var consistencyLevel = cql.types.consistencies.one;
+      const config = _.extend({}, getDefaultConfig());
+      const configCopy = _.extend({}, config);
+      const consistencyLevel = cql.types.consistencies.one;
 
       // act
-      var instance = new Driver({ config: config });
+      const instance = new Driver({ config: config });
 
       // assert
       assert.deepEqual(instance.poolConfig.contactPoints, configCopy.hosts, 'hosts should be passed through');
@@ -191,17 +188,17 @@ describe('lib/driver.js', function () {
 
     it('should override default pool config with additional store options', function () {
       // arrange
-      var config = _.extend({}, getDefaultConfig());
-      var configCopy = _.extend({}, config);
-      var cqlVersion = '2.0.0';
-      var consistencyLevel = cql.types.consistencies.any;
-      var limit = 300;
+      const config = _.extend({}, getDefaultConfig());
+      const configCopy = _.extend({}, config);
+      const cqlVersion = '2.0.0';
+      const consistencyLevel = cql.types.consistencies.any;
+      const limit = 300;
       config.cqlVersion = cqlVersion;
       config.consistencyLevel = consistencyLevel;
       config.limit = limit;
 
       // act
-      var instance = new Driver({ config: config });
+      const instance = new Driver({ config: config });
 
       // assert
       assert.deepEqual(instance.poolConfig.contactPoints, configCopy.hosts, 'hosts should be passed through');
@@ -211,14 +208,34 @@ describe('lib/driver.js', function () {
       assert.strictEqual(instance.poolConfig.limit, limit, 'limit should be overridden');
       assert.strictEqual(instance.poolConfig.consistencyLevel, consistencyLevel, 'consistencyLevel should be overridden');
     });
+
+    it('uses localDataCenter config in the load balancing policy', done => {
+      const driver = new Driver({
+        config: {
+          localDataCenter: 'some_dc'
+        }
+      });
+
+      driver.connect('myKeyspace', () => {
+        const dsOptions = cql.Client.lastCall.args[0];
+        expect(dsOptions.policies).to.be.an('object');
+        expect(dsOptions.policies.loadBalancing)
+          .to.be.instanceOf(cql.policies.loadBalancing.TokenAwarePolicy);
+        expect(dsOptions.policies.loadBalancing.childPolicy)
+          .to.be.instanceOf(cql.policies.loadBalancing.DCAwareRoundRobinPolicy);
+        expect(dsOptions.policies.loadBalancing.childPolicy.localDc)
+          .to.equal('some_dc');
+        done();
+      });
+    });
   });
 
   it('BaseDriver#beginQuery() returns a Query', function (done) {
     // arrange
-    var driver = getDefaultInstance();
+    const driver = getDefaultInstance();
 
     // act
-    var result = driver.beginQuery();
+    const result = driver.beginQuery();
 
     // assert
     assert.instanceOf(result, Query, 'result is instance of Query');
@@ -227,10 +244,10 @@ describe('lib/driver.js', function () {
 
   it('BaseDriver#beginBatch() returns a Batch', function (done) {
     // arrange
-    var driver = getDefaultInstance();
+    const driver = getDefaultInstance();
 
     // act
-    var result = driver.beginBatch();
+    const result = driver.beginBatch();
 
     // assert
     assert.instanceOf(result, Batch, 'result is instance of Batch');
@@ -239,7 +256,7 @@ describe('lib/driver.js', function () {
 
   describe('BaseDriver#connect()', function () {
 
-    var driver;
+    let driver;
     beforeEach(function () {
       driver = getDefaultInstance();
       driver.init({ config: {} });
@@ -247,7 +264,7 @@ describe('lib/driver.js', function () {
 
     it('creates a connection for the supplied keyspace', function (done) {
       // arrange
-      var keyspace = 'myKeyspace';
+      const keyspace = 'myKeyspace';
 
       // act
       driver.connect(keyspace, function (err, pool) {
@@ -271,7 +288,7 @@ describe('lib/driver.js', function () {
 
     it('yields error if connection pool fails to initialize', function (done) {
       // arrange
-      var error = new Error('connection failed');
+      const error = new Error('connection failed');
       driver.getConnectionPool = sinon.stub().yields(error);
 
       // act
@@ -286,17 +303,17 @@ describe('lib/driver.js', function () {
   describe('BaseDriver#cql()', function () {
 
     it('is expected function', function () {
-      var driver = getDefaultInstance();
+      const driver = getDefaultInstance();
       assert.isFunction(driver.cql);
       assert.equal(driver.cql.length, 4);
     });
 
     it('calls #execCql() if callback function is provided', function () {
-      var cql = 'myCqlQuery';
-      var params = [];
-      var options = { consistency: 'one' };
-      var cb = sinon.stub();
-      var driver = getDefaultInstance();
+      const cql = 'myCqlQuery';
+      const params = [];
+      const options = { consistency: 'one' };
+      const cb = sinon.stub();
+      const driver = getDefaultInstance();
       driver.execCql = sinon.stub();
       driver.execCqlStream = sinon.stub();
 
@@ -312,11 +329,11 @@ describe('lib/driver.js', function () {
     });
 
     it('calls #execCqlStream() if stream is provided', function () {
-      var cql = 'myCqlQuery';
-      var params = [];
-      var options = { consistency: 'one' };
-      var stream = new Stream();
-      var driver = getDefaultInstance();
+      const cql = 'myCqlQuery';
+      const params = [];
+      const options = { consistency: 'one' };
+      const stream = new Stream();
+      const driver = getDefaultInstance();
       driver.execCql = sinon.stub();
       driver.execCqlStream = sinon.stub();
 
@@ -333,7 +350,7 @@ describe('lib/driver.js', function () {
     describe('resultTransformers', function () {
 
       function testTransformers(transformers, results, cb) {
-        var driver = getDefaultInstance();
+        const driver = getDefaultInstance();
         driver.execCql = sinon.stub().yields(null, results);
         driver.cql('test', [], {
           resultTransformers: transformers
@@ -341,8 +358,8 @@ describe('lib/driver.js', function () {
       }
 
       it('called if results', function (done) {
-        var transformer = sinon.stub(),
-          results     = [{ test: true }];
+        const transformer = sinon.stub(),
+          results = [{ test: true }];
         testTransformers([transformer], results, function () {
           assert.ok(transformer.calledOnce);
           done();
@@ -350,7 +367,7 @@ describe('lib/driver.js', function () {
       });
 
       it('does not call unless results', function (done) {
-        var transformer = sinon.stub(),
+        const transformer = sinon.stub(),
           results = [];
         testTransformers([transformer], results, function () {
           assert.notOk(transformer.called);
@@ -359,8 +376,8 @@ describe('lib/driver.js', function () {
       });
 
       it('does not call unless results.length', function (done) {
-        var transformer = sinon.stub(),
-          results     = [];
+        const transformer = sinon.stub(),
+          results = [];
         testTransformers([transformer], results, function () {
           assert.notOk(transformer.called);
           done();
@@ -371,7 +388,7 @@ describe('lib/driver.js', function () {
 
   describe('BaseDriver#executeCqlStream()', function () {
 
-    var cql, dataParams, options, stream, driver, pool;
+    let cql, dataParams, options, stream, driver, pool;
     beforeEach(function () {
       cql = 'myCqlStatement';
       dataParams = [];
@@ -410,7 +427,7 @@ describe('lib/driver.js', function () {
     });
 
     it('emits error to stream if pool resolution fails', function () {
-      var error = new Error('uh-oh');
+      const error = new Error('uh-oh');
       driver.getConnectionPool = sinon.stub().yields(error);
       driver.execCqlStream(cql, dataParams, options, stream);
       expect(driver.streamCqlOnDriver.called).to.be.false;
@@ -424,7 +441,7 @@ describe('lib/driver.js', function () {
       expect(driver.streamCqlOnDriver.called).to.be.false;
       expect(pool.waiters.length).to.equal(1);
       pool.isReady = true;
-      var error = new Error('uh-oh');
+      const error = new Error('uh-oh');
       pool.waiters[0](error);
       expect(driver.streamCqlOnDriver.called).to.be.false;
       expect(stream.emit.calledOnce).to.be.true;
@@ -435,10 +452,10 @@ describe('lib/driver.js', function () {
 
   it('BaseDriver#canRetryError() returns false', function (done) {
     // arrange
-    var driver = getDefaultInstance();
+    const driver = getDefaultInstance();
 
     // act
-    var result = driver.canRetryError(null);
+    const result = driver.canRetryError(null);
 
     // assert
     assert.isFalse(result);
@@ -446,7 +463,7 @@ describe('lib/driver.js', function () {
   });
 
   describe('BaseDriver#param()', function () {
-    var driver;
+    let driver;
 
     beforeEach(function () {
       driver = new getDefaultInstance();
@@ -458,8 +475,8 @@ describe('lib/driver.js', function () {
     });
 
     it('returns a hinted value wrapper if a type hint was provided', function () {
-      var timestamp = new Date();
-      var param = driver.param(timestamp, driver.dataType.timestamp);
+      const timestamp = new Date();
+      const param = driver.param(timestamp, driver.dataType.timestamp);
 
       expect(param.value).to.equal(timestamp);
       expect(param.hint).to.equal(driver.dataType.timestamp);
@@ -467,8 +484,8 @@ describe('lib/driver.js', function () {
     });
 
     it('returns a hinted value wrapper marked as routing key if a type hint was provided and isRoutingKey is true', function () {
-      var timestamp = new Date();
-      var param = driver.param(timestamp, driver.dataType.timestamp, true);
+      const timestamp = new Date();
+      const param = driver.param(timestamp, driver.dataType.timestamp, true);
 
       expect(param.value).to.equal(timestamp);
       expect(param.hint).to.equal(driver.dataType.timestamp);
@@ -476,8 +493,8 @@ describe('lib/driver.js', function () {
     });
 
     it('returns a hinted value wrapper if a type hint was provided as a string', function () {
-      var timestamp = new Date();
-      var param = driver.param(timestamp, 'timestamp');
+      const timestamp = new Date();
+      const param = driver.param(timestamp, 'timestamp');
 
       expect(param.value).to.equal(timestamp);
       expect(param.hint).to.equal(driver.dataType.timestamp);
@@ -485,9 +502,9 @@ describe('lib/driver.js', function () {
     });
 
     it('returns a hinted value wrapper if an unmapped type hint was provided as a string', function () {
-      var type = 'map<text,text>';
-      var val = { key: 'value' };
-      var param = driver.param(val, type);
+      const type = 'map<text,text>';
+      const val = { key: 'value' };
+      const param = driver.param(val, type);
 
       expect(param.value).to.equal(val);
       expect(param.hint).to.equal(type);
@@ -496,7 +513,7 @@ describe('lib/driver.js', function () {
   });
 
   describe('BaseDriver#getDriverDataType()', function () {
-    var driver;
+    let driver;
 
     beforeEach(function () {
       driver = new getDefaultInstance();
@@ -505,38 +522,38 @@ describe('lib/driver.js', function () {
     });
 
     it('returns "ascii" if "objectAscii" provided', function () {
-      var value = '{ "some": "jsonObject" }';
-      var param = driver.param(value, 'objectAscii');
+      const value = '{ "some": "jsonObject" }';
+      const param = driver.param(value, 'objectAscii');
 
-      var type = driver.getDriverDataType(param.hint);
+      const type = driver.getDriverDataType(param.hint);
 
       expect(type).to.equal(driver.dataType.ascii);
     });
 
     it('returns "text" if "text" provided', function () {
-      var value = '{ "some": "jsonObject" }';
-      var param = driver.param(value, 'text');
+      const value = '{ "some": "jsonObject" }';
+      const param = driver.param(value, 'text');
 
-      var type = driver.getDriverDataType(param.hint);
+      const type = driver.getDriverDataType(param.hint);
 
       expect(type).to.equal(driver.dataType.text);
     });
   });
 
   describe('BaseDriver#isBatch()', function () {
-    var driver;
+    let driver;
 
     beforeEach(function () {
       driver = new getDefaultInstance();
     });
 
     it('returns true if passed a batch', function () {
-      var batch = driver.beginBatch();
+      const batch = driver.beginBatch();
       expect(driver.isBatch(batch)).to.be.true;
     });
 
     it('returns false if passed a non-batch', function () {
-      var notBatch = {
+      const notBatch = {
         add: function () {
         },
         foo: 'bar'
@@ -557,7 +574,7 @@ describe('lib/driver.js', function () {
   });
 
   describe('#BaseDriverisQuery()', function () {
-    var driver;
+    let driver;
 
     beforeEach(function () {
       driver = new getDefaultInstance();
@@ -568,7 +585,7 @@ describe('lib/driver.js', function () {
     });
 
     it('returns false if passed a non-query', function () {
-      var notQuery = {
+      const notQuery = {
         execute: function () {
         },
         foo: 'bar'
