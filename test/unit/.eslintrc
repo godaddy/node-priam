@@ -3,6 +3,7 @@
   "rules": {
     "no-new": "off",
     "max-nested-callbacks": "off",
-    "handle-callback-err": "warn"
+    "handle-callback-err": "warn",
+    "max-statements": "off"
   }
 }
