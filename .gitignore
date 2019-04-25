@@ -20,6 +20,7 @@ npm-debug.log
 
 # Istanbul Output
 coverage/
+.nyc_output
 
 # NPM Dependencies
 node_modules/
