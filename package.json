@@ -17,6 +17,7 @@
     "type": "git",
     "url": "https://github.com/godaddy/node-priam.git"
   },
+  "files": ["index.js", "lib"],
   "dependencies": {
     "async": "^1.2.1",
     "cassandra-driver": "^3.0.2",
