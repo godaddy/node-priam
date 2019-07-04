@@ -30,7 +30,8 @@
     "read-only-stream": "^1.1.1",
     "retry": "^0.6.1",
     "through2": "^2.0.0",
-    "uuid": "^2.0.1"
+    "uuid": "^2.0.1",
+    "snyk": "^1.189.0"
   },
   "devDependencies": {
     "chai": "^3.0.0",
@@ -49,6 +50,9 @@
   "scripts": {
     "pretest": "eslint --fix ./lib/. ./test/. ./example/. ./index.js",
     "test": "nyc mocha ./test/unit --recursive",
-    "start": "node example/example"
-  }
+    "start": "node example/example",
+    "snyk-protect": "snyk protect",
+    "prepare": "npm run snyk-protect"
+  },
+  "snyk": true
 }
