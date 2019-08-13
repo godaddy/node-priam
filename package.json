@@ -1,6 +1,6 @@
 {
   "name": "priam",
-  "version": "2.2.0",
+  "version": "3.0.0",
   "description": "A simple Cassandra driver. It wraps cassandra-driver modules with additional error/retry handling, external .cql file support, connection option resolution from an external source, and query composition, among other improvements.",
   "keywords": [
     "cassandra",
@@ -23,9 +23,9 @@
   ],
   "dependencies": {
     "async": "^1.2.1",
-    "cassandra-driver": "^3.0.2",
+    "cassandra-driver": "^4.1.0",
     "isstream": "^0.1.2",
-    "lodash": "^4.17.11",
+    "lodash": "^4.17.15",
     "q": "^1.4.1",
     "read-only-stream": "^1.1.1",
     "retry": "^0.6.1",
