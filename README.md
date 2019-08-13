@@ -54,7 +54,7 @@ var db = require('priam')({
       '123.456.789.012:9042',
       '123.456.789.013:9042'
     ],
-    localDataCenter: 'some_dc' /* optional; used for selecting preferred nodes during load balancing */ 
+    localDataCenter: 'some_dc' /* required; used for selecting preferred nodes during load balancing */ 
   }
 });
 ```
