@@ -1088,6 +1088,15 @@ describe('lib/driver.js', function () {
             assert.deepEqual(returnData, data, 'data should match cql output');
           } else {
             assert.strictEqual(pool.execute.callCount, 1, 'execute should be called once');
+            assert.instanceOf(error, Error, 'error is not populated');
+            assert.isObject(error.query, 'query is not defined');
+            assert.equal(error.query.cql, cqlQuery, 'query.cql does not match query');
+            assert.instanceOf(error.query.params, Array, 'query.params is not an array');
+            assert.deepEqual(error.query.options, {
+              consistency: consistency,
+              prepare: false
+            }, 'query.options does not match query options');
+            assert.isUndefined(returnData, 'returnData not defined');
           }
 
           done();
@@ -1867,7 +1876,7 @@ describe('lib/driver.js', function () {
     });
 
     function validateQueryCalls(asPromise) {
-      it('#execute() executes cq ' +
+      it('#execute() executes cql ' +
         (asPromise ? 'with promise syntax' : 'with callback syntax'),
       function (done) {
         // arrange
@@ -2000,6 +2009,8 @@ describe('lib/driver.js', function () {
       instance.namedQuery(queryName, [], function (error, returnData) {
         // assert
         assert.instanceOf(error, Error, 'error is populated');
+        assert.isObject(error.query, 'query is not defined');
+        assert.equal(error.query.queryName, 'idontexist', 'query.queryName does not match named query');
         assert.isUndefined(returnData, 'returnData not defined');
 
         done();
