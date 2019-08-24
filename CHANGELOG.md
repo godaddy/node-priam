@@ -1,5 +1,10 @@
 # Changelog
 
+## 3.1.0
+
+* Error objects will now return query metadata, including parameters. In production
+environments, it is recommended that the parameter values be excluded from logs.
+
 ## 3.0.0
 
 New features:
