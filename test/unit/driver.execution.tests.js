@@ -1,17 +1,16 @@
+const { PassThrough } = require('stream');
+const path            = require('path');
+const sinon           = require('sinon');
+const chai            = require('chai');
+const through         = require('through2');
+const _               = require('lodash');
+const cql             = require('cassandra-driver');
+const FakeResolver    = require('../stubs/fake-resolver');
+const Driver          = require('../../lib/driver');
 
-
-var sinon        = require('sinon'),
-  chai         = require('chai'),
-  assert       = chai.assert,
-  expect       = chai.expect,
-  through      = require('through2'),
-  FakeResolver = require('../stubs/fake-resolver'),
-  _            = require('lodash'),
-  path         = require('path');
 chai.use(require('sinon-chai'));
-
-var cql = require('cassandra-driver');
-var Driver = require('../../lib/driver');
+const assert = chai.assert;
+const expect = chai.expect;
 
 describe('lib/driver.js', function () {
 
@@ -1551,13 +1550,8 @@ describe('lib/driver.js', function () {
       params = [1, 2, 3];
       consistency = 'one';
       options = { foo: 'bar' };
-      stream = {
-        emit: sinon.stub()
-      };
-      resultStream = {
-        on: sinon.stub().returnsThis(),
-        pipe: sinon.stub().returnsThis()
-      };
+      stream = new PassThrough({ objectMode: true });
+      resultStream = new PassThrough({ objectMode: true });
       pool = {
         stream: sinon.stub().returns(resultStream),
         controlConnection: {
@@ -1586,69 +1580,41 @@ describe('lib/driver.js', function () {
       }, 'options are passed');
     });
 
-    it('wires up appropriate streaming pipeline', function () {
-      instance.streamCqlOnDriver(pool, cqlStatement, params, consistency, options, stream);
-      assert.ok(resultStream.on.calledTwice);
-      assert.strictEqual(resultStream.on.args[0][0], 'error', 'wires up error handler for transform');
-      assert.strictEqual(resultStream.on.args[1][0], 'error', 'wires up error handler for stream');
-      assert.ok(resultStream.pipe.calledTwice);
-      assert.equal(resultStream.pipe.args[0][0], fakeThroughObj, 'pipes to transform stream');
-      assert.equal(resultStream.pipe.args[1][0], stream, 'pipes to output stream');
-      assert.ok(through.obj.calledOnce);
-      assert.strictEqual(typeof through.obj.args[0][0], 'function', 'transform stream contains transform function');
-    });
-
-    it('transformation stream returns null if row is null', function () {
-      instance.getNormalizedResults = sinon.stub();
-      instance.streamCqlOnDriver(pool, cqlStatement, params, consistency, options, stream);
-      var cb = sinon.stub();
-      var transformer = through.obj.args[0][0];
-
-      transformer(null, null, cb);
-
-      assert.ok(cb.calledOnce);
-      assert.notOk(cb.args[0][0]);
-      assert.notOk(cb.args[0][1]);
-      assert.notOk(instance.getNormalizedResults.called);
-    });
-
-    it('transformation stream returns normalized object if row is present and there are no transforms', function () {
+    it('transformation stream returns normalized object if row is present and there are no transforms', function (done) {
       var row = { foo: 'bar' };
       var normalized = { something: 'else' };
       instance.getNormalizedResults = sinon.stub().returns([normalized]);
       instance.streamCqlOnDriver(pool, cqlStatement, params, consistency, options, stream);
-      var cb = sinon.stub();
-      var transformer = through.obj.args[0][0];
 
-      transformer(row, null, cb);
+      stream.once('data', assertData);
+      resultStream.end(row);
 
-      assert.ok(instance.getNormalizedResults.calledOnce);
-      assert.deepEqual(instance.getNormalizedResults.args[0][0], [row], 'row is normalized');
-      assert.ok(cb.calledOnce);
-      assert.notOk(cb.args[0][0]);
-      assert.deepEqual(cb.args[0][1], normalized);
+      function assertData(data) {
+        assert.deepEqual(data, normalized);
+        done();
+      }
     });
 
-    it('transformation stream returns transformed object if row is present and there are transforms', function () {
+    it('transformation stream returns transformed object if row is present and there are transforms', function (done) {
       var row = { foo: 'bar' };
       var normalized = { something: 'else' };
       var transformed = { something: 'completely different' };
       var transform = sinon.stub().returns(transformed);
       options.resultTransformers = [transform];
       instance.getNormalizedResults = sinon.stub().returns([normalized]);
+
       instance.streamCqlOnDriver(pool, cqlStatement, params, consistency, options, stream);
-      var cb = sinon.stub();
-      var transformer = through.obj.args[0][0];
+      stream.once('data', assertData);
+      resultStream.end(row);
 
-      transformer(row, null, cb);
-
-      assert.ok(instance.getNormalizedResults.calledOnce);
-      assert.deepEqual(instance.getNormalizedResults.args[0][0], [row], 'row is normalized');
-      assert.ok(transform.calledOnce);
-      assert.deepEqual(transform.args[0][0], normalized, 'normalized row is transformed');
-      assert.ok(cb.calledOnce);
-      assert.notOk(cb.args[0][0]);
-      assert.deepEqual(cb.args[0][1], transformed);
+      function assertData(data) {
+        assert.ok(instance.getNormalizedResults.calledOnce);
+        assert.deepEqual(instance.getNormalizedResults.args[0][0], [row], 'row is normalized');
+        assert.ok(transform.calledOnce);
+        assert.deepEqual(transform.args[0][0], normalized, 'normalized row is transformed');
+        assert.deepEqual(data, transformed);
+        done();
+      }
     });
 
   });
