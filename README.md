@@ -73,7 +73,7 @@ It provides the following arguments:
  - `callback(err, data)`: Optional. The callback for the CQL call. Provides `err` and `data` arguments. `data` will be
    an `Array`.
 
- - `stream`: Optional. A [`Stream`](https://github.com/rvagg/through2) object to be written to when reading from
+ - `stream`: Optional. A `Stream` object to be written to when reading from
    Cassandra. If this is provided, `callback` should not be provided. *Note: Only available when using the `datastax`
    driver!*
 
@@ -197,7 +197,7 @@ Calling `#beginQuery()` returns a `Query` object with the following chainable fu
 
  - `#execute(callback [optional, function])`: Executes the query. If a callback is not supplied, this will return a Promise.
 
- - `#stream()`: Executes the query and returns a read-only [`Stream`](https://github.com/rvagg/through2) object. *Note: Only available when using the `datastax` driver!*
+ - `#stream()`: Executes the query and returns a readable `Stream` object. *Note: Only available when using the `datastax` driver!*
 
 
 
@@ -257,7 +257,7 @@ db
 
 For expected large data sets in a web application, it is a good idea to stream the data back.
 ```javascript
-var through = require('through2');
+const { Transform } = require('stream');
 /* ... */
 function (req, res, next) {
   db
@@ -270,8 +270,12 @@ function (req, res, next) {
     .on('error', function (err) {
       res.statusCode(500).end(err.message);
     })
-    .pipe(through.obj(function(data, enc, next) {
-      next(null, JSON.stringify(data)+'\n');
+    .pipe(new Transform({
+      writableObjectMode: true,
+      readableObjectMode: false,
+      transform(data, enc, next) {
+        next(null, JSON.stringify(data)+'\n');
+      }
     }))
     .pipe(res);
 }
