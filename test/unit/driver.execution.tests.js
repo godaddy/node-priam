@@ -1568,8 +1568,8 @@ describe('lib/driver.js', function () {
       through.obj.restore();
     });
 
-    it('calls pool.stream() with the correct arguments', function () {
-      instance.streamCqlOnDriver(pool, cqlStatement, params, consistency, options, stream);
+    it('calls pool.stream() with the correct arguments', async function () {
+      await instance.streamCqlOnDriver(pool, cqlStatement, params, consistency, options, stream);
       assert.ok(pool.stream.calledOnce);
       assert.strictEqual(pool.stream.args[0][0], cqlStatement, 'cql is passed');
       assert.deepEqual(pool.stream.args[0][1], params, 'params are passed');
