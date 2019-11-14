@@ -47,7 +47,7 @@ describe('lib/driver.js', function () {
     return {
       storeConfig: storeConfig,
       isReady: isReady,
-      execute: sinon.stub().yields(err, data),
+      execute: sinon.stub().returns(err ? Promise.reject(err) : Promise.resolve(data)),
       batch: sinon.stub().yields(err, data),
       shutdown: sinon.stub().resolves(),
       controlConnection: {
@@ -541,15 +541,15 @@ describe('lib/driver.js', function () {
       var pool = getPoolStub(instance.config, true, null, []);
       instance.pools = { myKeySpace: pool };
 
-      pool.execute = sinon.spy(function (cql, data, consist, cb) {
+      pool.execute = sinon.spy(function (cql, data, consist) {
         var call = pool.execute.getCall(0);
 
         // assert
         assert.strictEqual(call.args[0], cql, 'cql should be passed through');
         assert.deepEqual(call.args[1], params, 'params should be passed through');
 
-        cb(null, []);
         done();
+        return Promise.resolve([]);
       });
 
       // act
@@ -1064,13 +1064,13 @@ describe('lib/driver.js', function () {
         var pool = getPoolStub(instance.config, true, null, {});
         var data = [];
         var callCount = 0;
-        pool.execute = sinon.spy(function (c, d, con, cb) {
+        pool.execute = sinon.spy(async function (c, d, con) {
           callCount++;
           if (callCount === 1) {
             var err = new cql.errors[errorName](errorCode, 'error message');
-            cb(err);
+            throw err;
           } else {
-            cb(null, data);
+            return data;
           }
         });
         instance.pools = { myKeySpace: pool };
@@ -1152,13 +1152,13 @@ describe('lib/driver.js', function () {
       var pool = getPoolStub(instance.config, true, null, {});
       var data = [];
       var callCount = 0;
-      pool.execute = sinon.spy(function (c, d, con, cb) {
+      pool.execute = sinon.spy(async function (c, d, con) {
         callCount++;
         if (callCount === 1) {
           var err = new cql.errors.ResponseError(0x1200, 'timeout on read');
-          cb(err);
+          throw err;
         } else {
-          cb(null, data);
+          return data;
         }
       });
       instance.pools = { myKeySpace: pool };
@@ -1186,13 +1186,13 @@ describe('lib/driver.js', function () {
       var pool = getPoolStub(instance.config, true, null, {});
       var data = [];
       var callCount = 0;
-      pool.execute = sinon.spy(function (c, d, con, cb) {
+      pool.execute = sinon.spy(async function (c, d, con) {
         callCount++;
         if (callCount === 1) {
           var err = new cql.errors.ResponseError(0x1200, 'timeout on read');
-          cb(err);
+          throw err;
         } else {
-          cb(null, data);
+          return data;
         }
       });
       instance.pools = { myKeySpace: pool };
@@ -1221,12 +1221,12 @@ describe('lib/driver.js', function () {
       var data = [];
       var callCount = 0;
       var err = new cql.errors.ResponseError(1234, 'something blew up');
-      pool.execute = sinon.spy(function (c, d, con, cb) {
+      pool.execute = sinon.spy(async function (c, d, con) {
         callCount++;
         if (callCount === 1) {
-          cb(err);
+          throw err;
         } else {
-          cb(null, data);
+          return data;
         }
       });
       instance.pools = { myKeySpace: pool };
