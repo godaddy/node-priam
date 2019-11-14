@@ -67,50 +67,13 @@ It provides the following arguments:
 
  - `dataParams`: The parameters array. Should match the order of `?` characters in the `cql` parameter
 
- - `options`: Optional. Additional options for the CQL call. Supports `consistency`, `queryName`, `keyspace`,
-   and `executeAsPrepared`.
+ - `options`: Optional. Additional options for the CQL call. See [Query Options](#query-options) for the list of supported properties.
 
- - `callback(err, data)`: Optional. The callback for the CQL call. Provides `err` and `data` arguments. `data` will be
-   an `Array`.
-
- - `stream`: Optional. A `Stream` object to be written to when reading from
-   Cassandra. If this is provided, `callback` should not be provided. *Note: Only available when using the `datastax`
-   driver!*
+ - `callback(err, data)` or `stream`: Optional. See [Query Return Options](#query-return-options) below.
 
 `dataParams` will be normalized as necessary in order to be passed to Cassandra. In addition to primitives
 (`Number`/`String`), the driver supports JSON objects, Array and Buffer types. `Object` and `Array` types will be
 stringified prior to being sent to [Cassandra](http://cassandra.apache.org/), whereas `Buffer` types will be encoded.
-
-The `executeAsPrepared` option informs the [node-cassandra-cql](https://github.com/jorgebay/node-cassandra-cql) driver
-to execute the given CQL as a prepared statement, which will boost performance if the query is executed multiple times.
-
-The `queryName` option allows metrics to be captured for the given query, assuming a `metrics` object was passed into
-the constructor. See the [Monitoring / Instrumentation](#monitoring--instrumentation) section for more information.
-
-The `consistency` option allows you to override any default consistency level that was specified in the constructor.
-
-The `resultHint` option allows you to control how objects being returned by the underlying provider are treated. For
-example, a data type of `objectAscii` will result in `JSON.parse()` being called on the resulting value. Special data types
-of `objectAscii` and `objectText` are available for this purpose. If these data types are used in a parameter's `hint`
-field, they will be automatically mapped to the corresponding data type (e.g. `ascii` or `text) prior to executing the
-cql statement.
-
-The `deserializeJsonStrings` option informs [Priam](https://github.com/godaddy/node-priam) to inspect any string results
-coming back from the driver and call `JSON.parse()` before returning the value back to you. This works similar to providing
-`resultHint` options for specific columns, but instead it applies to the entire set of columns.
-*This was the default behavior prior to the 0.7.0 release.*
-
-The `coerceDataStaxTypes` option informs [Priam](https://github.com/godaddy/node-priam) to convert any of the custom
-[DataStax data types](http://docs.datastax.com/en/developer/nodejs-driver/2.1/nodejs-driver/reference/nodejs2Cql3Datatypes.html)
-to standard JavaScript types (`string`, `number`). This is recommended if you are upgrading from a previous version of
-[Priam](https://github.com/godaddy/node-priam) and need to keep backwards-compatibility in your codebase with the previous
-versin of the [DataStax cassandra-driver module](https://github.com/datastax/nodejs-driver).
-
-The `keyspace` option allows you to specify another keyspace to execute a query against. This will override the default
-keyspace set in the connection information.
-
-The `suppressDebugLog` option allows you to disable debug logging of CQL for an individual query. This is useful for
-queries that may contain sensitive data that you do not wish to show up in debug logs.
 
 [hinted parameters](http://www.datastax.com/drivers/nodejs/1.0/types.js.html#line28) are supported.
 Instead of the driver inferring the data type, it can be explicitly specified by using a
@@ -139,11 +102,9 @@ db.cql(
 ```
 
 ### Named Queries ###
-The driver supports using named queries. These queries should be `.cql` files residing in a single folder. The query
-name corresponds to the file name preceding the `.cql` extension. For example, file `myObjectSelect.cql` would have a
-query name of `myObjectSelect`.
+The driver supports using named queries by calling the `namedQuery` method. This method behaves just like the `cql` method, only instead of passing the CQL as the first argument, you pass the name of a query. The query name must correspond to a file name preceding the `.cql` extension. For example, file `myObjectSelect.cql` would have a query name of `myObjectSelect`.
 
-In order to use named queries, the optional `queryDirectory` option should be passed into the driver constructor.
+In order to use named queries, the `queryDirectory` option must be passed into the driver constructor.
 
 Queries are loaded *synchronously* and cached when the driver is constructed.
 
@@ -169,6 +130,16 @@ db.namedQuery(
 );
 ```
 
+### Query Return Options ###
+
+For the `cql` and `namedQuery` methods, there are three ways to get back your
+data:
+
+* As a `Promise` - To get back a `Promise`, do not pass a callback argument. The `Promise` will resolve to an `Array` of rows.
+* Via a callback - If you supply a callback function as your last argument, it will be called with an `error` and `data` argument. If there was no error, `data` will be an `Array`.
+* Written to a `Stream` - If you pass a writable stream instead of a callback, the resulting rows will be written to this stream. Your stream will emit `error` events if an error occurs while executing the query.
+
+
 ### Fluent Syntax ###
 The driver provides a fluent syntax that can be used to construct queries.
 
@@ -184,8 +155,7 @@ Calling `#beginQuery()` returns a `Query` object with the following chainable fu
 
  - `#params(parameters [Array])`: Adds the array of parameters to the query. Parameters should be created using `db.param()`
 
- - `#options(optionsDictionary [object])`: Extends the query options. See
-    [Executing CQL](https://github.com/godaddy/node-priam/blob/master/README.md#executing-cql) for valid options.
+ - `#options(optionsDictionary [object])`: Extends the query options. See [Query Options](#query-options) for the list of supported properties.
 
  - `#consistency(consistencyLevelName [string])`: Sets consistency level for the query. Alias for `#options({ consistency: db.consistencyLevel[consistencyLevelName] })`.
 
@@ -311,8 +281,7 @@ Calling `#beginBatch()` returns a `Query` object with the following chainable fu
  - `#add(batchOrQuery [Batch or Query])`: Allows `null`, `Query`, or `Batch` objects. See `#addQuery()` and `#addBatch()`
     above.
 
- - `#options(optionsDictionary [object])`: Extends the batch. See
-    [Executing CQL](https://github.com/godaddy/node-priam/blob/master/README.md#executing-cql) for valid options.
+ - `#options(optionsDictionary [object])`: Extends the batch. See [Query Options](#query-options) for the list of supported properties.
 
  - `#timestamp(clientTimestamp [optional, long])`: Specifies that `USING TIMESTAMP <value>` will be sent as part of the
     batch CQL. If `clientTimestamp` is not specified, the current time will be used.
@@ -355,6 +324,19 @@ db
     console.log('Returned data: ' + data);
   });
 ```
+
+### Query Options ###
+
+All techniques for a query share the following set of options:
+
+* `executeAsPrepared` - informs the [node-cassandra-cql](https://github.com/jorgebay/node-cassandra-cql) driver to execute the given CQL as a prepared statement, which will boost performance if the query is executed multiple times.
+* `queryName` - allows metrics to be captured for the given query, assuming a `metrics` object was passed into the constructor. See the [Monitoring / Instrumentation](#monitoring--instrumentation) section for more information.
+* `consistency` - allows you to override any default consistency level that was specified in the driver's constructor.
+* `resultHint` - allows you to control how objects being returned by the underlying provider are treated. For example, a data type of `objectAscii` will result in `JSON.parse()` being called on the resulting value. Special data types of `objectAscii` and `objectText` are available for this purpose. If these data types are used in a parameter's `hint` field, they will be automatically mapped to the corresponding data type (e.g. `ascii` or `text) prior to executing the cql statement.
+* `deserializeJsonStrings` - informs [Priam](https://github.com/godaddy/node-priam) to inspect any string results coming back from the driver and calls `JSON.parse()` before returning the value back to you. This works similar to providing `resultHint` options for specific columns, but instead it applies to the entire set of columns. *This was the default behavior prior to the 0.7.0 release.*
+* `coerceDataStaxTypes` - informs [Priam](https://github.com/godaddy/node-priam) to convert any of the custom [DataStax data types](http://docs.datastax.com/en/developer/nodejs-driver/2.1/nodejs-driver/reference/nodejs2Cql3Datatypes.html) to standard JavaScript types (`string`, `number`). This is recommended if you are upgrading from a previous version of [Priam](https://github.com/godaddy/node-priam) and need to keep backwards-compatibility in your codebase with the previous version of the [DataStax cassandra-driver module](https://github.com/datastax/nodejs-driver).
+* `keyspace` - allows you to specify another keyspace to execute a query against. This will override the default keyspace set in the connection information.
+* `suppressDebugLog` - allows you to disable debug logging of CQL for an individual query. This is useful for queries that may contain sensitive data that you do not wish to show up in debug logs.
 
 ### Helper Functions ###
 The driver also provides the following functions that wrap `#cql()`. They should be used in place of `#cql()` where

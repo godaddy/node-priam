@@ -250,8 +250,8 @@ describe('lib/driver.js', function () {
 
   describe('DatastaxDriver#cql()', function () {
 
-    var instance     = null,
-      fakeResolver = null;
+    let instance;
+    let fakeResolver;
 
     beforeEach(function () {
       fakeResolver = new FakeResolver();
@@ -617,6 +617,25 @@ describe('lib/driver.js', function () {
 
         done();
       });
+    });
+
+    it.skip('returns a `Promise` if no callback or stream is supplied', async () => {
+      const rows = [
+        {
+          field1: '12345'
+        }, {
+          field1: null
+        }, {
+          field1: undefined
+        }
+      ];
+      instance.pools = { 
+        myKeySpace: getPoolStub(instance.config, true, null, { rows })
+      };
+
+      const result = await instance.cql('SELECT * FROM foo', []);
+
+      expect(result).to.equal(rows);
     });
 
     it('handles null parameters', function (done) {
