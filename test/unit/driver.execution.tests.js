@@ -122,7 +122,7 @@ describe('lib/driver.js', function () {
       }
     });
 
-    it('returns the connection pool on successful connection if "waitForConnect" is true', function (done) {
+    it('returns the connection pool on successful connection if "waitForConnect" is true', async () => {
       // arrange
       var pool = getPoolStub(instance.config, true, null, {});
       pool.on = sinon.stub();
@@ -130,17 +130,14 @@ describe('lib/driver.js', function () {
       sinon.stub(cql, 'Client').returns(pool);
 
       // act
-      instance._createConnectionPool({}, true, function (err, newPool) {
-        // assert
-        assert.notOk(err, 'error should not be passed');
-        assert.equal(newPool, pool, 'pool should be passed');
-        assert.strictEqual(pool.isReady, true, 'pool should be ready');
+      const newPool = await instance._createConnectionPool({}, true);
 
-        done();
-      });
+      // assert
+      assert.equal(newPool, pool, 'pool should be passed');
+      assert.strictEqual(pool.isReady, true, 'pool should be ready');
     });
 
-    it('generates appropriate configuration structure for timeout', function (done) {
+    it('generates appropriate configuration structure for timeout', async () => {
       // arrange
       instance.config.getAConnectionTimeout = 15000;
       var pool = getPoolStub(instance.config, true, null, {});
@@ -149,21 +146,18 @@ describe('lib/driver.js', function () {
       sinon.stub(cql, 'Client').returns(pool);
 
       // act
-      instance._createConnectionPool(instance.config, true, function (err, newPool) {
-        // assert
-        assert.notOk(err, 'error should not be passed');
-        assert.equal(newPool, pool, 'pool should be passed');
-        assert.ok(cql.Client.calledWithMatch({
-          socketOptions: {
-            connectTimeout: 15000
-          }
-        }), 'socketOptions should be set');
+      const newPool = await instance._createConnectionPool(instance.config, true);
 
-        done();
-      });
+      // assert
+      assert.equal(newPool, pool, 'pool should be passed');
+      assert.ok(cql.Client.calledWithMatch({
+        socketOptions: {
+          connectTimeout: 15000
+        }
+      }), 'socketOptions should be set');
     });
 
-    it('generates appropriate configuration structure for pool size', function (done) {
+    it('generates appropriate configuration structure for pool size', async () => {
       // arrange
       instance.config.poolSize = 5;
       var pool = getPoolStub(instance.config, true, null, {});
@@ -172,39 +166,34 @@ describe('lib/driver.js', function () {
       sinon.stub(cql, 'Client').returns(pool);
 
       // act
-      instance._createConnectionPool(instance.config, true, function (err, newPool) {
-        // assert
-        assert.notOk(err, 'error should not be passed');
-        assert.equal(newPool, pool, 'pool should be passed');
-        assert.ok(cql.Client.calledWithMatch({
-          pooling: {
-            coreConnectionsPerHost: {
-              0: 5,
-              1: 3
-            }
-          }
-        }), 'pooling should be set');
+      const newPool = await instance._createConnectionPool(instance.config, true);
 
-        done();
-      });
+      // assert
+      assert.equal(newPool, pool, 'pool should be passed');
+      assert.ok(cql.Client.calledWithMatch({
+        pooling: {
+          coreConnectionsPerHost: {
+            0: 5,
+            1: 3
+          }
+        }
+      }), 'pooling should be set');
     });
 
-    it('returns the connection pool immediately if "waitForConnect" is false', function (done) {
+    it('returns the connection pool immediately if "waitForConnect" is false', async () => {
       // arrange
       var pool = getPoolStub(instance.config, false, null, {});
       pool.on = sinon.stub();
-      pool.connect = sinon.stub().resolves({});
+      pool.connect = sinon.stub()
+        .resolves(new Promise(resolve => setTimeout(resolve, 10)));
       sinon.stub(cql, 'Client').returns(pool);
 
       // act
-      instance._createConnectionPool({}, false, function (err, newPool) {
-        // assert
-        assert.notOk(err, 'error should not be passed');
-        assert.equal(newPool, pool, 'pool should be passed');
-        assert.strictEqual(pool.isReady, false, 'pool should NOT be ready');
+      const newPool = await instance._createConnectionPool({}, false);
 
-        done();
-      });
+      // assert
+      assert.equal(newPool, pool, 'pool should be passed');
+      assert.strictEqual(pool.isReady, false, 'pool should NOT be ready');
     });
 
   });
