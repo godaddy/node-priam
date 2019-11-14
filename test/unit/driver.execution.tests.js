@@ -1435,39 +1435,6 @@ describe('lib/driver.js', function () {
         });
       });
 
-      it('logs error and updates connection if connection resolver returns error AND data', function (done) {
-        // arrange
-        var cqlQuery = 'MyCqlStatement';
-        var params = ['param1', 'param2', 'param3'];
-        var consistency = cql.types.consistencies.one;
-        instance = getResolverInstance({ connectionResolver: fakeResolver });
-        var fakeConnectionInfo = {
-          username: 'myResolvedUsername',
-          password: 'myResolvedPassword',
-          hosts: []
-        };
-        var resolutionError = new Error('connection resolution failed');
-        fakeResolver.resolveConnection = sinon.stub().yieldsAsync(resolutionError, fakeConnectionInfo);
-        var pool = getPoolStub(instance.config, true, null, {});
-        pool.on = sinon.stub();
-        pool.connect = sinon.stub().yieldsAsync(null, {});
-        sinon.stub(cql, 'Client').returns(pool);
-        instance.pools = {};
-        var resolutionErrorHandler = sinon.stub();
-        instance.on('connectionResolvedError', resolutionErrorHandler);
-
-        // act
-        instance.cql(cqlQuery, params, { consistency: consistency }, function (err) {
-          // assert
-          assert.isNull(err);
-          assert.strictEqual(pool.storeConfig.username, fakeConnectionInfo.username, 'username successfully updated');
-          assert.strictEqual(pool.storeConfig.password, fakeConnectionInfo.password, 'password successfully updated');
-          assert.ok(logger.error.called, 'error log is called');
-          expect(resolutionErrorHandler).to.have.been.calledWithMatch(sinon.match.string, resolutionError);
-          done();
-        });
-      });
-
       it('returns data and logs error if connection resolver throws error on lazy fetch', function (done) {
         // arrange
         var cqlQuery = 'MyCqlStatement';
