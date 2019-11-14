@@ -43,7 +43,7 @@ describe('lib/driver.js', function () {
 
   beforeEach(function () {
     sinon.stub(cql, 'Client').returns({
-      connect: sinon.stub().yieldsAsync(),
+      connect: sinon.stub().resolves(),
       on: sinon.stub(),
       execute: sinon.stub().yieldsAsync(null, [])
     });
