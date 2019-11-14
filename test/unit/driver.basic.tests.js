@@ -286,7 +286,7 @@ describe('lib/driver.js', function () {
     it('yields error if connection pool fails to initialize', function (done) {
       // arrange
       const error = new Error('connection failed');
-      driver._getConnectionPool = sinon.stub().yields(error);
+      driver._getConnectionPool = sinon.stub().rejects(error);
 
       // act
       driver.connect(function (err, pool) {
@@ -396,11 +396,12 @@ describe('lib/driver.js', function () {
       driver = getDefaultInstance();
       pool = { isReady: true, waiters: [] };
       driver._streamCqlOnDriver = sinon.stub();
-      driver._getConnectionPool = sinon.stub().yields(null, pool);
+      driver._getConnectionPool = sinon.stub().resolves(pool);
     });
 
-    it('calls #streamCqlOnDriver() if pool is ready', function () {
-      driver._execCqlStream(cql, dataParams, options, stream);
+    it('calls #streamCqlOnDriver() if pool is ready', async () => {
+      await driver._execCqlStream(cql, dataParams, options, stream);
+
       expect(driver._streamCqlOnDriver.calledOnce).to.be.true;
       expect(driver._streamCqlOnDriver.args[0][0]).to.equal(pool);
       expect(driver._streamCqlOnDriver.args[0][1]).to.equal(cql);
@@ -412,34 +413,38 @@ describe('lib/driver.js', function () {
       expect(stream.emit.called).to.be.false;
     });
 
-    it('calls #streamCqlOnDriver() after pool is ready if pool is not yet ready', function () {
+    it('calls #streamCqlOnDriver() after pool is ready if pool is not yet ready', async () => {
       pool.isReady = false;
-      driver._execCqlStream(cql, dataParams, options, stream);
+      await driver._execCqlStream(cql, dataParams, options, stream);
+
       expect(driver._streamCqlOnDriver.called).to.be.false;
       expect(pool.waiters.length).to.equal(1);
       pool.isReady = true;
-      pool.waiters[0]();
+      await pool.waiters[0]();
       expect(driver._streamCqlOnDriver.calledOnce).to.be.true;
       expect(stream.emit.called).to.be.false;
     });
 
-    it('emits error to stream if pool resolution fails', function () {
+    it('emits error to stream if pool resolution fails', async () => {
       const error = new Error('uh-oh');
-      driver._getConnectionPool = sinon.stub().yields(error);
-      driver._execCqlStream(cql, dataParams, options, stream);
+      driver._getConnectionPool = sinon.stub().rejects(error);
+      await driver._execCqlStream(cql, dataParams, options, stream);
+
       expect(driver._streamCqlOnDriver.called).to.be.false;
       expect(stream.emit.calledOnce).to.be.true;
       expect(stream.emit.args[0][0]).to.equal(error);
     });
 
-    it('emits error to stream if pool connection fails', function () {
+    it('emits error to stream if pool connection fails', async () => {
       pool.isReady = false;
-      driver._execCqlStream(cql, dataParams, options, stream);
+
+      await driver._execCqlStream(cql, dataParams, options, stream);
       expect(driver._streamCqlOnDriver.called).to.be.false;
       expect(pool.waiters.length).to.equal(1);
       pool.isReady = true;
       const error = new Error('uh-oh');
-      pool.waiters[0](error);
+
+      await pool.waiters[0](error);
       expect(driver._streamCqlOnDriver.called).to.be.false;
       expect(stream.emit.calledOnce).to.be.true;
       expect(stream.emit.args[0][0]).to.equal(error);
