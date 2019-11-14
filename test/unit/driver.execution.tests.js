@@ -43,7 +43,7 @@ describe('lib/driver.js', function () {
 
   function getPoolStub(config, isReady, err, data) {
     var storeConfig = _.extend({ consistencyLevel: 1, version: '3.1.0' }, config);
-    Driver.DatastaxDriver.prototype.remapConnectionOptions(storeConfig);
+    Driver.DatastaxDriver.prototype._remapConnectionOptions(storeConfig);
     return {
       storeConfig: storeConfig,
       isReady: isReady,
@@ -136,7 +136,7 @@ describe('lib/driver.js', function () {
       sinon.stub(cql, 'Client').returns(pool);
 
       // act
-      instance.createConnectionPool({}, true, function (err, newPool) {
+      instance._createConnectionPool({}, true, function (err, newPool) {
         // assert
         assert.notOk(err, 'error should not be passed');
         assert.equal(newPool, pool, 'pool should be passed');
@@ -155,7 +155,7 @@ describe('lib/driver.js', function () {
       sinon.stub(cql, 'Client').returns(pool);
 
       // act
-      instance.createConnectionPool(instance.config, true, function (err, newPool) {
+      instance._createConnectionPool(instance.config, true, function (err, newPool) {
         // assert
         assert.notOk(err, 'error should not be passed');
         assert.equal(newPool, pool, 'pool should be passed');
@@ -178,7 +178,7 @@ describe('lib/driver.js', function () {
       sinon.stub(cql, 'Client').returns(pool);
 
       // act
-      instance.createConnectionPool(instance.config, true, function (err, newPool) {
+      instance._createConnectionPool(instance.config, true, function (err, newPool) {
         // assert
         assert.notOk(err, 'error should not be passed');
         assert.equal(newPool, pool, 'pool should be passed');
@@ -203,7 +203,7 @@ describe('lib/driver.js', function () {
       sinon.stub(cql, 'Client').returns(pool);
 
       // act
-      instance.createConnectionPool({}, false, function (err, newPool) {
+      instance._createConnectionPool({}, false, function (err, newPool) {
         // assert
         assert.notOk(err, 'error should not be passed');
         assert.equal(newPool, pool, 'pool should be passed');
@@ -1568,23 +1568,30 @@ describe('lib/driver.js', function () {
       through.obj.restore();
     });
 
-    it('calls pool.stream() with the correct arguments', async function () {
-      await instance.streamCqlOnDriver(pool, cqlStatement, params, consistency, options, stream);
-      assert.ok(pool.stream.calledOnce);
-      assert.strictEqual(pool.stream.args[0][0], cqlStatement, 'cql is passed');
-      assert.deepEqual(pool.stream.args[0][1], params, 'params are passed');
-      assert.deepEqual(pool.stream.args[0][2], {
-        consistency: 'one',
-        foo: 'bar',
-        prepare: false
-      }, 'options are passed');
+    it('calls pool.stream() with the correct arguments', function (done) {
+      instance._streamCqlOnDriver(pool, cqlStatement, params, consistency, options, stream);
+
+      stream.once('data', assertDriverCall);
+      resultStream.end({ foo: 'bar' });
+
+      function assertDriverCall() {
+        assert.ok(pool.stream.calledOnce);
+        assert.strictEqual(pool.stream.args[0][0], cqlStatement, 'cql is passed');
+        assert.deepEqual(pool.stream.args[0][1], params, 'params are passed');
+        assert.deepEqual(pool.stream.args[0][2], {
+          consistency: 'one',
+          foo: 'bar',
+          prepare: false
+        }, 'options are passed');
+        done();
+      }
     });
 
     it('transformation stream returns normalized object if row is present and there are no transforms', function (done) {
       var row = { foo: 'bar' };
       var normalized = { something: 'else' };
-      instance.getNormalizedResults = sinon.stub().returns([normalized]);
-      instance.streamCqlOnDriver(pool, cqlStatement, params, consistency, options, stream);
+      instance._getNormalizedResults = sinon.stub().returns([normalized]);
+      instance._streamCqlOnDriver(pool, cqlStatement, params, consistency, options, stream);
 
       stream.once('data', assertData);
       resultStream.end(row);
@@ -1601,15 +1608,15 @@ describe('lib/driver.js', function () {
       var transformed = { something: 'completely different' };
       var transform = sinon.stub().returns(transformed);
       options.resultTransformers = [transform];
-      instance.getNormalizedResults = sinon.stub().returns([normalized]);
+      instance._getNormalizedResults = sinon.stub().returns([normalized]);
 
-      instance.streamCqlOnDriver(pool, cqlStatement, params, consistency, options, stream);
+      instance._streamCqlOnDriver(pool, cqlStatement, params, consistency, options, stream);
       stream.once('data', assertData);
       resultStream.end(row);
 
       function assertData(data) {
-        assert.ok(instance.getNormalizedResults.calledOnce);
-        assert.deepEqual(instance.getNormalizedResults.args[0][0], [row], 'row is normalized');
+        assert.ok(instance._getNormalizedResults.calledOnce);
+        assert.deepEqual(instance._getNormalizedResults.args[0][0], [row], 'row is normalized');
         assert.ok(transform.calledOnce);
         assert.deepEqual(transform.args[0][0], normalized, 'normalized row is transformed');
         assert.deepEqual(data, transformed);
@@ -1624,12 +1631,12 @@ describe('lib/driver.js', function () {
     var instance;
     beforeEach(function () {
       instance = getDefaultInstance();
-      sinon.stub(instance, 'execCql').yields(null, {});
+      sinon.stub(instance, '_execCql').yields(null, {});
       sinon.stub(cql, 'Client').returns({});
     });
 
     afterEach(function () {
-      instance.execCql.restore();
+      instance._execCql.restore();
       cql.Client.restore();
     });
 
@@ -1645,7 +1652,7 @@ describe('lib/driver.js', function () {
 
           // act
           instance[method]('cql', params, {}, function () {
-            var call = instance.execCql.getCall(0);
+            var call = instance._execCql.getCall(0);
             var normalized = call.args[1];
 
             // assert
@@ -1679,7 +1686,7 @@ describe('lib/driver.js', function () {
 
           // act
           instance[method]('cql', params, {}, function () {
-            var call = instance.execCql.getCall(0);
+            var call = instance._execCql.getCall(0);
             var normalized = call.args[1];
 
             // assert
@@ -1699,7 +1706,7 @@ describe('lib/driver.js', function () {
 
           // act
           instance[method]('cql', params, {}, function () {
-            var call = instance.execCql.getCall(0);
+            var call = instance._execCql.getCall(0);
             var normalized = call.args[1];
 
             // assert
@@ -1715,7 +1722,7 @@ describe('lib/driver.js', function () {
 
           // act
           instance[method]('cql', params, {}, function () {
-            var call = instance.execCql.getCall(0);
+            var call = instance._execCql.getCall(0);
             var normalized = call.args[1];
 
             // assert
@@ -1748,7 +1755,7 @@ describe('lib/driver.js', function () {
 
           // act
           instance[method](cqlQuery, params, options, function () {
-            var call = instance.execCql.getCall(0);
+            var call = instance._execCql.getCall(0);
 
             // assert
             assert.ok(instance.logger.debug.calledOnce, 'cql is logged');
@@ -1769,7 +1776,7 @@ describe('lib/driver.js', function () {
 
           // act
           instance[method](cqlQuery, params, options, function () {
-            var call = instance.execCql.getCall(0);
+            var call = instance._execCql.getCall(0);
 
             // assert
             assert.equal(call.args[0], cqlQuery, 'cql should be passed through');
@@ -1788,7 +1795,7 @@ describe('lib/driver.js', function () {
 
           // act
           instance[method](cqlQuery, params, function () {
-            var call = instance.execCql.getCall(0);
+            var call = instance._execCql.getCall(0);
 
             // assert
             assert.equal(call.args[0], cqlQuery, 'cql should be passed through');
@@ -1809,7 +1816,7 @@ describe('lib/driver.js', function () {
 
           // act
           instance[method](cqlQuery, params, options, function () {
-            var call = instance.execCql.getCall(0);
+            var call = instance._execCql.getCall(0);
 
             // assert
             assert.equal(call.args[0], cqlQuery, 'cql should be passed through');
@@ -1837,7 +1844,7 @@ describe('lib/driver.js', function () {
       instance = getDefaultInstance();
       pool = getPoolStub(instance.config, true, null, {});
       instance.pools = { myKeySpace: pool };
-      instance.execCql = sinon.stub().yields(null, {});
+      instance._execCql = sinon.stub().yields(null, {});
       instance.getConnectionPool = sinon.stub().yields(null, pool);
     });
 
@@ -1867,7 +1874,7 @@ describe('lib/driver.js', function () {
         }
 
         function asserts(done) {
-          var call = instance.execCql.getCall(0);
+          var call = instance._execCql.getCall(0);
 
           // assert
           assert.equal(call.args[0], cqlQuery, 'cql should be passed through');
@@ -1891,7 +1898,7 @@ describe('lib/driver.js', function () {
       instance = getNamedQueryInstance();
       pool = getPoolStub(instance.config, true, null, {});
       instance.pools = { myKeySpace: pool };
-      instance.execCql = sinon.stub().yields(null, {});
+      instance._execCql = sinon.stub().yields(null, {});
       instance.getConnectionPool = sinon.stub().yields(null, pool);
     });
 
@@ -1909,7 +1916,7 @@ describe('lib/driver.js', function () {
 
       // act
       instance.namedQuery(queryName, params, { consistency: consistency }, function () {
-        var call = instance.execCql.getCall(0),
+        var call = instance._execCql.getCall(0),
           opts = call.args[2];
 
         // assert
@@ -1930,7 +1937,7 @@ describe('lib/driver.js', function () {
 
       // act
       instance.namedQuery(queryName, params, { consistency: consistency }, function () {
-        expect(instance.execCql.firstCall.args[0]).to.equal('SELECT * FROM "myColumnFamily"');
+        expect(instance._execCql.firstCall.args[0]).to.equal('SELECT * FROM "myColumnFamily"');
         done();
       });
     });
@@ -1943,7 +1950,7 @@ describe('lib/driver.js', function () {
 
       // act
       instance.namedQuery(queryName, params, { consistency: consistency, executeAsPrepared: false }, function () {
-        var call = instance.execCql.getCall(0),
+        var call = instance._execCql.getCall(0),
           opts = call.args[2];
 
         // assert
