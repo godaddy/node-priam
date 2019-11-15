@@ -1897,13 +1897,13 @@ describe('lib/driver.js', function () {
       });
     });
 
-    it.skip('returns a Promise if no callback or stream is supplied', async () => {
+    it('returns a Promise if no callback or stream is supplied', async () => {
       // arrange
       const rows = [
         { foo: 1, bar: 2 },
         { foo: 3, bar: 4 }
       ];
-      pool.execute.resolves({ rows });
+      instance._execCql.resolves(rows);
 
       // act
       const result = await instance.namedQuery('myFakeCql', [], { consistency: cql.types.consistencies.one });
@@ -1973,17 +1973,21 @@ describe('lib/driver.js', function () {
       });
     });
 
-    it('throws error if queryDirectory not provided in constructor', function (done) {
+    it('throws error if queryDirectory not provided in constructor', async () => {
       // arrange
       var defInstance = getDefaultInstance();
       var queryName = 'myFakeCql';
 
       // act
-      expect(function () {
-        defInstance.namedQuery(queryName, [], {}, sinon.stub());
-      }).to.throw(Error);
+      let error;
+      try {
+        await defInstance.namedQuery(queryName, [], {});
+      } catch (err) {
+        error = err;
+      }
 
-      done();
+      // assert
+      expect(error).to.be.instanceOf(Error);
     });
 
   });
