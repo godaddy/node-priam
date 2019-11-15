@@ -1866,8 +1866,8 @@ describe('lib/driver.js', function () {
       instance = getNamedQueryInstance();
       pool = getPoolStub(instance.config, true, null, {});
       instance.pools = { myKeySpace: pool };
-      instance._execCql = sinon.stub().yields(null, {});
-      instance.getConnectionPool = sinon.stub().yields(null, pool);
+      instance._execCql = sinon.stub().resolves({});
+      instance._getConnectionPool = sinon.stub().resolves(pool);
     });
 
     function getNamedQueryInstance() {
@@ -1895,6 +1895,21 @@ describe('lib/driver.js', function () {
 
         done();
       });
+    });
+
+    it.skip('returns a Promise if no callback or stream is supplied', async () => {
+      // arrange
+      const rows = [
+        { foo: 1, bar: 2 },
+        { foo: 3, bar: 4 }
+      ];
+      pool.execute.resolves({ rows });
+
+      // act
+      const result = await instance.namedQuery('myFakeCql', [], { consistency: cql.types.consistencies.one });
+
+      // assert
+      expect(result).to.deep.equal(rows);
     });
 
     it('handles CQL files containing a BOM', function (done) {
