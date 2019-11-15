@@ -619,7 +619,7 @@ describe('lib/driver.js', function () {
       });
     });
 
-    it.skip('returns a `Promise` if no callback or stream is supplied', async () => {
+    it('returns a `Promise` if no callback or stream is supplied', async () => {
       const rows = [
         {
           field1: '12345'
@@ -629,13 +629,13 @@ describe('lib/driver.js', function () {
           field1: undefined
         }
       ];
-      instance.pools = { 
+      instance.pools = {
         myKeySpace: getPoolStub(instance.config, true, null, { rows })
       };
 
       const result = await instance.cql('SELECT * FROM foo', []);
 
-      expect(result).to.equal(rows);
+      expect(result).to.deep.equal(rows);
     });
 
     it('handles null parameters', function (done) {
