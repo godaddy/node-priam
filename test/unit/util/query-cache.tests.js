@@ -45,7 +45,7 @@ describe('lib/util/query-cache.js', function () {
     }
 
     it('provides a readQuery function', function () {
-      validateFunctionExists('readQuery', 2);
+      validateFunctionExists('readQuery', 1);
     });
 
     it('pre-initializes the query cache', function () {
@@ -57,7 +57,7 @@ describe('lib/util/query-cache.js', function () {
 
   describe('#readQuery()', function () {
 
-    it('returns query text represented by query name', function (done) {
+    it('returns query text represented by query name', function () {
       // arrange
       var queryName = 'myQueryName',
         queryText = 'SELECT * FROM users LIMIT 10;';
@@ -65,28 +65,19 @@ describe('lib/util/query-cache.js', function () {
       queries.fileCache[queryName] = queryText;
 
       // act
-      queries.readQuery(queryName, function (err, data) {
-        // assert
-        assert.strictEqual(data, queryText, 'returned contents of file');
-        assert.isNull(err, 'error should be null');
+      const data = queries.readQuery(queryName);
 
-        done();
-      });
+      // assert
+      assert.strictEqual(data, queryText, 'returned contents of file');
     });
 
-    it('returns error if named query does not exist', function (done) {
+    it('returns error if named query does not exist', function () {
       // arrange
       var queryName = 'myQueryNameDoesntExist';
       var queries = new QueryCache({ queryDirectory: queryDir });
 
-      // act
-      queries.readQuery(queryName, function (err, data) {
-        // assert
-        assert.isUndefined(data, 'file contents are undefined');
-        assert.instanceOf(err, Error, 'error should be populated');
-
-        done();
-      });
+      // act/assert
+      expect(() => queries.readQuery(queryName)).to.throw(Error);
     });
 
     it('throws error if callback not provided', function (done) {
