@@ -1813,7 +1813,7 @@ describe('lib/driver.js', function () {
       instance = getDefaultInstance();
       pool = getPoolStub(instance.config, true, null, {});
       instance.pools = { myKeySpace: pool };
-      instance._execCql = sinon.stub().yields(null, {});
+      instance._execCql = sinon.stub().resolves({});
       instance.getConnectionPool = sinon.stub().yields(null, pool);
     });
 

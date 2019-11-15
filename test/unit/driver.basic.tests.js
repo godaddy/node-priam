@@ -321,7 +321,6 @@ describe('lib/driver.js', function () {
       expect(driver._execCql.args[0][1]).to.deep.equal(params);
       expect(driver._execCql.args[0][2]).to.deep.equal(options);
       expect(driver._execCql.args[0][3]).to.be.a('string');
-      expect(driver._execCql.args[0][4]).to.be.a('function');
       expect(driver.execCqlStream.called).to.be.false;
     });
 
@@ -348,7 +347,7 @@ describe('lib/driver.js', function () {
 
       function testTransformers(transformers, results, cb) {
         const driver = getDefaultInstance();
-        driver._execCql = sinon.stub().yields(null, results);
+        driver._execCql = sinon.stub().resolves(results);
         driver.cql('test', [], {
           resultTransformers: transformers
         }, cb);
@@ -415,9 +414,13 @@ describe('lib/driver.js', function () {
 
     it('calls #streamCqlOnDriver() after pool is ready if pool is not yet ready', async () => {
       pool.isReady = false;
-      await driver._execCqlStream(cql, dataParams, options, stream);
-
+      driver._execCqlStream(cql, dataParams, options, stream);
       expect(driver._streamCqlOnDriver.called).to.be.false;
+
+      while (!pool.waiters.length) {
+        await pool.waiters;
+      }
+
       expect(pool.waiters.length).to.equal(1);
       pool.isReady = true;
       await pool.waiters[0]();
@@ -438,8 +441,12 @@ describe('lib/driver.js', function () {
     it('emits error to stream if pool connection fails', async () => {
       pool.isReady = false;
 
-      await driver._execCqlStream(cql, dataParams, options, stream);
+      driver._execCqlStream(cql, dataParams, options, stream);
       expect(driver._streamCqlOnDriver.called).to.be.false;
+
+      while (!pool.waiters.length) {
+        await pool.waiters;
+      }
       expect(pool.waiters.length).to.equal(1);
       pool.isReady = true;
       const error = new Error('uh-oh');
