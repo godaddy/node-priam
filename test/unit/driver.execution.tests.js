@@ -1074,8 +1074,7 @@ describe('lib/driver.js', function () {
           }
         });
         instance.pools = { myKeySpace: pool };
-        instance.config.numRetries = numRetries;
-        instance.config.retryDelay = 1;
+        instance._initDriverConfig({ numRetries, retryDelay: 1 });
 
         // act
         instance.cql(cqlQuery, params, { consistency: consistency }, function (error, returnData) {
@@ -1162,7 +1161,7 @@ describe('lib/driver.js', function () {
         }
       });
       instance.pools = { myKeySpace: pool };
-      instance.config.retryDelay = 1;
+      instance._initDriverConfig({ retryDelay: 1 });
 
       // act
       instance.cql(cqlQuery, params, { consistency: consistency }, function (error, returnData) {
