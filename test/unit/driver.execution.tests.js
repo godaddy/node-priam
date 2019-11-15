@@ -2,7 +2,6 @@ const { PassThrough } = require('stream');
 const path            = require('path');
 const sinon           = require('sinon');
 const chai            = require('chai');
-const through         = require('through2');
 const _               = require('lodash');
 const cql             = require('cassandra-driver');
 const FakeResolver    = require('../stubs/fake-resolver');
@@ -1511,7 +1510,7 @@ describe('lib/driver.js', function () {
 
   describe('DatastaxDriver#streamCqlOnDriver()', function () {
     var pool, cqlStatement, params, consistency, options, stream,
-      resultStream, fakeThroughObj, instance;
+      resultStream, instance;
     beforeEach(function () {
       instance = getDefaultInstance();
       cqlStatement = 'myCqlStatement';
@@ -1526,14 +1525,6 @@ describe('lib/driver.js', function () {
           protocolVersion: 2
         }
       };
-      fakeThroughObj = {
-        foo: 'bar'
-      };
-      sinon.stub(through, 'obj').returns(fakeThroughObj);
-    });
-
-    afterEach(function () {
-      through.obj.restore();
     });
 
     it('calls pool.stream() with the correct arguments', function (done) {

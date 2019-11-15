@@ -41,7 +41,6 @@
     "nyc": "^14.0.0",
     "sinon": "^7.5.0",
     "sinon-chai": "^3.3.0",
-    "through2": "^2.0.0",
     "winston": "^1.0.0"
   },
   "scripts": {
