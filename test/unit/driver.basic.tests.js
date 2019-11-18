@@ -343,43 +343,6 @@ describe('lib/driver.js', function () {
       expect(driver.execCql.called).to.be.false;
     });
 
-    describe('resultTransformers', function () {
-
-      function testTransformers(transformers, results, cb) {
-        const driver = getDefaultInstance();
-        driver._execCql = sinon.stub().resolves(results);
-        driver.cql('test', [], {
-          resultTransformers: transformers
-        }, cb);
-      }
-
-      it('called if results', function (done) {
-        const transformer = sinon.stub(),
-          results = [{ test: true }];
-        testTransformers([transformer], results, function () {
-          assert.ok(transformer.calledOnce);
-          done();
-        });
-      });
-
-      it('does not call unless results', function (done) {
-        const transformer = sinon.stub(),
-          results = [];
-        testTransformers([transformer], results, function () {
-          assert.notOk(transformer.called);
-          done();
-        });
-      });
-
-      it('does not call unless results.length', function (done) {
-        const transformer = sinon.stub(),
-          results = [];
-        testTransformers([transformer], results, function () {
-          assert.notOk(transformer.called);
-          done();
-        });
-      });
-    });
   });
 
   describe('BaseDriver#executeCqlStream()', function () {
