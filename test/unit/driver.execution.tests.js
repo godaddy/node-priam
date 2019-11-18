@@ -548,15 +548,15 @@ describe('lib/driver.js', function () {
       var pool = getPoolStub(instance.config, true, null, []);
       instance.pools = { myKeySpace: pool };
 
-      pool.stream = sinon.spy(function (cql, data, consist) {
+      pool.stream = sinon.spy(function *(cql) {
         var call = pool.stream.getCall(0);
 
         // assert
         assert.strictEqual(call.args[0], cql, 'cql should be passed through');
         assert.deepEqual(call.args[1], params, 'params should be passed through');
 
+        yield* [];
         done();
-        return arrayStream([]);
       });
 
       // act
@@ -1071,7 +1071,7 @@ describe('lib/driver.js', function () {
         var pool = getPoolStub(instance.config, true, null, {});
         var data = [];
         var callCount = 0;
-        pool.stream = sinon.spy(async function *(c, d, con) {
+        pool.stream = sinon.spy(async function *() {
           callCount++;
           if (callCount === 1) {
             throw new cql.errors[errorName](errorCode, 'error message');
