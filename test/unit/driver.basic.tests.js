@@ -414,7 +414,7 @@ describe('lib/driver.js', function () {
 
     it('calls #streamCqlOnDriver() after pool is ready if pool is not yet ready', async () => {
       pool.isReady = false;
-      driver._execCqlStream(cql, dataParams, options, stream);
+      const streamPromise = driver._execCqlStream(cql, dataParams, options, stream);
       expect(driver._streamCqlOnDriver.called).to.be.false;
 
       while (!pool.waiters.length) {
@@ -424,6 +424,7 @@ describe('lib/driver.js', function () {
       expect(pool.waiters.length).to.equal(1);
       pool.isReady = true;
       await pool.waiters[0]();
+      await streamPromise;
       expect(driver._streamCqlOnDriver.calledOnce).to.be.true;
       expect(stream.emit.called).to.be.false;
     });
@@ -441,7 +442,7 @@ describe('lib/driver.js', function () {
     it('emits error to stream if pool connection fails', async () => {
       pool.isReady = false;
 
-      driver._execCqlStream(cql, dataParams, options, stream);
+      const streamPromise = driver._execCqlStream(cql, dataParams, options, stream);
       expect(driver._streamCqlOnDriver.called).to.be.false;
 
       while (!pool.waiters.length) {
@@ -452,6 +453,7 @@ describe('lib/driver.js', function () {
       const error = new Error('uh-oh');
 
       await pool.waiters[0](error);
+      await streamPromise;
       expect(driver._streamCqlOnDriver.called).to.be.false;
       expect(stream.emit.calledOnce).to.be.true;
       expect(stream.emit.args[0][0]).to.equal(error);
