@@ -1557,7 +1557,7 @@ describe('lib/driver.js', function () {
     it('transformation stream returns normalized object if row is present and there are no transforms', function (done) {
       var row = { foo: 'bar' };
       var normalized = { something: 'else' };
-      instance._getNormalizedResults = sinon.stub().returns([normalized]);
+      instance._getNormalizedRecord = sinon.stub().returns(normalized);
       instance._streamCqlOnDriver(pool, cqlStatement, params, consistency, options, stream);
 
       stream.once('data', assertData);
@@ -1575,15 +1575,15 @@ describe('lib/driver.js', function () {
       var transformed = { something: 'completely different' };
       var transform = sinon.stub().returns(transformed);
       options.resultTransformers = [transform];
-      instance._getNormalizedResults = sinon.stub().returns([normalized]);
+      instance._getNormalizedRecord = sinon.stub().returns(normalized);
 
       instance._streamCqlOnDriver(pool, cqlStatement, params, consistency, options, stream);
       stream.once('data', assertData);
       resultStream.end(row);
 
       function assertData(data) {
-        assert.ok(instance._getNormalizedResults.calledOnce);
-        assert.deepEqual(instance._getNormalizedResults.args[0][0], [row], 'row is normalized');
+        assert.ok(instance._getNormalizedRecord.calledOnce);
+        assert.deepEqual(instance._getNormalizedRecord.args[0][0], row, 'row is normalized');
         assert.ok(transform.calledOnce);
         assert.deepEqual(transform.args[0][0], normalized, 'normalized row is transformed');
         assert.deepEqual(data, transformed);
