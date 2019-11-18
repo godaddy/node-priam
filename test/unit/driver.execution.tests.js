@@ -1956,20 +1956,20 @@ describe('lib/driver.js', function () {
       done();
     });
 
-    it('yields error if named query does not exist', function (done) {
+    it('throws an error if named query does not exist', async () => {
       // arrange
       var queryName = 'idontexist';
 
       // act
-      instance.namedQuery(queryName, [], function (error, returnData) {
-        // assert
-        assert.instanceOf(error, Error, 'error is populated');
-        assert.isObject(error.query, 'query is not defined');
-        assert.equal(error.query.queryName, 'idontexist', 'query.queryName does not match named query');
-        assert.isUndefined(returnData, 'returnData not defined');
+      let error;
+      try {
+        await instance.namedQuery(queryName, []);
+      } catch (err) {
+        error = err;
+      }
 
-        done();
-      });
+      // assert
+      assert.instanceOf(error, Error, 'error is populated');
     });
 
     it('throws error if queryDirectory not provided in constructor', async () => {
