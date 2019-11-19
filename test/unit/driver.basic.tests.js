@@ -351,33 +351,32 @@ describe('lib/driver.js', function () {
       cql = 'myCqlStatement';
       dataParams = [];
       options = { consistency: 'one' };
-      stream = {
-        emit: sinon.stub()
-      };
+      stream = new Stream.Writable({
+        objectMode: true,
+        write: sinon.stub().yields()
+      });
       driver = getDefaultInstance();
       pool = { isReady: true, waiters: [] };
-      driver._streamCqlOnDriver = sinon.stub();
+      driver._iterateCqlOnDriver = sinon.spy(async function *() { yield* []; });
       driver._getConnectionPool = sinon.stub().resolves(pool);
     });
 
-    it('calls #streamCqlOnDriver() if pool is ready', async () => {
+    it('calls #_iterateCqlOnDriver() if pool is ready', async () => {
       await driver._execCqlStream(cql, dataParams, options, stream);
 
-      expect(driver._streamCqlOnDriver.calledOnce).to.be.true;
-      expect(driver._streamCqlOnDriver.args[0][0]).to.equal(pool);
-      expect(driver._streamCqlOnDriver.args[0][1]).to.equal(cql);
-      expect(driver._streamCqlOnDriver.args[0][2]).to.deep.equal(dataParams);
-      expect(driver._streamCqlOnDriver.args[0][3]).to.deep.equal(options.consistency);
-      expect(driver._streamCqlOnDriver.args[0][4]).to.deep.equal(options);
-      expect(driver._streamCqlOnDriver.args[0][5]).to.equal(stream);
+      expect(driver._iterateCqlOnDriver.calledOnce).to.be.true;
+      expect(driver._iterateCqlOnDriver.args[0][0]).to.equal(pool);
+      expect(driver._iterateCqlOnDriver.args[0][1]).to.equal(cql);
+      expect(driver._iterateCqlOnDriver.args[0][2]).to.deep.equal(dataParams);
+      expect(driver._iterateCqlOnDriver.args[0][3]).to.deep.equal(options.consistency);
+      expect(driver._iterateCqlOnDriver.args[0][4]).to.deep.equal(options);
       expect(pool.waiters.length).to.equal(0);
-      expect(stream.emit.called).to.be.false;
     });
 
-    it('calls #streamCqlOnDriver() after pool is ready if pool is not yet ready', async () => {
+    it('calls #_iterateCqlOnDriver() after pool is ready if pool is not yet ready', async () => {
       pool.isReady = false;
       const streamPromise = driver._execCqlStream(cql, dataParams, options, stream);
-      expect(driver._streamCqlOnDriver.called).to.be.false;
+      expect(driver._iterateCqlOnDriver.called).to.be.false;
 
       while (!pool.waiters.length) {
         await pool.waiters;
@@ -387,26 +386,26 @@ describe('lib/driver.js', function () {
       pool.isReady = true;
       await pool.waiters[0]();
       await streamPromise;
-      expect(driver._streamCqlOnDriver.calledOnce).to.be.true;
-      expect(stream.emit.called).to.be.false;
+      expect(driver._iterateCqlOnDriver.calledOnce).to.be.true;
     });
 
     it('emits error to stream if pool resolution fails', async () => {
+      sinon.stub(stream, 'emit').returnsThis();
       const error = new Error('uh-oh');
       driver._getConnectionPool = sinon.stub().rejects(error);
       await driver._execCqlStream(cql, dataParams, options, stream);
 
-      expect(driver._streamCqlOnDriver.called).to.be.false;
-      expect(stream.emit.calledOnce).to.be.true;
-      expect(stream.emit.args[0][0]).to.equal(error);
+      expect(driver._iterateCqlOnDriver.called).to.be.false;
+      expect(stream.emit).to.be.calledWith('error', error);
     });
 
     it('emits error to stream if pool connection fails', async () => {
       pool.isReady = false;
 
       const streamPromise = driver._execCqlStream(cql, dataParams, options, stream);
-      expect(driver._streamCqlOnDriver.called).to.be.false;
+      expect(driver._iterateCqlOnDriver.called).to.be.false;
 
+      sinon.stub(stream, 'emit').returnsThis();
       while (!pool.waiters.length) {
         await pool.waiters;
       }
@@ -416,9 +415,8 @@ describe('lib/driver.js', function () {
 
       await pool.waiters[0](error);
       await streamPromise;
-      expect(driver._streamCqlOnDriver.called).to.be.false;
-      expect(stream.emit.calledOnce).to.be.true;
-      expect(stream.emit.args[0][0]).to.equal(error);
+      expect(driver._iterateCqlOnDriver.called).to.be.false;
+      expect(stream.emit).to.be.calledWith('error', error);
     });
 
   });
