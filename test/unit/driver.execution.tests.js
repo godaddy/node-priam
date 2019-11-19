@@ -1,4 +1,3 @@
-const { PassThrough } = require('stream');
 const path            = require('path');
 const sinon           = require('sinon');
 const chai            = require('chai');

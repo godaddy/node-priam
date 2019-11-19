@@ -166,8 +166,9 @@ Calling `#beginQuery()` returns a `Query` object with the following chainable fu
 
  - `#execute(callback [optional, function])`: Executes the query. If a callback is not supplied, this will return a Promise.
 
- - `#stream()`: Executes the query and returns a readable `Stream` object. *Note: Only available when using the `datastax` driver!*
+ - `#stream()`: Executes the query and returns a readable `Stream` object.
 
+ - `#iterate()`: Executes the query and returns an async iterable.
 
 
 #### Fluent Syntax Examples ####

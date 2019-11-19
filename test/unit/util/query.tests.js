@@ -379,7 +379,7 @@ describe('lib/util/query.js', function () {
 
   describe('#stream()', function () {
     beforeEach(function () {
-      db.cql = sinon.stub().returns(null);
+      db.cql = sinon.spy(function *() { yield* []; });
     });
 
     it('returns a stream when context has proper cql', function () {
@@ -390,13 +390,27 @@ describe('lib/util/query.js', function () {
       assert(isStream(stream), 'that the returned stream is indeed a stream');
     });
 
-    it('emits an error when cql is not in the context', function (done) {
+    it('throws an error when cql is not in the context', function () {
       query.context.cql = null;
-      var stream = query.stream();
-      stream.on('error', function (err) {
-        expect(err, 'to be an error');
-        done();
-      });
+      expect(() => query.stream()).to.throw(Error);
+    });
+  });
+
+  describe('#iterate()', () => {
+    const rows = [{ a: 1 }, { a: 2 }, { a: 3 }];
+    beforeEach(function () {
+      db.cql = sinon.spy(function *() { yield* rows; });
+    });
+
+    it('returns an async iterable', async () => {
+      query.context.cql = 'SELECT * from myColumnFamily';
+
+      const result = [];
+      for await (const row of query.iterate()) {
+        result.push(row);
+      }
+
+      expect(result).to.deep.equal(rows);
     });
   });
 
