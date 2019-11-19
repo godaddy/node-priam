@@ -311,7 +311,7 @@ describe('lib/driver.js', function () {
       const options = { consistency: 'one' };
       const cb = sinon.stub();
       const driver = getDefaultInstance();
-      driver._execCql = sinon.stub();
+      driver._execCql = sinon.stub().resolves();
       driver.execCqlStream = sinon.stub();
 
       driver.cql(cql, params, options, cb);

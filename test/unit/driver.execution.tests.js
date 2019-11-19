@@ -628,13 +628,9 @@ describe('lib/driver.js', function () {
 
     it('returns a `Promise` if no callback or stream is supplied', async () => {
       const rows = [
-        {
-          field1: '12345'
-        }, {
-          field1: null
-        }, {
-          field1: undefined
-        }
+        { field1: '12345' },
+        { field1: null },
+        { field1: undefined }
       ];
       instance.pools = {
         myKeySpace: getPoolStub(instance.config, true, null, { rows })
@@ -643,6 +639,57 @@ describe('lib/driver.js', function () {
       const result = await instance.cql('SELECT * FROM foo', []);
 
       expect(result).to.deep.equal(rows);
+    });
+
+    describe('when the "iterable" option is set to true', () => {
+      const rows = [
+        { field1: '12345' },
+        { field1: null },
+        { field1: undefined }
+      ];
+
+      beforeEach(() => {
+        instance = getDefaultInstance();
+        instance.pools = {
+          myKeySpace: getPoolStub(instance.config, true, null, { rows })
+        };
+      });
+
+      it('returns an async iterable', async () => {
+        const result = await iterateIntoArray(instance.cql('SELECT * FROM foo', [], { iterable: true }));
+        expect(result).to.deep.equal(rows);
+      });
+
+      it('performs retries within the async iterable', async () => {
+        instance._initDriverConfig({
+          ...getDefaultConfig(),
+          numRetries: 2,
+          retryDelay: 1
+        });
+
+        const pool = instance.pools.myKeySpace;
+        let callCount = 0;
+        pool.stream = sinon.spy(() => {
+          if (!callCount++) {
+            throw new cql.errors.ResponseError(0x1200, 'error message');
+          } else {
+            return rows;
+          }
+        });
+
+        const result = await iterateIntoArray(instance.cql('SELECT * FROM foo', [], { iterable: true }));
+
+        expect(callCount).to.equal(2);
+        expect(result).to.deep.equal(rows);
+      });
+
+      async function iterateIntoArray(iterable) {
+        const result = [];
+        for await (const row of iterable) {
+          result.push(row);
+        }
+        return result;
+      }
     });
 
     it('handles null parameters', function (done) {
@@ -1598,7 +1645,7 @@ describe('lib/driver.js', function () {
     var instance;
     beforeEach(function () {
       instance = getDefaultInstance();
-      sinon.stub(instance, '_execCql').yields(null, {});
+      sinon.stub(instance, '_execCql').resolves({});
       sinon.stub(cql, 'Client').returns({});
     });
 

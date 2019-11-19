@@ -132,13 +132,12 @@ db.namedQuery(
 
 ### Query Return Options ###
 
-For the `cql` and `namedQuery` methods, there are three ways to get back your
-data:
+For the `cql` and `namedQuery` methods, there are four ways to get back your data:
 
 * As a `Promise` - To get back a `Promise`, do not pass a callback argument. The `Promise` will resolve to an `Array` of rows.
 * Via a callback - If you supply a callback function as your last argument, it will be called with an `error` and `data` argument. If there was no error, `data` will be an `Array`.
 * Written to a `Stream` - If you pass a writable stream instead of a callback, the resulting rows will be written to this stream. Your stream will emit `error` events if an error occurs while executing the query.
-
+* As an async iterable - If you set the `iterable` option to `true`, then an async iterable is returned.
 
 ### Fluent Syntax ###
 The driver provides a fluent syntax that can be used to construct queries.
@@ -329,6 +328,7 @@ db
 
 All techniques for a query share the following set of options:
 
+* `iterable` - causes an async iterable to be returned
 * `executeAsPrepared` - informs the [node-cassandra-cql](https://github.com/jorgebay/node-cassandra-cql) driver to execute the given CQL as a prepared statement, which will boost performance if the query is executed multiple times.
 * `queryName` - allows metrics to be captured for the given query, assuming a `metrics` object was passed into the constructor. See the [Monitoring / Instrumentation](#monitoring--instrumentation) section for more information.
 * `consistency` - allows you to override any default consistency level that was specified in the driver's constructor.
