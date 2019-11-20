@@ -5,7 +5,7 @@
 This major release is mostly geared toward performance improvements, but some minor potential breakages may occur. 
 
 **BREAKING**:
-* Priam now requires node 10 or greater so it can take advantage of async iterator support.
+* Priam now requires node 10 or node 12 or greater so it can take advantage of async iterator support. For some reason, node 11 is incompatible.
 * Errors are now emitted correctly when writing to a stream. This means you may now need to attach `error` handlers to your streams to avoid unhandled error exceptions.
 * Undocumented private methods have now been prefixed with underscores; if your code was calling these undocumented methods directly, those methods may now have been renamed or removed.
 * Some cases where error would be emitted through streams or callbacks have been changed to throw immediately in the case of caller error. For example, passing a named query that does not exist will throw immediately to the caller.
