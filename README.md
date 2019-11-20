@@ -356,8 +356,7 @@ of queries, and easily find references in your application to each query type.
 Connection pools are automatically instantiated when the first query is run and kept alive for the lifetime of the driver.
 To manually initiate and/or close connections, you can use the following functions:
 
- - `#connect(keyspace [string, optional], callback [Function])`: Calls `callback` parameter after connection pool is initialized,
-   or existing pool is retrieved. Can be used at application startup to immediately start the connection pool.
+ - `#connect(keyspace [string, optional], callback [Function])`: Calls `callback` parameter after connection pool is initialized, or existing pool is retrieved. Can be used at application startup to immediately start the connection pool. You may also omit the callback parameter to receive a Promise instead.
 
  - `#close(callback [Function])`: Calls `callback` after all connection pools are closed. Useful for testing purposes.
 

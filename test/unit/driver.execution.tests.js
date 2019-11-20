@@ -114,6 +114,41 @@ describe('lib/driver.js', function () {
       });
     });
 
+    it('supports returning a pool via Promise', async () => {
+      // arrange
+      var pool = getPoolStub(instance.config, true, null, {});
+      pool.on = sinon.stub();
+      pool.connect = sinon.stub().resolves({});
+      sinon.stub(cql, 'Client').returns(pool);
+
+      // act
+      const newPool = await instance.connect();
+
+      // assert
+      assert.equal(newPool, pool, 'pool should be passed');
+      assert.strictEqual(pool.isReady, true, 'pool should be ready');
+    });
+
+    it('handles errors via Promises', async () => {
+      // arrange
+      var pool = getPoolStub(instance.config, true, null, {});
+      var error = new Error('connection failed');
+      pool.on = sinon.stub();
+      pool.connect = sinon.stub().rejects(error);
+      sinon.stub(cql, 'Client').returns(pool);
+
+      // act
+      let caughtError;
+      try {
+        await instance.connect();
+      } catch (err) {
+        caughtError = err;
+      }
+
+      // assert
+      assert.equal(caughtError, error, 'error should be populated');
+    });
+
     it('allows the load balancing policy to be overridden', done => {
       const mockPolicy = {
         loadBalancing: Symbol()
