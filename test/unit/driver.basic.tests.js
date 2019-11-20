@@ -24,8 +24,7 @@ describe('lib/driver.js', function () {
   function getDefaultConfig() {
     return {
       hosts: ['123.456.789.012:9160'],
-      keyspace: 'myKeySpace',
-      timeout: 12345
+      keyspace: 'myKeySpace'
     };
   }
 
@@ -167,17 +166,16 @@ describe('lib/driver.js', function () {
 
     it('sets default pool configuration', function () {
       // arrange
-      const config = _.extend({}, getDefaultConfig());
-      const configCopy = _.extend({}, config);
+      const config = { ...getDefaultConfig() };
+      const configCopy = { ...config };
       const consistencyLevel = cql.types.consistencies.one;
 
       // act
-      const instance = new Driver({ config: config });
+      const instance = new Driver({ config });
 
       // assert
       assert.deepEqual(instance.poolConfig.contactPoints, configCopy.hosts, 'hosts should be passed through');
       assert.strictEqual(instance.poolConfig.keyspace, configCopy.keyspace, 'keyspace should be passed through');
-      assert.strictEqual(instance.poolConfig.getAConnectionTimeout, configCopy.timeout, 'timeout should be passed through');
       assert.strictEqual(instance.poolConfig.version, configCopy.cqlVersion, 'cqlVersion should be passed through');
       assert.strictEqual(instance.poolConfig.limit, configCopy.limit, 'limit should be passed through');
       assert.strictEqual(instance.poolConfig.consistencyLevel, consistencyLevel, 'consistencyLevel should default to ONE');
@@ -193,13 +191,14 @@ describe('lib/driver.js', function () {
       config.cqlVersion = cqlVersion;
       config.consistencyLevel = consistencyLevel;
       config.limit = limit;
+      config.socketOptions = { connectTimeout: 1000 };
 
       // act
-      const instance = new Driver({ config: config });
+      const instance = new Driver({ config });
 
       // assert
       assert.deepEqual(instance.poolConfig.contactPoints, configCopy.hosts, 'hosts should be passed through');
-      assert.strictEqual(instance.poolConfig.getAConnectionTimeout, configCopy.timeout, 'timeout should be passed through');
+      assert.strictEqual(instance.poolConfig.socketOptions, config.socketOptions, 'socket options should be passed through');
       assert.strictEqual(instance.poolConfig.keyspace, configCopy.keyspace, 'keyspace should be passed through');
       assert.strictEqual(instance.poolConfig.version, cqlVersion, 'cqlVersion should be overridden');
       assert.strictEqual(instance.poolConfig.limit, limit, 'limit should be overridden');

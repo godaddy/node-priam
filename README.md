@@ -31,12 +31,19 @@ Example Usage
 Check the `example` folder for a more complete example. Start by running: `npm start` followed by `curl http://localhost:8080/` or `curl http://localhost:8080/stream=true`.
 
 ### Using Known Connection Information ###
+
 ```javascript
 var path = require('path');
 var db = require('priam')({
   config: {
+    /* See https://docs.datastax.com/en/developer/nodejs-driver/4.3/api/type.ClientOptions/
+ 
+       for full list of config options 
+    */
     cqlVersion: '3.0.0', /* optional, defaults to '3.1.0' */
-    timeout: 4000, /* optional, defaults to 4000 */
+    socketOptions: {  /* optional, defaults as below */
+      connectTimeout: 5000 /* optional, defaults to 4000 */
+    },
     poolSize: 2, /* optional, defaults to 1 */
     consistencyLevel: 'one', /* optional, defaults to one. Will throw if not a valid Cassandra consistency level*/
     numRetries: 3, /* optional, defaults to 0. Retries occur on connection failures. Deprecated, use retryOptions instead. */

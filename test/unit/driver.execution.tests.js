@@ -18,7 +18,6 @@ describe('lib/driver.js', function () {
       cqlVersion: '3.1.0',
       hosts: ['123.456.789.012:9042'],
       keyspace: 'myKeySpace',
-      timeout: 12345,
       limit: 5000
     };
   }
@@ -200,9 +199,9 @@ describe('lib/driver.js', function () {
       assert.strictEqual(pool.isReady, true, 'pool should be ready');
     });
 
-    it('generates appropriate configuration structure for timeout', async () => {
+    it('generates appropriate configuration structure for socket options', async () => {
       // arrange
-      instance.config.getAConnectionTimeout = 15000;
+      instance.config.socketOptions = { connectTimeout: 15000 };
       var pool = getPoolStub(instance.config, true, null, {});
       pool.on = sinon.stub();
       pool.connect = sinon.stub().resolves({});

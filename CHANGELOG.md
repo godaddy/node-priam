@@ -2,10 +2,11 @@
 
 ## 4.0.0
 
-This major release is mostly geared toward performance improvements, but some minor potential breakages may occur. 
+This major release is geared toward internal performance improvements and removing some legacy code cruft relating to the now-defunct dual driver support.
 
 **BREAKING**:
 * Priam now requires node 10 or node 12 or greater so it can take advantage of async iterator support. For some reason, node 11 is incompatible.
+* In olden days, `priam` supported two underlying Cassandra drivers. This is no-longer the case, so some effort has been done to remove the cruft in the code for this dual support. One of these changes removes the translation of the old `helenus` driver config options to those compatible with `cassandra-driver`. Config options in `priam` are now aligned directly with the config options of `cassandra-driver`.
 * Errors are now emitted correctly when writing to a stream. This means you may now need to attach `error` handlers to your streams to avoid unhandled error exceptions.
 * Undocumented private methods have now been prefixed with underscores; if your code was calling these undocumented methods directly, those methods may now have been renamed or removed.
 * Some cases where error would be emitted through streams or callbacks have been changed to throw immediately in the case of caller error. For example, passing a named query that does not exist will throw immediately to the caller.
@@ -17,6 +18,8 @@ Features:
 
 Performance:
 * Streaming functionality has been streamlined; native node streams are now used instead of third-party wrappers, and the number of intermediate streams wrappers have been reduced. You may now use the async iterable options to avoid even more node streaming overhead.
+
+See the [migration from 3.x to 4.x](./MIGRATION.md#from-3.x-to-4.x) to assist your efforts into migrating to version 4.x.
 
 ## 3.1.0
 
