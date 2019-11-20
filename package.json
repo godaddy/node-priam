@@ -45,7 +45,7 @@
   },
   "scripts": {
     "pretest": "eslint --fix ./lib/. ./test/. ./example/. ./index.js",
-    "test": "nyc mocha ./test/unit --recursive",
+    "test": "nyc --reporter=lcov mocha ./test/unit --recursive",
     "start": "node example/example"
   }
 }

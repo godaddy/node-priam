@@ -1,10 +1,11 @@
-const path            = require('path');
-const sinon           = require('sinon');
-const chai            = require('chai');
-const _               = require('lodash');
-const cql             = require('cassandra-driver');
-const FakeResolver    = require('../stubs/fake-resolver');
-const Driver          = require('../../lib/driver');
+const path             = require('path');
+const { EventEmitter } = require('events');
+const sinon            = require('sinon');
+const chai             = require('chai');
+const _                = require('lodash');
+const cql              = require('cassandra-driver');
+const FakeResolver     = require('../stubs/fake-resolver');
+const Driver           = require('../../lib/driver');
 
 chai.use(require('sinon-chai'));
 const assert = chai.assert;
@@ -43,7 +44,7 @@ describe('lib/driver.js', function () {
     const rows = (data || {}).rows || [];
     var storeConfig = _.extend({ consistencyLevel: 1, version: '3.1.0' }, config);
     Driver.DatastaxDriver.prototype._remapConnectionOptions(storeConfig);
-    return {
+    return Object.assign(new EventEmitter(), {
       storeConfig: storeConfig,
       isReady: isReady,
       execute: sinon.stub().returns(err ? Promise.reject(err) : Promise.resolve(data)),
@@ -55,11 +56,12 @@ describe('lib/driver.js', function () {
         }
       }),
       batch: sinon.stub().yields(err, data),
+      connect: sinon.stub().resolves({}),
       shutdown: sinon.stub().resolves(),
       controlConnection: {
         protocolVersion: 2
       }
-    };
+    });
   }
 
   describe('DatastaxDriver#connect()', function () {
@@ -112,6 +114,26 @@ describe('lib/driver.js', function () {
       });
     });
 
+    it('allows the load balancing policy to be overridden', done => {
+      const mockPolicy = {
+        loadBalancing: Symbol()
+      };
+      const driver = new Driver({
+        config: {
+          localDataCenter: 'fakeDC',
+          policies: mockPolicy
+        }
+      });
+      var pool = getPoolStub(instance.config, true, null, {});
+      sinon.stub(cql, 'Client').returns(pool);
+
+      driver.connect(err => {
+        expect(err).to.not.exist;
+        const poolOpts = cql.Client.lastCall.args[0];
+        expect(poolOpts.policies).to.deep.equal(mockPolicy);
+        done();
+      });
+    });
   });
 
   describe('DatastaxDriver#createConnectionPool()', function () {
@@ -250,6 +272,40 @@ describe('lib/driver.js', function () {
 
       // act
       instance.close(done);
+    });
+
+    it('propagates pool closing errors', done => {
+      // arrange
+      const error = new Error('Please, just 5 more minutes?');
+      pool.isReady = true;
+      pool.isClosed = false;
+      pool.shutdown = sinon.stub().rejects(error);
+
+      // act
+      instance.close(function (err) {
+        // assert
+        expect(err).to.equal(error);
+        done();
+      });
+    });
+
+    it('supports Promises', async () => {
+      // arrange
+      const error = new Error('Please, just 5 more minutes?');
+      pool.isReady = true;
+      pool.isClosed = false;
+      pool.shutdown = sinon.stub().rejects(error);
+
+      // act
+      let caughtError;
+      try {
+        await instance.close();
+      } catch (err) {
+        caughtError = err;
+      }
+
+      // assert
+      expect(caughtError).to.equal(error);
     });
 
   });
@@ -1338,6 +1394,30 @@ describe('lib/driver.js', function () {
       });
     });
 
+    it('can apply transformations to the results', async () => {
+      const rows = [
+        { foo: 1 },
+        { foo: 2 },
+        { foo: 3 }
+      ];
+      instance.pools = {
+        myKeySpace: getPoolStub(instance.config, true, null, { rows })
+      };
+
+      const result = await instance.cql('SELECT * FROM foo', [], {
+        resultTransformers: [
+          x => x.foo * 2,
+          x => '*'.repeat(x)
+        ]
+      });
+
+      expect(result).to.deep.equal([
+        '**',
+        '****',
+        '******'
+      ]);
+    });
+
     describe('with connection resolver', function () {
 
       var logger, resolverOptions;
@@ -1437,7 +1517,7 @@ describe('lib/driver.js', function () {
         var fakeConnectionInfo = {
           user: userName,
           password: 'myResolvedPassword',
-          hosts: ['123.456.789.012:1234', '234.567.890.123']
+          hosts: ['123.456.789.012:1234', '234.567.890.123', '235.235.4.3:8888']
         };
         instance.connectionResolver.resolveConnection = sinon.stub().yieldsAsync(null, _.cloneDeep(fakeConnectionInfo));
         var pool = getPoolStub(instance.config, true, null, {});
@@ -1451,8 +1531,10 @@ describe('lib/driver.js', function () {
           // assert
           assert.strictEqual(pool.storeConfig.username, userName);
           assert.strictEqual(pool.storeConfig.password, fakeConnectionInfo.password);
-          assert.deepEqual(pool.storeConfig.contactPoints, ['123.456.789.012:2345', '234.567.890.123'], 'hosts were applied with remapped ports');
-
+          assert.deepEqual(
+            pool.storeConfig.contactPoints,
+            ['123.456.789.012:2345', '234.567.890.123', '235.235.4.3:8888'],
+            'hosts were applied with remapped ports');
           done();
         });
       });

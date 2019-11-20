@@ -1,7 +1,7 @@
 const { expect } = require('chai');
 const peek = require('../../../lib/util/peek');
 
-describe('peek', () => {
+describe('lib/util/peek.js', () => {
   it('returns an async iterable containing the original contents', async () => {
     function *iterable() {
       yield 1;
