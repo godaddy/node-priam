@@ -15,7 +15,9 @@ describe('lib/driver.js', function () {
 
   function getDefaultConfig() {
     return {
-      cqlVersion: '3.1.0',
+      protocolOptions: {
+        maxVersion: '3.1.0'
+      },
       hosts: ['123.456.789.012:9042'],
       keyspace: 'myKeySpace',
       limit: 5000
@@ -41,7 +43,7 @@ describe('lib/driver.js', function () {
 
   function getPoolStub(config, isReady, err, data) {
     const rows = (data || {}).rows || [];
-    var storeConfig = _.extend({ consistencyLevel: 1, version: '3.1.0' }, config);
+    var storeConfig = _.extend({ consistencyLevel: 1, protocolOptions: { maxVersion: '3.1.0' } }, config);
     Driver.DatastaxDriver.prototype._remapConnectionOptions(storeConfig);
     return Object.assign(new EventEmitter(), {
       storeConfig: storeConfig,

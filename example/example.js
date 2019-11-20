@@ -17,7 +17,9 @@ var http               = require('http'),
   db                 = require('../index' /* "priam"*/)({
     config: {
       protocol: 'binary',
-      cqlVersion: '3.1',
+      protocolOptions: {
+        maxVersion: '3.1'
+      },
       queryDirectory: path.join(__dirname, 'cql'),
 
       // If using config-based connection, use these options

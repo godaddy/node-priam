@@ -166,7 +166,8 @@ describe('lib/driver.js', function () {
 
     it('sets default pool configuration', function () {
       // arrange
-      const config = { ...getDefaultConfig() };
+      const protocolOptions = { maxVersion: '3.1.0' };
+      const config = { ...getDefaultConfig(), protocolOptions };
       const configCopy = { ...config };
       const consistencyLevel = cql.types.consistencies.one;
 
@@ -176,7 +177,7 @@ describe('lib/driver.js', function () {
       // assert
       assert.deepEqual(instance.poolConfig.contactPoints, configCopy.hosts, 'hosts should be passed through');
       assert.strictEqual(instance.poolConfig.keyspace, configCopy.keyspace, 'keyspace should be passed through');
-      assert.strictEqual(instance.poolConfig.version, configCopy.cqlVersion, 'cqlVersion should be passed through');
+      assert.strictEqual(instance.poolConfig.protocolOptions, configCopy.protocolOptions, 'protocolOptions should be passed through');
       assert.strictEqual(instance.poolConfig.limit, configCopy.limit, 'limit should be passed through');
       assert.strictEqual(instance.poolConfig.consistencyLevel, consistencyLevel, 'consistencyLevel should default to ONE');
     });
@@ -188,7 +189,7 @@ describe('lib/driver.js', function () {
       const cqlVersion = '2.0.0';
       const consistencyLevel = cql.types.consistencies.any;
       const limit = 300;
-      config.cqlVersion = cqlVersion;
+      config.protocolOptions = { maxVersion: cqlVersion };
       config.consistencyLevel = consistencyLevel;
       config.limit = limit;
       config.socketOptions = { connectTimeout: 1000 };
@@ -200,7 +201,7 @@ describe('lib/driver.js', function () {
       assert.deepEqual(instance.poolConfig.contactPoints, configCopy.hosts, 'hosts should be passed through');
       assert.strictEqual(instance.poolConfig.socketOptions, config.socketOptions, 'socket options should be passed through');
       assert.strictEqual(instance.poolConfig.keyspace, configCopy.keyspace, 'keyspace should be passed through');
-      assert.strictEqual(instance.poolConfig.version, cqlVersion, 'cqlVersion should be overridden');
+      assert.strictEqual(instance.poolConfig.protocolOptions.maxVersion, cqlVersion, 'cqlVersion should be overridden');
       assert.strictEqual(instance.poolConfig.limit, limit, 'limit should be overridden');
       assert.strictEqual(instance.poolConfig.consistencyLevel, consistencyLevel, 'consistencyLevel should be overridden');
     });

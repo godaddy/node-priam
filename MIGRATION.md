@@ -14,7 +14,7 @@ Valid config options have now changed to be more [directly aligned with `cassand
 |----------|----------|----------------|
 | `timeout`, `getAConnectionTimeout` | `socketOptions.connectTimeout` | None |
 | `hostPoolSize`, `poolSize` | `pooling.coreConnectionsPerHost` | To replicate the legacy behavior, set `pooling.coreConnectionsPerHost` to `{ local: poolSize, remote: Math.ceil(poolSize / 2) }` |
-
+| `cqlVersion`, `version` | `protocolOptions.maxVersion` | None |
 
 ### Stream Error Handling
 

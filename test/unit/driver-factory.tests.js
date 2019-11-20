@@ -27,7 +27,7 @@ describe('lib/driver-factory.js', function () {
     });
 
     it('returns datastax driver set to version 3.0 if cqlVersion is equal to 3.0', function () {
-      testInstance('datastax', 'cqlVersion', '3.0.0', '3.0.0', 'binary', Driver.DatastaxDriver);
+      testInstance('datastax', '3.0.0', '3.0.0', 'binary', Driver.DatastaxDriver);
     });
 
     it('exposes DataStax types and consistencies', function () {
@@ -36,23 +36,21 @@ describe('lib/driver-factory.js', function () {
       expect(driverFactory.valueTypes).to.be.an('object');
     });
 
-    function testInstance(driver, versionPath, cqlVersion, expectedVersion, expectedProtocol, expectedInstance) {
+    function testInstance(driver, cqlVersion, expectedVersion, expectedProtocol, expectedInstance) {
       // arrange
-      var context = {
+      const context = {
         config: {
-          driver: driver
+          driver,
+          protocolOptions: { maxVersion: cqlVersion }
         }
       };
-      context.config[versionPath] = cqlVersion;
-      var parsed = parseVersion(expectedVersion);
+      const parsed = parseVersion(expectedVersion);
 
       // act
-      var instance = driverFactory(context);
-      var config = instance.config;
+      const instance = driverFactory(context);
+      const config = instance.config;
 
       // assert
-      assert.strictEqual(config.cqlVersion || config.version, expectedVersion);
-      /* helenus is cqlVersion, node-cass-cql is version */
       assert.deepEqual(config.parsedCqlVersion, parsed);
       assert.strictEqual(config.protocol, expectedProtocol);
       assert.instanceOf(instance, expectedInstance);
