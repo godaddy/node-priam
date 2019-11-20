@@ -1,5 +1,23 @@
 # Changelog
 
+## 4.0.0
+
+This major release is mostly geared toward performance improvements, but some minor potential breakages may occur. 
+
+**BREAKING**:
+* Priam now requires node 10 or greater so it can take advantage of async iterator support.
+* Errors are now emitted correctly when writing to a stream. This means you may now need to attach `error` handlers to your streams to avoid unhandled error exceptions.
+* Undocumented private methods have now been prefixed with underscores; if your code was calling these undocumented methods directly, those methods may now have been renamed or removed.
+* Some cases where error would be emitted through streams or callbacks have been changed to throw immediately in the case of caller error. For example, passing a named query that does not exist will throw immediately to the caller.
+
+Features:
+* Query methods now all support callbacks, Promises, stream writing, and async iterators options.
+* `connect` and `close` methods now support Promises
+* All query result options use retry mechanisms; before the stream option did not.
+
+Performance:
+* Streaming functionality has been streamlined; native node streams are now used instead of third-party wrappers, and the number of intermediate streams wrappers have been reduced. You may now use the async iterable options to avoid even more node streaming overhead.
+
 ## 3.1.0
 
 * Error objects will now return query metadata, including parameters. In production
