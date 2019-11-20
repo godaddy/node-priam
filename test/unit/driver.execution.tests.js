@@ -219,9 +219,15 @@ describe('lib/driver.js', function () {
       }), 'socketOptions should be set');
     });
 
-    it('generates appropriate configuration structure for pool size', async () => {
+    it('uses configured pooling options', async () => {
       // arrange
-      instance.config.poolSize = 5;
+      const pooling = {
+        coreConnectionsPerHost: {
+          0: 5,
+          1: 3
+        }
+      };
+      instance.config.pooling = pooling;
       var pool = getPoolStub(instance.config, true, null, {});
       pool.on = sinon.stub();
       pool.connect = sinon.stub().resolves({});
@@ -232,14 +238,7 @@ describe('lib/driver.js', function () {
 
       // assert
       assert.equal(newPool, pool, 'pool should be passed');
-      assert.ok(cql.Client.calledWithMatch({
-        pooling: {
-          coreConnectionsPerHost: {
-            0: 5,
-            1: 3
-          }
-        }
-      }), 'pooling should be set');
+      assert.ok(cql.Client.calledWithMatch({ pooling }), 'pooling should be set');
     });
 
     it('returns the connection pool immediately if "waitForConnect" is false', async () => {

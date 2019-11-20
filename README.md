@@ -44,7 +44,12 @@ var db = require('priam')({
     socketOptions: {  /* optional, defaults as below */
       connectTimeout: 5000 /* optional, defaults to 4000 */
     },
-    poolSize: 2, /* optional, defaults to 1 */
+    pooling: {  /* optional */
+      coreConnectionsPerHost: {
+        local: 2,
+        remote: 1
+      }
+    },
     consistencyLevel: 'one', /* optional, defaults to one. Will throw if not a valid Cassandra consistency level*/
     numRetries: 3, /* optional, defaults to 0. Retries occur on connection failures. Deprecated, use retryOptions instead. */
     retryDelay: 100, /* optional, defaults to 100ms. Used on consistency fallback retry */
