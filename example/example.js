@@ -23,8 +23,10 @@ var http               = require('http'),
       queryDirectory: path.join(__dirname, 'cql'),
 
       // If using config-based connection, use these options
-      user: 'admin',
-      password: 'admin',
+      credentials: {
+        username: 'admin',
+        password: 'admin'
+      },
       // keyspace: 'priam_test_db',
       hosts: [
         '127.0.0.1', // your host IP's should be here

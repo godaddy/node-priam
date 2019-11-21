@@ -57,8 +57,10 @@ var db = require('priam')({
     enableConsistencyFailover: true, /* optional, defaults to true */
     coerceDataStaxTypes: false, /* optional, defaults to true */
     queryDirectory: path.join(__dirname, 'path/to/your/cql/files'), /* optional, required to use #namedQuery() */
-    user: '<your_username>',
-    password: '<your_password>',
+    credentials: {
+      username: '<your_username>',
+      password: '<your_password>'
+    },
     keyspace: '<your_keyspace>', /* Default keyspace. Can be overwritten via options passed into #cql(), etc. */
     hosts: [ /* Ports are optional */
       '123.456.789.010:9042',

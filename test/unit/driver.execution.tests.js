@@ -18,7 +18,7 @@ describe('lib/driver.js', function () {
       protocolOptions: {
         maxVersion: '3.1.0'
       },
-      hosts: ['123.456.789.012:9042'],
+      contactPoints: ['123.456.789.012:9042'],
       keyspace: 'myKeySpace',
       limit: 5000
     };
@@ -43,8 +43,11 @@ describe('lib/driver.js', function () {
 
   function getPoolStub(config, isReady, err, data) {
     const rows = (data || {}).rows || [];
-    var storeConfig = _.extend({ consistencyLevel: 1, protocolOptions: { maxVersion: '3.1.0' } }, config);
-    Driver.DatastaxDriver.prototype._remapConnectionOptions(storeConfig);
+    var storeConfig = {
+      consistencyLevel: 1,
+      protocolOptions: { maxVersion: '3.1.0' },
+      ...config
+    };
     return Object.assign(new EventEmitter(), {
       storeConfig: storeConfig,
       isReady: isReady,
@@ -1481,27 +1484,27 @@ describe('lib/driver.js', function () {
 
       it('uses supplied connection resolver to override base config', function (done) {
         // arrange
-        var cqlQuery = 'MyCqlStatement';
-        var params = ['param1', 'param2', 'param3'];
-        var consistency = cql.types.consistencies.one;
+        const cqlQuery = 'MyCqlStatement';
+        const params = ['param1', 'param2', 'param3'];
+        const consistency = cql.types.consistencies.one;
         instance = getResolverInstance({ connectionResolver: fakeResolver });
-        var fakeConnectionInfo = {
+        const fakeConnectionInfo = {
           username: 'myResolvedUsername',
           password: 'myResolvedPassword',
           hosts: []
         };
         fakeResolver.resolveConnection = sinon.stub().yieldsAsync(null, fakeConnectionInfo);
-        var pool = getPoolStub(instance.config, true, null, {});
+        const pool = getPoolStub(instance.config, true, null, {});
         pool.on = sinon.stub();
         pool.connect = sinon.stub().resolves({});
         sinon.stub(cql, 'Client').returns(pool);
         instance.pools = {};
 
         // act
-        instance.cql(cqlQuery, params, { consistency: consistency }, function () {
+        instance.cql(cqlQuery, params, { consistency }, function () {
           // assert
-          assert.strictEqual(pool.storeConfig.username, fakeConnectionInfo.username);
-          assert.strictEqual(pool.storeConfig.password, fakeConnectionInfo.password);
+          assert.strictEqual(pool.storeConfig.credentials.username, fakeConnectionInfo.username);
+          assert.strictEqual(pool.storeConfig.credentials.password, fakeConnectionInfo.password);
 
           done();
         });
@@ -1509,12 +1512,12 @@ describe('lib/driver.js', function () {
 
       it('uses resolved connection resolver from path to override base config', function (done) {
         // arrange
-        var cqlQuery = 'MyCqlStatement';
-        var params = ['param1', 'param2', 'param3'];
-        var consistency = cql.types.consistencies.one;
+        const cqlQuery = 'MyCqlStatement';
+        const params = ['param1', 'param2', 'param3'];
+        const consistency = cql.types.consistencies.one;
         instance = getResolverInstance(resolverOptions);
-        var userName = 'myResolvedUsername';
-        var fakeConnectionInfo = {
+        const userName = 'myResolvedUsername';
+        const fakeConnectionInfo = {
           user: userName,
           password: 'myResolvedPassword',
           hosts: ['123.456.789.012:1234']
@@ -1527,10 +1530,10 @@ describe('lib/driver.js', function () {
         instance.pools = {};
 
         // act
-        instance.cql(cqlQuery, params, { consistency: consistency }, function () {
+        instance.cql(cqlQuery, params, { consistency }, function () {
           // assert
-          assert.strictEqual(pool.storeConfig.username, userName);
-          assert.strictEqual(pool.storeConfig.password, fakeConnectionInfo.password);
+          assert.strictEqual(pool.storeConfig.credentials.username, userName);
+          assert.strictEqual(pool.storeConfig.credentials.password, fakeConnectionInfo.password);
           assert.deepEqual(pool.storeConfig.contactPoints, fakeConnectionInfo.hosts);
 
           done();
@@ -1539,33 +1542,33 @@ describe('lib/driver.js', function () {
 
       it('applies port remapping to resolved connection information if specified', function (done) {
         // arrange
-        var cqlQuery = 'MyCqlStatement';
-        var params = ['param1', 'param2', 'param3'];
-        var consistency = cql.types.consistencies.one;
+        const cqlQuery = 'MyCqlStatement';
+        const params = ['param1', 'param2', 'param3'];
+        const consistency = cql.types.consistencies.one;
         instance = getResolverInstance(resolverOptions);
         instance.config.connectionResolverPortMap = {
           from: '1234',
           to: '2345'
         };
         instance.poolConfig.connectionResolverPortMap = instance.config.connectionResolverPortMap;
-        var userName = 'myResolvedUsername';
-        var fakeConnectionInfo = {
+        const userName = 'myResolvedUsername';
+        const fakeConnectionInfo = {
           user: userName,
           password: 'myResolvedPassword',
           hosts: ['123.456.789.012:1234', '234.567.890.123', '235.235.4.3:8888']
         };
         instance.connectionResolver.resolveConnection = sinon.stub().yieldsAsync(null, _.cloneDeep(fakeConnectionInfo));
-        var pool = getPoolStub(instance.config, true, null, {});
+        const pool = getPoolStub(instance.config, true, null, {});
         pool.on = sinon.stub();
         pool.connect = sinon.stub().resolves({});
         sinon.stub(cql, 'Client').returns(pool);
         instance.pools = {};
 
         // act
-        instance.cql(cqlQuery, params, { consistency: consistency }, function () {
+        instance.cql(cqlQuery, params, { consistency }, function () {
           // assert
-          assert.strictEqual(pool.storeConfig.username, userName);
-          assert.strictEqual(pool.storeConfig.password, fakeConnectionInfo.password);
+          assert.strictEqual(pool.storeConfig.credentials.username, userName);
+          assert.strictEqual(pool.storeConfig.credentials.password, fakeConnectionInfo.password);
           assert.deepEqual(
             pool.storeConfig.contactPoints,
             ['123.456.789.012:2345', '234.567.890.123', '235.235.4.3:8888'],
@@ -1608,33 +1611,33 @@ describe('lib/driver.js', function () {
 
       it('returns data and logs error if connection resolver throws error on lazy fetch', function (done) {
         // arrange
-        var cqlQuery = 'MyCqlStatement';
-        var params = ['param1', 'param2', 'param3'];
-        var consistency = cql.types.consistencies.one;
+        const cqlQuery = 'MyCqlStatement';
+        const params = ['param1', 'param2', 'param3'];
+        const consistency = cql.types.consistencies.one;
         instance = getResolverInstance({ connectionResolver: fakeResolver });
-        var fakeConnectionInfo = {
+        const fakeConnectionInfo = {
           username: 'myResolvedUsername',
           password: 'myResolvedPassword',
           hosts: []
         };
-        var fetchError = new Error('lazy fetch error');
+        const fetchError = new Error('lazy fetch error');
         fakeResolver.resolveConnection = function (data, cb) {
           fakeResolver.on.getCall(1).args[1](fetchError);
           cb(null, fakeConnectionInfo);
         };
-        var pool = getPoolStub(instance.config, true, null, {});
+        const pool = getPoolStub(instance.config, true, null, {});
         pool.on = sinon.stub();
         pool.connect = sinon.stub().resolves({});
         sinon.stub(cql, 'Client').returns(pool);
         instance.pools = {};
-        var connectionOptionsErrorHandler = sinon.stub();
+        const connectionOptionsErrorHandler = sinon.stub();
         instance.on('connectionOptionsError', connectionOptionsErrorHandler);
 
         // act
         instance.cql(cqlQuery, params, { consistency: consistency }, function () {
           // assert
-          assert.strictEqual(pool.storeConfig.username, fakeConnectionInfo.username, 'username successfully updated');
-          assert.strictEqual(pool.storeConfig.password, fakeConnectionInfo.password, 'password successfully updated');
+          assert.strictEqual(pool.storeConfig.credentials.username, fakeConnectionInfo.username, 'username successfully updated');
+          assert.strictEqual(pool.storeConfig.credentials.password, fakeConnectionInfo.password, 'password successfully updated');
           expect(connectionOptionsErrorHandler).to.have.been.calledWith(fetchError);
           done();
         });
@@ -1642,11 +1645,11 @@ describe('lib/driver.js', function () {
 
       it('returns data if connection resolver successfully performs a lazy fetch', function (done) {
         // arrange
-        var cqlQuery = 'MyCqlStatement';
-        var params = ['param1', 'param2', 'param3'];
-        var consistency = cql.types.consistencies.one;
+        const cqlQuery = 'MyCqlStatement';
+        const params = ['param1', 'param2', 'param3'];
+        const consistency = cql.types.consistencies.one;
         instance = getResolverInstance({ connectionResolver: fakeResolver });
-        var fakeConnectionInfo = {
+        const fakeConnectionInfo = {
           username: 'myResolvedUsername',
           password: 'myResolvedPassword',
           hosts: []
@@ -1655,24 +1658,24 @@ describe('lib/driver.js', function () {
           cb(null, fakeConnectionInfo);
           fakeResolver.on.getCall(1).args[1](null, { user: 'someOtherInfo', password: 'someOtherPassword' });
         };
-        var pool = getPoolStub(instance.config, true, null, {});
+        const pool = getPoolStub(instance.config, true, null, {});
         pool.on = sinon.stub();
         pool.connect = sinon.stub().resolves({});
         sinon.stub(cql, 'Client').returns(pool);
         instance.pools = {};
-        var connectionOptionsFetchedHandler = sinon.stub();
-        var connectionResolvedHandler = sinon.stub();
-        instance.on('connectionOptionsFetched', connectionOptionsFetchedHandler);
-        instance.on('connectionResolved', connectionResolvedHandler);
+        const connOptionsFetchedHandler = sinon.stub();
+        const connResolvedHandler = sinon.stub();
+        instance.on('connectionOptionsFetched', connOptionsFetchedHandler);
+        instance.on('connectionResolved', connResolvedHandler);
 
         // act
         instance.cql(cqlQuery, params, { consistency: consistency }, function () {
           // assert
-          assert.strictEqual(pool.storeConfig.username, fakeConnectionInfo.username, 'username successfully updated');
-          assert.strictEqual(pool.storeConfig.password, fakeConnectionInfo.password, 'password successfully updated');
+          assert.strictEqual(pool.storeConfig.credentials.username, fakeConnectionInfo.username, 'username successfully updated');
+          assert.strictEqual(pool.storeConfig.credentials.password, fakeConnectionInfo.password, 'password successfully updated');
           assert.notOk(logger.warn.called, 'warn logger should not be called');
-          expect(connectionOptionsFetchedHandler).to.have.been.called;
-          expect(connectionResolvedHandler).to.have.been.called;
+          expect(connOptionsFetchedHandler).to.have.been.called;
+          expect(connResolvedHandler).to.have.been.called;
           done();
         });
       });
