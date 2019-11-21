@@ -205,7 +205,6 @@ describe('lib/util/query.js', function () {
     it('populates queryName and executeAsPrepared in options if not already supplied', function (done) {
       // arrange
       var cql = 'SELECT * FROM mycolumnfamily';
-      db.poolConfig.supportsPreparedStatements = true;
       query.db.queryCache = {
         readQuery: sinon.stub().yields(null, cql)
       };
@@ -224,7 +223,6 @@ describe('lib/util/query.js', function () {
     it('does not populate queryName and executeAsPrepared in options if already supplied', function (done) {
       // arrange
       var cql = 'SELECT * FROM mycolumnfamily';
-      db.poolConfig.supportsPreparedStatements = true;
       query.db.queryCache = {
         readQuery: sinon.stub().yields(null, cql)
       };
