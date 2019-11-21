@@ -278,7 +278,7 @@ describe('lib/util/query.js', function () {
       done();
     });
 
-    it('returns self', function (done) {
+    it('returns self', function () {
       // arrange
       var param1 = { value: 'myVal1', hint: 'ascii' };
 
@@ -287,11 +287,10 @@ describe('lib/util/query.js', function () {
 
       // assert
       assert.equal(result, query, 'returns self');
-      done();
     });
   });
 
-  describe('#param()', function () {
+  describe('#params()', function () {
     it('adds parameters to the context', function (done) {
       // arrange
       var param1 = { value: 'myVal1', hint: 'ascii' };

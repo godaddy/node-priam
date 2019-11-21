@@ -933,6 +933,7 @@ describe('lib/driver.js', function () {
               { name: 'field9', types: [33, null] },
               { name: 'field10', types: [33, null] },
               { name: 'field11', types: [33, null] },
+              { name: 'field17', types: [33, null] },
               // Set types
               { name: 'field12', types: [34, null] },
               { name: 'field13', types: [34, null] },
@@ -955,7 +956,8 @@ describe('lib/driver.js', function () {
             field13: [null, cql.types.Uuid.random()],
             field14: [null, 'value'],
             field15: [],
-            field16: [null]
+            field16: [null],
+            field17: { nullKey: null, key1: true, key2: false }
           }
         ]
       };
@@ -984,7 +986,8 @@ describe('lib/driver.js', function () {
           field13: instance.dataType.set,
           field14: instance.dataType.set,
           field15: instance.dataType.set,
-          field16: instance.dataType.set
+          field16: instance.dataType.set,
+          field17: instance.dataType.set
         }
       }, function (error, returnData) {
         if (error) { return void done(error); }
@@ -1021,6 +1024,9 @@ describe('lib/driver.js', function () {
           assert.isTrue(Object.keys(record.field10).length === 0, 'tenth field should be an empty object');
           assert.isTrue(Object.keys(record.field11).length === 1, 'eleventh field should contain only nullKey');
           assert.isNull(record.field11.nullKey, 'eleventh field nullkey should be null');
+          assert.isNull(record.field17.nullKey, '17th field nullkey should be null');
+          assert.strictEqual(record.field17.key1, true, '17th field1 should be true');
+          assert.strictEqual(record.field17.key2, false, '17th field1 should be false');
 
           // Sets
           assert.isNull(record.field12[0], 'twelfth field null index should be null');
@@ -1458,7 +1464,14 @@ describe('lib/driver.js', function () {
 
     describe('with connection resolver', function () {
 
-      var logger, resolverOptions;
+      let logger;
+
+      const resolverOptions = {
+        config: {
+          connectionResolverPath: '../test/stubs/fake-resolver',
+          cqlVersion: '3.1.0'
+        }
+      };
 
       function getResolverInstance(context) {
         logger = {
@@ -1467,20 +1480,13 @@ describe('lib/driver.js', function () {
           warn: sinon.stub(),
           error: sinon.stub()
         };
-        resolverOptions = {
-          config: {
-            connectionResolverPath: '../test/stubs/fake-resolver',
-            cqlVersion: '3.1.0'
-          }
-        };
-        return new Driver(_.extend({ config: getDefaultConfig(), logger: logger }, context));
+        return new Driver({ config: getDefaultConfig(), logger: logger, ...context });
       }
 
       beforeEach(function () {
         instance = null;
         fakeResolver.resolveConnection = sinon.stub().yieldsAsync(null, {});
       });
-
 
       it('uses supplied connection resolver to override base config', function (done) {
         // arrange
@@ -1677,6 +1683,20 @@ describe('lib/driver.js', function () {
           expect(connOptionsFetchedHandler).to.have.been.called;
           expect(connResolvedHandler).to.have.been.called;
           done();
+        });
+      });
+
+      it('allows the connection resolver to not be an event emitter', () => {
+        getResolverInstance({
+          connectionResolver: {
+            resolveConnection(cb) {
+              cb(null, {
+                username: 'bob',
+                password: 'blah',
+                contactPoints: ['1.2.3.4']
+              });
+            }
+          }
         });
       });
     });

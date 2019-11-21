@@ -551,6 +551,8 @@ if known. If it is not supplied when an error is thrown, the error will be suppl
 
 `connectionInformation` should contain the following properties: `username`, `password`, `contactPoints`.
 
+Your connection resolver may optionally be an `EventEmitter`. `priam` will listen to `fetch` and `lazyfetch` events and emit & log its own events in response to these. These events should emit two arguments, an `Error` for any fetch errors as the first and the resolved connection information as the second.
+
 See example application for a concrete example using a connection resolver.
 
 #### Port Mapping Options ####
