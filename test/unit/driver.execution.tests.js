@@ -1491,7 +1491,7 @@ describe('lib/driver.js', function () {
         const fakeConnectionInfo = {
           username: 'myResolvedUsername',
           password: 'myResolvedPassword',
-          hosts: []
+          contactPoints: []
         };
         fakeResolver.resolveConnection = sinon.stub().yieldsAsync(null, fakeConnectionInfo);
         const pool = getPoolStub(instance.config, true, null, {});
@@ -1518,9 +1518,9 @@ describe('lib/driver.js', function () {
         instance = getResolverInstance(resolverOptions);
         const userName = 'myResolvedUsername';
         const fakeConnectionInfo = {
-          user: userName,
+          username: userName,
           password: 'myResolvedPassword',
-          hosts: ['123.456.789.012:1234']
+          contactPoints: ['123.456.789.012:1234']
         };
         instance.connectionResolver.resolveConnection = sinon.stub().yieldsAsync(null, _.cloneDeep(fakeConnectionInfo));
         var pool = getPoolStub(instance.config, true, null, {});
@@ -1534,7 +1534,7 @@ describe('lib/driver.js', function () {
           // assert
           assert.strictEqual(pool.storeConfig.credentials.username, userName);
           assert.strictEqual(pool.storeConfig.credentials.password, fakeConnectionInfo.password);
-          assert.deepEqual(pool.storeConfig.contactPoints, fakeConnectionInfo.hosts);
+          assert.deepEqual(pool.storeConfig.contactPoints, fakeConnectionInfo.contactPoints);
 
           done();
         });
@@ -1555,7 +1555,7 @@ describe('lib/driver.js', function () {
         const fakeConnectionInfo = {
           user: userName,
           password: 'myResolvedPassword',
-          hosts: ['123.456.789.012:1234', '234.567.890.123', '235.235.4.3:8888']
+          contactPoints: ['123.456.789.012:1234', '234.567.890.123', '235.235.4.3:8888']
         };
         instance.connectionResolver.resolveConnection = sinon.stub().yieldsAsync(null, _.cloneDeep(fakeConnectionInfo));
         const pool = getPoolStub(instance.config, true, null, {});
@@ -1572,7 +1572,7 @@ describe('lib/driver.js', function () {
           assert.deepEqual(
             pool.storeConfig.contactPoints,
             ['123.456.789.012:2345', '234.567.890.123', '235.235.4.3:8888'],
-            'hosts were applied with remapped ports');
+            'contactPoints were applied with remapped ports');
           done();
         });
       });
@@ -1618,7 +1618,7 @@ describe('lib/driver.js', function () {
         const fakeConnectionInfo = {
           username: 'myResolvedUsername',
           password: 'myResolvedPassword',
-          hosts: []
+          contactPoints: []
         };
         const fetchError = new Error('lazy fetch error');
         fakeResolver.resolveConnection = function (data, cb) {
@@ -1652,7 +1652,7 @@ describe('lib/driver.js', function () {
         const fakeConnectionInfo = {
           username: 'myResolvedUsername',
           password: 'myResolvedPassword',
-          hosts: []
+          contactPoints: []
         };
         fakeResolver.resolveConnection = function (data, cb) {
           cb(null, fakeConnectionInfo);

@@ -62,7 +62,7 @@ var db = require('priam')({
       password: '<your_password>'
     },
     keyspace: '<your_keyspace>', /* Default keyspace. Can be overwritten via options passed into #cql(), etc. */
-    hosts: [ /* Ports are optional */
+    contactPoints: [ /* Ports are optional */
       '123.456.789.010:9042',
       '123.456.789.011:9042',
       '123.456.789.012:9042',
@@ -549,7 +549,7 @@ connection resolvers can access any custom configuration information specified w
 supplied, an error log message will be sent to the supplied logger. `connectionInformation` should always be supplied
 if known. If it is not supplied when an error is thrown, the error will be supplied to the `#cql()` callback.
 
-`connectionInformation` should contain the following properties: `user`, `password`, `hosts`.
+`connectionInformation` should contain the following properties: `username`, `password`, `contactPoints`.
 
 See example application for a concrete example using a connection resolver.
 

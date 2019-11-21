@@ -28,7 +28,7 @@ var http               = require('http'),
         password: 'admin'
       },
       // keyspace: 'priam_test_db',
-      hosts: [
+      contactPoints: [
         '127.0.0.1', // your host IP's should be here
         '127.0.0.2',
         '127.0.0.3',

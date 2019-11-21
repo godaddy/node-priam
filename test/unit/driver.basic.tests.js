@@ -23,7 +23,7 @@ describe('lib/driver.js', function () {
 
   function getDefaultConfig() {
     return {
-      hosts: ['123.456.789.012:9160'],
+      contactPoints: ['123.456.789.012:9160'],
       keyspace: 'myKeySpace'
     };
   }
@@ -175,7 +175,7 @@ describe('lib/driver.js', function () {
       const instance = new Driver({ config });
 
       // assert
-      assert.deepEqual(instance.poolConfig.contactPoints, configCopy.hosts, 'hosts should be passed through');
+      assert.deepEqual(instance.poolConfig.contactPoints, configCopy.contactPoints, 'contactPoints should be passed through');
       assert.strictEqual(instance.poolConfig.keyspace, configCopy.keyspace, 'keyspace should be passed through');
       assert.strictEqual(instance.poolConfig.protocolOptions, configCopy.protocolOptions, 'protocolOptions should be passed through');
       assert.strictEqual(instance.poolConfig.limit, configCopy.limit, 'limit should be passed through');
@@ -198,7 +198,7 @@ describe('lib/driver.js', function () {
       const instance = new Driver({ config });
 
       // assert
-      assert.deepEqual(instance.poolConfig.contactPoints, configCopy.hosts, 'hosts should be passed through');
+      assert.deepEqual(instance.poolConfig.contactPoints, configCopy.contactPoints, 'contactPoints should be passed through');
       assert.strictEqual(instance.poolConfig.socketOptions, config.socketOptions, 'socket options should be passed through');
       assert.strictEqual(instance.poolConfig.keyspace, configCopy.keyspace, 'keyspace should be passed through');
       assert.strictEqual(instance.poolConfig.protocolOptions.maxVersion, cqlVersion, 'cqlVersion should be overridden');
