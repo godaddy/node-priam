@@ -15,7 +15,6 @@ const logger             = new (winston.Logger)({
 const metrics            = new MetricsClient({ logger: logger });
 const db                 = require('../index' /* "priam"*/)({
   config: {
-    protocol: 'binary',
     protocolOptions: {
       maxVersion: '3.1'
     },

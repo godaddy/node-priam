@@ -22,12 +22,11 @@ describe('lib/driver-factory.js', function () {
       // assert
       assert.strictEqual(driver.config.version, '3.1.0');
       assert.deepEqual(driver.config.parsedCqlVersion, parsed);
-      assert.strictEqual(driver.config.protocol, 'binary');
       assert.instanceOf(driver, Driver.DatastaxDriver);
     });
 
     it('returns datastax driver set to version 3.0 if cqlVersion is equal to 3.0', function () {
-      testInstance('datastax', '3.0.0', '3.0.0', 'binary', Driver.DatastaxDriver);
+      testInstance('datastax', '3.0.0', '3.0.0', Driver.DatastaxDriver);
     });
 
     it('exposes DataStax types and consistencies', function () {
@@ -36,7 +35,7 @@ describe('lib/driver-factory.js', function () {
       expect(driverFactory.valueTypes).to.be.an('object');
     });
 
-    function testInstance(driver, cqlVersion, expectedVersion, expectedProtocol, expectedInstance) {
+    function testInstance(driver, cqlVersion, expectedVersion, expectedInstance) {
       // arrange
       const context = {
         config: {
@@ -52,7 +51,6 @@ describe('lib/driver-factory.js', function () {
 
       // assert
       assert.deepEqual(config.parsedCqlVersion, parsed);
-      assert.strictEqual(config.protocol, expectedProtocol);
       assert.instanceOf(instance, expectedInstance);
     }
 
