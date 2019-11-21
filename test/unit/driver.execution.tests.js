@@ -849,7 +849,8 @@ describe('lib/driver.js', function () {
         { value: 'param3', hint: instance.dataType.ascii },
         { value: 'param4', hint: 'map<text,boolean>' },
         { value: 'param5', hint: 'int', isRoutingKey: true },
-        new Buffer('param6')];
+        new Buffer('param6')
+      ];
       var consistency = cql.types.consistencies.quorum;
       var err = null;
       var data = {
@@ -1836,7 +1837,7 @@ describe('lib/driver.js', function () {
             // assert
             assert.ok(instance.logger.debug.calledOnce, 'cql is logged');
             assert.equal(call.args[0], cqlQuery, 'cql should be passed through');
-            assert.equal(call.args[1], params, 'params should be passed through');
+            assert.deepEqual(call.args[1], params, 'params should be passed through');
             assert.isObject(call.args[2], 'options should be populated');
             assert.strictEqual(call.args[2].consistency, cql.types.consistencies[consistencyLevel], `options.consistency should be ${consistencyLevel}`);
 
@@ -1856,7 +1857,7 @@ describe('lib/driver.js', function () {
 
             // assert
             assert.equal(call.args[0], cqlQuery, 'cql should be passed through');
-            assert.equal(call.args[1], params, 'params should be passed through');
+            assert.deepEqual(call.args[1], params, 'params should be passed through');
             assert.isObject(call.args[2], 'options should be populated');
             assert.strictEqual(call.args[2].consistency, cql.types.consistencies[consistencyLevel], `options.consistency should be ${consistencyLevel}`);
 
@@ -1875,7 +1876,7 @@ describe('lib/driver.js', function () {
 
             // assert
             assert.equal(call.args[0], cqlQuery, 'cql should be passed through');
-            assert.equal(call.args[1], params, 'params should be passed through');
+            assert.deepEqual(call.args[1], params, 'params should be passed through');
             assert.isObject(call.args[2], 'options should be populated');
             assert.strictEqual(call.args[2].consistency, cql.types.consistencies[consistencyLevel], `options.consistency should be ${consistencyLevel}`);
 
@@ -1896,7 +1897,7 @@ describe('lib/driver.js', function () {
 
             // assert
             assert.equal(call.args[0], cqlQuery, 'cql should be passed through');
-            assert.equal(call.args[1], params, 'params should be passed through');
+            assert.deepEqual(call.args[1], params, 'params should be passed through');
             assert.isObject(call.args[2], 'options should be populated');
             assert.strictEqual(call.args[2].consistency, consistency, 'options.consistency should be passed through');
 
@@ -1952,7 +1953,7 @@ describe('lib/driver.js', function () {
 
           // assert
           assert.equal(call.args[0], cqlQuery, 'cql should be passed through');
-          assert.equal(call.args[1], query.context.params, 'params should be passed through');
+          assert.deepEqual(call.args[1], query.context.params, 'params should be passed through');
           assert.equal(call.args[2], query.context.options, 'options should be passed through');
 
           done();
