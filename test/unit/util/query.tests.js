@@ -77,7 +77,7 @@ describe('lib/util/query.js', function () {
     function validateFunctionExists(name, argCount) {
       // assert
       assert.strictEqual(typeof query[name], 'function');
-      assert.strictEqual(query[name].length, argCount, name + ' takes ' + argCount + ' arguments');
+      assert.strictEqual(query[name].length, argCount, `${name} takes ${argCount} arguments`);
     }
 
     it('provides a query function', function () {

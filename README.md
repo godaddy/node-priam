@@ -107,10 +107,10 @@ db.cql(
   { consistency: db.consistencyLevel.one, queryName: 'myQuery', executeAsPrepared: true },
   function (err, data) {
     if (err) {
-      console.log('ERROR: ' + err);
+      console.log(`ERROR: ${err}`);
       return;
     }
-    console.log('Returned data: ' + data);
+    console.log('Returned data: ', data);
   }
 );
 ```
@@ -136,10 +136,10 @@ db.namedQuery(
   { consistency: db.consistencyLevel.ONE },
   function (err, data) {
     if (err) {
-      console.log('ERROR: ' + err);
+      console.log('ERROR: ', err);
       return;
     }
-    console.log('Returned data: ' + data);
+    console.log('Returned data: ', data);
   }
 );
 ```
@@ -198,10 +198,10 @@ db
   .options({ executeAsPrepared: true })
   .execute(function (err, data) {
     if (err) {
-      console.log('ERROR: ' + err);
+      console.log('ERROR: ', err);
       return;
     }
-    console.log('Returned data: ' + data);
+    console.log('Returned data: ', data);
   });
 ```
 
@@ -215,10 +215,10 @@ db
   .consistency('one')
   .execute(function (err, data) {
     if (err) {
-      console.log('ERROR: ' + err);
+      console.log('ERROR: ', err);
       return;
     }
-    console.log('Returned data: ' + data);
+    console.log('Returned data: ', data);
   });
 ```
 
@@ -232,10 +232,10 @@ db
   .consistency('one')
   .execute()
   .fail(function (err) {
-    console.error('ERROR: ' + err);
+    console.error('ERROR: ', err);
   })
   .done(function (data) {
-    console.log('Returned data: ' + JSON.stringify(data));
+    console.log('Returned data: ', JSON.stringify(data));
   });
 ```
 
@@ -332,10 +332,10 @@ db
   .timestamp()
   .execute()
   .fail(function (err) {
-    console.log('ERROR: ' + err);
+    console.log('ERROR: ', err);
   })
   .done(function (data) {
-    console.log('Returned data: ' + data);
+    console.log('Returned data: ', data);
   });
 ```
 

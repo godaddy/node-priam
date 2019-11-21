@@ -54,7 +54,7 @@ describe('lib/util/batch.js', function () {
     function validateFunctionExists(name, argCount) {
       // assert
       assert.strictEqual(typeof batch[name], 'function');
-      assert.strictEqual(batch[name].length, argCount, name + ' takes ' + argCount + ' arguments');
+      assert.strictEqual(batch[name].length, argCount, `${name} takes ${argCount} arguments`);
     }
 
     it('provides an add function', function () {
@@ -764,7 +764,7 @@ describe('lib/util/batch.js', function () {
             assert.equal(data, result, 'result is populated');
             assert.equal(queryParams[0].value, 1234567, 'timestamp param is populated');
             for (var i = 1; i < queryParams.length; i++) {
-              assert.equal(queryParams[i].value, 'param' + i, 'query param ' + i + ' is populated');
+              assert.equal(queryParams[i].value, `param${i}`, `query param ${i} is populated`);
             }
             done();
           }
@@ -817,7 +817,7 @@ describe('lib/util/batch.js', function () {
             assert.equal(data, result, 'result is populated');
             assert.equal(queryParams[2].value, 1234567, 'timestamp param is populated');
             for (var i = 0; i < queryParams.length - 1; i++) {
-              assert.equal(queryParams[i].value, 'param' + (i + 1), 'query param ' + (i + 1) + ' is populated');
+              assert.equal(queryParams[i].value, `param${i + 1}`, `query param ${i + 1} is populated`);
             }
             done();
           }
@@ -870,7 +870,7 @@ describe('lib/util/batch.js', function () {
             assert.equal(data, result, 'result is populated');
             assert.equal(queryParams[0].value, 1234567, 'timestamp param is populated');
             for (var i = 1; i < queryParams.length; i++) {
-              assert.equal(queryParams[i].value, 'param' + i, 'query param ' + i + ' is populated');
+              assert.equal(queryParams[i].value, `param${i}`, `query param ${i} is populated`);
             }
             done();
           }
@@ -923,7 +923,7 @@ describe('lib/util/batch.js', function () {
             assert.equal(data, result, 'result is populated');
             assert.equal(queryParams[0].value, 1234567, 'timestamp param is populated');
             for (var i = 1; i < queryParams.length; i++) {
-              assert.equal(queryParams[i].value, 'param' + i, 'query param ' + i + ' is populated');
+              assert.equal(queryParams[i].value, `param${i}`, `query param ${i} is populated`);
             }
             done();
           }
@@ -1083,7 +1083,7 @@ describe('lib/util/batch.js', function () {
             assert.equal(result, data, 'result is populated');
             for (var i = 0; i < queryParams.length; i++) {
               var num = i + 1;
-              assert.equal(queryParams[i].value, 'param' + num, 'query param ' + num + ' is populated');
+              assert.equal(queryParams[i].value, `param${num}`, `query param ${num} is populated`);
             }
             done();
           }
@@ -1153,7 +1153,7 @@ describe('lib/util/batch.js', function () {
             assert.equal(result, data, 'result is populated');
             for (var i = 0; i < queryParams.length; i++) {
               var num = i + 1;
-              assert.equal(queryParams[i].value, 'param' + num, 'query param ' + num + ' is populated');
+              assert.equal(queryParams[i].value, `param${num}`, `query param ${num} is populated`);
             }
             done();
           }
@@ -1225,7 +1225,7 @@ describe('lib/util/batch.js', function () {
             assert.equal(result, data, 'result is populated');
             for (var i = 0; i < queryParams.length; i++) {
               var num = i + 1;
-              assert.equal(queryParams[i].value, 'param' + num, 'query param ' + num + ' is populated');
+              assert.equal(queryParams[i].value, `param${num}`, `query param ${num} is populated`);
             }
             done();
           }

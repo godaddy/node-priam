@@ -13,7 +13,7 @@ describe('lib/util/parse-version.js', function () {
   });
 
   function testParse(value, major, minor, patch) {
-    it('parseVersion#() parses "' + value + '" correctly', function () {
+    it(`parseVersion#() parses "${value}" correctly`, function () {
       var result = sut(value);
       assert.strictEqual(result.major, major, 'major version matches');
       assert.strictEqual(result.minor, minor, 'minor version matches');

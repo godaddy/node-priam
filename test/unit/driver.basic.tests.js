@@ -61,7 +61,7 @@ describe('lib/driver.js', function () {
       // act
       // assert
       assert.strictEqual(typeof instance[name], 'function');
-      assert.strictEqual(instance[name].length, argCount, name + ' takes ' + argCount + ' arguments');
+      assert.strictEqual(instance[name].length, argCount, `${name} takes ${argCount} arguments`);
     }
 
     it('is a constructor function', function () {

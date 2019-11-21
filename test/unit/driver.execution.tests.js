@@ -549,12 +549,12 @@ describe('lib/driver.js', function () {
           data: errorData
         };
         if (typeof errorData === 'string') {
-          expectedMessage = message + ': ' + errorData;
+          expectedMessage = `${message}: ${errorData}`;
           delete expectedData.data;
         }
         expect(logEventHandler).to.have.been.calledWith(logLevel, message, metaData);
         if (expectedLevel) {
-          assert.strictEqual(instance.logger[expectedLevel].args[0][0], 'priam.Driver.' + expectedMessage);
+          assert.strictEqual(instance.logger[expectedLevel].args[0][0], `priam.Driver.${expectedMessage}`);
           assert.deepEqual(instance.logger[expectedLevel].args[0][1], expectedData);
         } else {
           assert.notOk(instance.logger.info.called);
@@ -1203,7 +1203,7 @@ describe('lib/driver.js', function () {
     });
 
     function testErrorRetry(errorName, errorCode, numRetries, shouldRetry) {
-      it((shouldRetry ? 'adds' : 'does not add') + ' error retry if error is "' + errorName + '", code "' + errorCode + '", and retries ' + numRetries, function (done) {
+      it(`${shouldRetry ? 'adds' : 'does not add'} error retry if error is "${errorName}", code "${errorCode}", and retries ${numRetries}`, function (done) {
         // arrange
         var cqlQuery = 'MyCqlStatement';
         var params = ['param1', 'param2', 'param3'];
@@ -1426,7 +1426,7 @@ describe('lib/driver.js', function () {
 
         // assert
         assert.ok(instance.metrics.measurement.calledOnce, 'measurement called once');
-        assert.strictEqual(call.args[0], 'query.' + queryName, 'measurement called with appropriate query name');
+        assert.strictEqual(call.args[0], `query.${queryName}`, 'measurement called with appropriate query name');
 
         done();
       });
@@ -1697,7 +1697,7 @@ describe('lib/driver.js', function () {
     });
 
     function validateWrapperCall(method, consistencyLevel) {
-      describe('DatastaxDriver#' + method + '()', function () {
+      describe(`DatastaxDriver#${method}()`, function () {
         it('normalizes the parameter list if it is an array', function (done) {
           // arrange
           var dt = new Date();
@@ -1803,7 +1803,7 @@ describe('lib/driver.js', function () {
           });
         });
 
-        it('executes cql with default ConsistencyLevel.' + consistencyLevel + ' if consistency not provided.', function (done) {
+        it(`executes cql with default ConsistencyLevel.${consistencyLevel} if consistency not provided.`, function (done) {
           // arrange
           var cqlQuery = 'SELECT * FROM users;';
           var params = [];
@@ -1818,13 +1818,13 @@ describe('lib/driver.js', function () {
             assert.equal(call.args[0], cqlQuery, 'cql should be passed through');
             assert.equal(call.args[1], params, 'params should be passed through');
             assert.isObject(call.args[2], 'options should be populated');
-            assert.strictEqual(call.args[2].consistency, cql.types.consistencies[consistencyLevel], 'options.consistency should be ' + consistencyLevel);
+            assert.strictEqual(call.args[2].consistency, cql.types.consistencies[consistencyLevel], `options.consistency should be ${consistencyLevel}`);
 
             done();
           });
         });
 
-        it('executes cql with default ConsistencyLevel.' + consistencyLevel + ' if options is null.', function (done) {
+        it(`executes cql with default ConsistencyLevel.${consistencyLevel} if options is null.`, function (done) {
           // arrange
           var cqlQuery = 'SELECT * FROM users;';
           var params = [];
@@ -1838,13 +1838,13 @@ describe('lib/driver.js', function () {
             assert.equal(call.args[0], cqlQuery, 'cql should be passed through');
             assert.equal(call.args[1], params, 'params should be passed through');
             assert.isObject(call.args[2], 'options should be populated');
-            assert.strictEqual(call.args[2].consistency, cql.types.consistencies[consistencyLevel], 'options.consistency should be ' + consistencyLevel);
+            assert.strictEqual(call.args[2].consistency, cql.types.consistencies[consistencyLevel], `options.consistency should be ${consistencyLevel}`);
 
             done();
           });
         });
 
-        it('executes cql with default ConsistencyLevel.' + consistencyLevel + ' if options not provided.', function (done) {
+        it(`executes cql with default ConsistencyLevel.${consistencyLevel} if options not provided.`, function (done) {
           // arrange
           var cqlQuery = 'SELECT * FROM users;';
           var params = [];
@@ -1857,7 +1857,7 @@ describe('lib/driver.js', function () {
             assert.equal(call.args[0], cqlQuery, 'cql should be passed through');
             assert.equal(call.args[1], params, 'params should be passed through');
             assert.isObject(call.args[2], 'options should be populated');
-            assert.strictEqual(call.args[2].consistency, cql.types.consistencies[consistencyLevel], 'options.consistency should be ' + consistencyLevel);
+            assert.strictEqual(call.args[2].consistency, cql.types.consistencies[consistencyLevel], `options.consistency should be ${consistencyLevel}`);
 
             done();
           });
@@ -1905,9 +1905,7 @@ describe('lib/driver.js', function () {
     });
 
     function validateQueryCalls(asPromise) {
-      it('#execute() executes cql ' +
-        (asPromise ? 'with promise syntax' : 'with callback syntax'),
-      function (done) {
+      it(`#execute() executes cql ${asPromise ? 'with promise syntax' : 'with callback syntax'}`, function (done) {
         // arrange
         var cqlQuery = 'SELECT * FROM users WHERE name = ?;';
 

@@ -41,7 +41,7 @@ describe('lib/util/query-cache.js', function () {
     function validateFunctionExists(name, argCount) {
       // assert
       assert.strictEqual(typeof queries[name], 'function');
-      assert.strictEqual(queries[name].length, argCount, name + ' takes ' + argCount + ' arguments');
+      assert.strictEqual(queries[name].length, argCount, `${name} takes ${argCount} arguments`);
     }
 
     it('provides a readQuery function', function () {
