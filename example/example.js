@@ -45,13 +45,13 @@ const port               = 8080;
 console.log(util.inspect(db, { showHidden: true, depth: null, colors: true }));
 
 http.createServer(function (req, res) {
-  var parsed = url.parse(req.url, true);
-  var shouldStreamData = (parsed.query.stream && parsed.query.stream.toLowerCase() === 'true');
+  const parsed = url.parse(req.url, true);
+  const shouldStreamData = (parsed.query.stream && parsed.query.stream.toLowerCase() === 'true');
 
   function errorHandler(err) {
     if (err) {
-      var statusCode = 500;
-      var message = `If you're getting this error message, please ensure the following:
+      const statusCode = 500;
+      let message = `If you're getting this error message, please ensure the following:
 - The data in "/example/lib/credentials.json" is updated with your connection information.
 - You have executed the "/example/cql/create-db.cql" in your keyspace.
 `;
@@ -94,7 +94,7 @@ http.createServer(function (req, res) {
 
       if (shouldStreamData) {
         // Read the data from a stream!
-        var data = [];
+        const data = [];
         db.beginQuery()
           .param('hello', 'ascii', true) // maps to 'column1' placeholder in 'helloWorld.cql'
           .param('world', 'ascii') // maps to 'column2' placeholder in 'helloWorld.cql'
@@ -106,7 +106,7 @@ http.createServer(function (req, res) {
             if (res.headersSent) {
               return;
             }
-            var message = data.length ?
+            const message = data.length ?
               `${data[0].column1} ${data[0].column2} - from stream! Map: ${JSON.stringify(data[0].column3)}` :
               'NO DATA FOUND! Please execute "/example/cql/create-db.cql" in your keyspace.';
             res.writeHead(200, { 'Content-Type': 'text/plain' });
@@ -121,7 +121,7 @@ http.createServer(function (req, res) {
           .execute()
           .fail(errorHandler)
           .done(function (data) {
-            var message = (Array.isArray(data) && data.length) ?
+            const message = (Array.isArray(data) && data.length) ?
               `${data[0].column1} ${data[0].column2} - from Promise! Map: ${JSON.stringify(data[0].column3)}` :
               'NO DATA FOUND! Please execute "/example/cql/create-db.cql" in your keyspace.';
             res.writeHead(200, { 'Content-Type': 'text/plain' });

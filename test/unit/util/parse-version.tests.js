@@ -1,7 +1,5 @@
-var
-  sut = require('../../../lib/util/parse-version'),
-  chai = require('chai'),
-  assert = chai.assert;
+const sut = require('../../../lib/util/parse-version');
+const { assert } = require('chai');
 
 describe('lib/util/parse-version.js', function () {
 
@@ -14,7 +12,7 @@ describe('lib/util/parse-version.js', function () {
 
   function testParse(value, major, minor, patch) {
     it(`parseVersion#() parses "${value}" correctly`, function () {
-      var result = sut(value);
+      const result = sut(value);
       assert.strictEqual(result.major, major, 'major version matches');
       assert.strictEqual(result.minor, minor, 'minor version matches');
       assert.strictEqual(result.patch, patch, 'patch version matches');

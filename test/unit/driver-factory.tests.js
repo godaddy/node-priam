@@ -13,11 +13,11 @@ describe('lib/driver-factory.js', function () {
 
     it('returns latest datastax driver by default', function () {
       // arrange
-      var context = null;
-      var parsed = parseVersion('3.1.0');
+      const context = null;
+      const parsed = parseVersion('3.1.0');
 
       // act
-      var driver = driverFactory(context);
+      const driver = driverFactory(context);
 
       // assert
       assert.strictEqual(driver.config.version, '3.1.0');

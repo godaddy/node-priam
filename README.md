@@ -33,8 +33,8 @@ Check the `example` folder for a more complete example. Start by running: `npm s
 ### Using Known Connection Information ###
 
 ```javascript
-var path = require('path');
-var db = require('priam')({
+const path = require('path');
+const db = require('priam')({
   config: {
     /* See https://docs.datastax.com/en/developer/nodejs-driver/4.3/api/type.ClientOptions/
  
@@ -98,8 +98,8 @@ There is also a `param(value [object], type [string])` helper method for creatin
 
 #### Example ####
 ```javascript
-var db = require('priam')({
-    config: { /* ... options ... */ }
+const db = require('priam')({
+  config: { /* ... options ... */ }
 });
 db.cql(
   'SELECT "myCol1", "myCol2" FROM "myColumnFamily" WHERE "keyCol1" = ? AND "keyCol2" = ?',
@@ -127,7 +127,7 @@ though the caller can override these options by providing them in the `options` 
 
 #### Example ####
 ```javascript
-var db = require('priam')({
+const db = require('priam')({
     config: { queryDirectory: path.join(__dirName, 'cql') }
 }); /* 'cql' folder will be scanned and all .cql files loaded into memory synchronously */
 db.namedQuery(
@@ -414,8 +414,8 @@ Instrumentation is supported via an optional `metrics` object passed into the dr
 should have a method `#measurement(queryName [string], duration [number], unit [string])`.
 
 ```javascript
-var logger = new (require('winston')).Logger({ /* logger options */ })
-var metrics = new MetricsClient();
+const logger = new (require('winston')).Logger({ /* logger options */ })
+const metrics = new MetricsClient();
 require('priam')({
   config: { /* connection information */ },
   logger: logger,
@@ -516,8 +516,8 @@ connection resolver to follow whatever caching strategies are required for the e
 The `connectionResolver` option allows you to pass in a `connectionResolver` object that has already been constructed.
 
 ```javascript
-var resolver = new MyConnectionResolver();
-var db = require('priam')({
+const resolver = new MyConnectionResolver();
+const db = require('priam')({
   config: {
     /* ... connection options ... */
   },
@@ -530,7 +530,7 @@ it is recommended to supply a resolver this way via a node module, as paths to s
 internal path.*
 
 ```javascript
-var db = require('priam')({
+const db = require('priam')({
   config: {
     /* ... other connection options ... */
     connectionResolverPath: 'myResolverModule'
@@ -561,7 +561,7 @@ wish to use, (e.g. You want to use binary port 9042, but resolver is returning T
 `connectionResolverPortMap` option to perform the mapping.
 
 ```javascript
-var db = require('priam')({
+const db = require('priam')({
   config: {
     /* ... other connection options, including Nimitz ... */
     connectionResolverPortMap = {

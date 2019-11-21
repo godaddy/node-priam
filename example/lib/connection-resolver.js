@@ -1,10 +1,8 @@
-
-
-var EventEmitter          = require('events').EventEmitter,
-  util                  = require('util'),
-  fs                    = require('fs'),
-  path                  = require('path'),
-  DEFAULT_POLL_INTERVAL = 30000; // 30 sec
+const { EventEmitter }      = require('events');
+const util                  = require('util');
+const fs                    = require('fs');
+const path                  = require('path');
+const DEFAULT_POLL_INTERVAL = 30000; // 30 sec
 
 function SampleResolver() {
   if (!(this instanceof SampleResolver)) {
@@ -17,83 +15,76 @@ function SampleResolver() {
 util.inherits(SampleResolver, EventEmitter);
 
 SampleResolver.prototype.resolveConnection = function resolveConnection(config, callback) {
-  var self = this;
-
-  if (!self.localCache || !self.localCache.cache || !self.pollHandle) {
+  if (!this.localCache || !this.localCache.cache || !this.pollHandle) {
 
     // clear any old polling
-    self.stopPolling();
+    this.stopPolling();
 
     // initial call to resolve connection
-    self.localCache.config = {
+    this.localCache.config = {
       /* Resolver configuration options here .. e.g. web service url */
       pollInterval: config.pollInterval
     };
-    config = self.localCache.config;
+    config = this.localCache.config;
 
     // set up polling
-    var pollInterval = config.pollInterval || DEFAULT_POLL_INTERVAL;
+    let pollInterval = config.pollInterval || DEFAULT_POLL_INTERVAL;
     if (pollInterval <= 0) {
       pollInterval = DEFAULT_POLL_INTERVAL;
     }
     config.pollInterval = pollInterval;
-    self.pollHandle = setInterval(function pollResolver() {
-      self.fetch(self.localCache.config, null);
+    this.pollHandle = setInterval(() => {
+      this.fetch(this.localCache.config, null);
     }, pollInterval);
-    self.pollHandle.unref();
+    this.pollHandle.unref();
 
     // retrieve credentials
-    self.fetch(config, callback);
+    this.fetch(config, callback);
   } else {
     // retrieve from cache
-    callback(null, self.localCache.cache);
+    callback(null, this.localCache.cache);
   }
 };
 
 SampleResolver.prototype.fetch = function fetch(config, callback) {
-  var self = this;
-
-  self.emit('fetching', config);
+  this.emit('fetching', config);
 
   /* Make some web service call or something similar here .. for demo purposes load from file */
-  fs.readFile(path.join(__dirname, 'credentials.json'), self.resolveConnectionCallback.bind(self, callback));
+  fs.readFile(path.join(__dirname, 'credentials.json'), this.resolveConnectionCallback.bind(this, callback));
 };
 
 SampleResolver.prototype.resolveConnectionCallback = function resolveConnectionCallback(callback, err, record) {
-  var self = this;
   if (!record && !err) {
     err = new Error('no credential record returned from credential store');
   }
   if (err) {
-    self.emit('fetch', err);
+    this.emit('fetch', err);
     if (typeof callback === 'function') {
       callback(err);
     }
     return;
   }
 
-  var parseError = null,
-    configData;
+  let parseError = null, configData;
   try {
     configData = JSON.parse(record.toString('utf8'));
-    self.localCache.cache = configData;
+    this.localCache.cache = configData;
   } catch (e) {
     parseError = e;
     configData = undefined;
   }
 
-  self.emit('fetch', parseError, configData);
+  this.emit('fetch', parseError, configData);
   if (typeof callback === 'function') {
     callback(parseError, configData);
   }
 };
 
 SampleResolver.prototype.stopPolling = function stopPolling() {
-  var self = this;
-  if (self.pollHandle) {
-    clearInterval(self.pollHandle);
-    self.localCache.config = null;
-    self.pollHandle = null;
+  if (this.pollHandle) {
+    clearInterval(this.pollHandle);
+    this.localCache.config = null;
+    this.pollHandle = null;
   }
 };
 

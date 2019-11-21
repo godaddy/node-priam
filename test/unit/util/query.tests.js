@@ -1,18 +1,13 @@
-var
-  sinon = require('sinon'),
-  chai = require('chai'),
-  assert = chai.assert,
-  expect = chai.expect,
-  isStream = require('isstream'),
-  q = require('q');
+const sinon = require('sinon');
+const { assert, expect } = require('chai');
+const isStream = require('isstream');
+const q = require('q');
 
-var Query = require('../../../lib/util/query');
+const Query = require('../../../lib/util/query');
 
 describe('lib/util/query.js', function () {
 
-  var query,
-    context,
-    db;
+  let query, context, db;
 
   beforeEach(function () {
     db = {
@@ -56,7 +51,7 @@ describe('lib/util/query.js', function () {
 
     it('applies provided settings to its context', function () {
       // arrange
-      var resultTransformer = function (obj) {return obj;};
+      const resultTransformer = function (obj) {return obj;};
 
       // act
       query = new Query(db, {
@@ -133,7 +128,7 @@ describe('lib/util/query.js', function () {
   describe('#query()', function () {
     it('populates cql in context', function (done) {
       // arrange
-      var cql = 'SELECT * FROM mycolumnfamily';
+      const cql = 'SELECT * FROM mycolumnfamily';
 
       // act
       query.query(cql);
@@ -145,10 +140,10 @@ describe('lib/util/query.js', function () {
 
     it('returns self', function (done) {
       // arrange
-      var cql = 'SELECT * FROM mycolumnfamily';
+      const cql = 'SELECT * FROM mycolumnfamily';
 
       // act
-      var result = query.query(cql);
+      const result = query.query(cql);
 
       // assert
       assert.equal(result, query, 'returns self');
@@ -172,7 +167,7 @@ describe('lib/util/query.js', function () {
 
     it('adds error to context if "queryCache" yields error', function (done) {
       // arrange
-      var qcError = new Error('queryCache blew up');
+      const qcError = new Error('queryCache blew up');
       query.db.queryCache = {
         readQuery: sinon.stub().yields(qcError)
       };
@@ -188,7 +183,7 @@ describe('lib/util/query.js', function () {
 
     it('populates cql in context if "queryCache" yields data', function (done) {
       // arrange
-      var cql = 'SELECT * FROM mycolumnfamily';
+      const cql = 'SELECT * FROM mycolumnfamily';
       query.db.queryCache = {
         readQuery: sinon.stub().yields(null, cql)
       };
@@ -204,7 +199,7 @@ describe('lib/util/query.js', function () {
 
     it('populates queryName and executeAsPrepared in options if not already supplied', function (done) {
       // arrange
-      var cql = 'SELECT * FROM mycolumnfamily';
+      const cql = 'SELECT * FROM mycolumnfamily';
       query.db.queryCache = {
         readQuery: sinon.stub().yields(null, cql)
       };
@@ -222,7 +217,7 @@ describe('lib/util/query.js', function () {
 
     it('does not populate queryName and executeAsPrepared in options if already supplied', function (done) {
       // arrange
-      var cql = 'SELECT * FROM mycolumnfamily';
+      const cql = 'SELECT * FROM mycolumnfamily';
       query.db.queryCache = {
         readQuery: sinon.stub().yields(null, cql)
       };
@@ -247,7 +242,7 @@ describe('lib/util/query.js', function () {
       query.db.queryCache = null;
 
       // act
-      var result = query.namedQuery('myQueryName');
+      const result = query.namedQuery('myQueryName');
 
       // assert
       assert.equal(result, query, 'returns self');
@@ -258,8 +253,8 @@ describe('lib/util/query.js', function () {
   describe('#param()', function () {
     it('adds a parameter to the context', function (done) {
       // arrange
-      var param1 = { value: 'myVal1', hint: 'ascii' };
-      var param2 = { value: 12345, hint: 'int' };
+      const param1 = { value: 'myVal1', hint: 'ascii' };
+      const param2 = { value: 12345, hint: 'int' };
 
       // act
       query.param(param1.value, param1.hint);
@@ -278,10 +273,10 @@ describe('lib/util/query.js', function () {
 
     it('returns self', function () {
       // arrange
-      var param1 = { value: 'myVal1', hint: 'ascii' };
+      const param1 = { value: 'myVal1', hint: 'ascii' };
 
       // act
-      var result = query.param(param1.value, param1.hint);
+      const result = query.param(param1.value, param1.hint);
 
       // assert
       assert.equal(result, query, 'returns self');
@@ -291,8 +286,8 @@ describe('lib/util/query.js', function () {
   describe('#params()', function () {
     it('adds parameters to the context', function (done) {
       // arrange
-      var param1 = { value: 'myVal1', hint: 'ascii' };
-      var param2 = { value: 12345, hint: 'int' };
+      const param1 = { value: 'myVal1', hint: 'ascii' };
+      const param2 = { value: 12345, hint: 'int' };
 
       // act
       query.params([param1, param2]);
@@ -308,10 +303,10 @@ describe('lib/util/query.js', function () {
 
     it('returns self', function (done) {
       // arrange
-      var param1 = { value: 'myVal1', hint: 'ascii' };
+      const param1 = { value: 'myVal1', hint: 'ascii' };
 
       // act
-      var result = query.params([param1]);
+      const result = query.params([param1]);
 
       // assert
       assert.equal(result, query, 'returns self');
@@ -343,7 +338,7 @@ describe('lib/util/query.js', function () {
     it('returns self', function (done) {
       // arrange
       // act
-      var result = query.consistency('one');
+      const result = query.consistency('one');
 
       // assert
       assert.equal(result, query, 'returns self');
@@ -366,7 +361,7 @@ describe('lib/util/query.js', function () {
     it('returns self', function (done) {
       // arrange
       // act
-      var result = query.options({ one: 'one' });
+      const result = query.options({ one: 'one' });
 
       // assert
       assert.equal(result, query, 'returns self');
@@ -382,7 +377,7 @@ describe('lib/util/query.js', function () {
     it('returns a stream when context has proper cql', function () {
       query.context.cql = 'SELECT * from myColumnFamily';
 
-      var stream = query.stream();
+      const stream = query.stream();
 
       assert(isStream(stream), 'that the returned stream is indeed a stream');
     });
@@ -424,7 +419,7 @@ describe('lib/util/query.js', function () {
       query.context.cql = 'myCqlQuery';
 
       // act
-      var result = query.execute(function () {});
+      const result = query.execute(function () {});
 
       // assert
       assert.equal(result, void 0, 'returns void');
@@ -436,7 +431,7 @@ describe('lib/util/query.js', function () {
       query.context.cql = 'myCqlQuery';
 
       // act
-      var result = query.execute({ one: 'one' });
+      const result = query.execute({ one: 'one' });
 
       // assert
       assert.ok(q.isPromise(result), 'returns promise');
@@ -451,7 +446,7 @@ describe('lib/util/query.js', function () {
 
           // act
           if (isPromise) {
-            var e = null;
+            let e = null;
             query
               .execute()
               .catch(function (error) {
@@ -483,7 +478,7 @@ describe('lib/util/query.js', function () {
 
           // act
           if (isPromise) {
-            var e = null;
+            let e = null;
             query
               .execute()
               .catch(function (error) {
@@ -519,7 +514,7 @@ describe('lib/util/query.js', function () {
 
           // act
           if (isPromise) {
-            var e = null;
+            let e = null;
             query
               .execute()
               .catch(function (error) {
@@ -548,15 +543,13 @@ describe('lib/util/query.js', function () {
 
         it('yields data if db yields data', function (done) {
           // arrange
-          var data = [
-            {}
-          ];
+          const data = [{}];
           query.context.cql = 'myCqlStatement';
           db.cql = sinon.stub().yields(null, data);
 
           // act
           if (isPromise) {
-            var e = null;
+            let e = null;
             query
               .execute()
               .catch(function (error) {
@@ -590,7 +583,7 @@ describe('lib/util/query.js', function () {
 
           // act
           if (isPromise) {
-            var e = null;
+            let e = null;
             query
               .execute()
               .catch(function (error) {
@@ -616,15 +609,15 @@ describe('lib/util/query.js', function () {
 
         it('yields first of data if db yields data and first is enabled', function (done) {
           // arrange
-          var first = {};
-          var data = [first, {}];
+          const first = {};
+          const data = [first, {}];
           query.context.cql = 'myCqlStatement';
           query.first();
           db.cql = sinon.stub().yields(null, data);
 
           // act
           if (isPromise) {
-            var e = null;
+            let e = null;
             query
               .execute()
               .catch(function (error) {
@@ -651,15 +644,15 @@ describe('lib/util/query.js', function () {
 
         it('yields first of data if db yields data and single is enabled', function (done) {
           // arrange
-          var first = {};
-          var data = [first];
+          const first = {};
+          const data = [first];
           query.context.cql = 'myCqlStatement';
           query.single();
           db.cql = sinon.stub().yields(null, data);
 
           // act
           if (isPromise) {
-            var e = null;
+            let e = null;
             query
               .execute()
               .catch(function (error) {
@@ -686,15 +679,15 @@ describe('lib/util/query.js', function () {
 
         it('yields error if db yields data with more than one result and single is enabled', function (done) {
           // arrange
-          var first = {};
-          var data = [first, {}];
+          const first = {};
+          const data = [first, {}];
           query.context.cql = 'myCqlStatement';
           query.single();
           db.cql = sinon.stub().yields(null, data);
 
           // act
           if (isPromise) {
-            var e = null;
+            let e = null;
             query
               .execute()
               .catch(function (error) {
@@ -721,14 +714,14 @@ describe('lib/util/query.js', function () {
 
         it('yields null of data if db yields empty array and single is enabled', function (done) {
           // arrange
-          var data = [];
+          const data = [];
           query.context.cql = 'myCqlStatement';
           query.single();
           db.cql = sinon.stub().yields(null, data);
 
           // act
           if (isPromise) {
-            var e = null;
+            let e = null;
             query
               .execute()
               .catch(function (error) {
@@ -755,14 +748,14 @@ describe('lib/util/query.js', function () {
 
         it('yields null of data if db yields empty array and first is enabled', function (done) {
           // arrange
-          var data = [];
+          const data = [];
           query.context.cql = 'myCqlStatement';
           query.first();
           db.cql = sinon.stub().yields(null, data);
 
           // act
           if (isPromise) {
-            var e = null;
+            let e = null;
             query
               .execute()
               .catch(function (error) {
@@ -803,7 +796,7 @@ describe('lib/util/query.js', function () {
     });
 
     it('returns self', function () {
-      var result = query.all();
+      const result = query.all();
       assert.equal(result, query, 'returns self');
     });
   });
@@ -818,7 +811,7 @@ describe('lib/util/query.js', function () {
     });
 
     it('returns self', function () {
-      var result = query.first();
+      const result = query.first();
       assert.equal(result, query, 'returns self');
     });
   });
@@ -833,28 +826,28 @@ describe('lib/util/query.js', function () {
     });
 
     it('returns self', function () {
-      var result = query.single();
+      const result = query.single();
       assert.equal(result, query, 'returns self');
     });
   });
 
   describe('#addResultTransformer()', function () {
     it('adds a transformer to the context', function () {
-      var transformer = function (obj) {return obj;};
+      const transformer = function (obj) {return obj;};
       query.addResultTransformer(transformer);
       assert.strictEqual(query.context.resultTransformers.length, 1, 'resultTransformer added');
       assert.strictEqual(typeof query.context.resultTransformers[0], 'function', 'resultTransformer is a function');
     });
 
     it('returns self', function () {
-      var result = query.addResultTransformer();
+      const result = query.addResultTransformer();
       assert.equal(result, query, 'returns self');
     });
   });
 
   describe('#clearResultTransformers()', function () {
     it('removes transformers from the context', function () {
-      var transformer = function (obj) {return obj;};
+      const transformer = function (obj) {return obj;};
       query.addResultTransformer(transformer);
       query.addResultTransformer(transformer);
       query.clearResultTransformers();
@@ -862,7 +855,7 @@ describe('lib/util/query.js', function () {
     });
 
     it('returns self', function () {
-      var result = query.clearResultTransformers();
+      const result = query.clearResultTransformers();
       assert.equal(result, query, 'returns self');
     });
   });

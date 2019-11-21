@@ -1,18 +1,12 @@
-
-
-var sinon = require('sinon'),
-  chai = require('chai'),
-  assert = chai.assert,
-  expect = chai.expect,
-  q = require('q'),
-  Query = require('../../../lib/util/query');
-
-var Batch = require('../../../lib/util/batch');
+const sinon = require('sinon');
+const { assert, expect } = require('chai');
+const q = require('q');
+const Query = require('../../../lib/util/query');
+const Batch = require('../../../lib/util/batch');
 
 describe('lib/util/batch.js', function () {
 
-  var batch,
-    db;
+  let batch, db;
 
   beforeEach(function () {
     db = {
@@ -91,9 +85,9 @@ describe('lib/util/batch.js', function () {
 
     it('iterates an array', function () {
       // arrange
-      var query1 = new Query(db);
-      var query2 = new Query(db);
-      var batch1 = new Batch(db);
+      const query1 = new Query(db);
+      const query2 = new Query(db);
+      const batch1 = new Batch(db);
 
       // act
       batch.add([query1, query2, batch1]);
@@ -108,7 +102,7 @@ describe('lib/util/batch.js', function () {
 
     it('adds the query to the query list', function (done) {
       // arrange
-      var query = new Query(db);
+      const query = new Query(db);
 
       // act
       batch.add(query);
@@ -122,7 +116,7 @@ describe('lib/util/batch.js', function () {
 
     it('adds the batch to the query list', function (done) {
       // arrange
-      var newBatch = new Batch(db);
+      const newBatch = new Batch(db);
 
       // act
       batch.add(newBatch);
@@ -136,7 +130,7 @@ describe('lib/util/batch.js', function () {
 
     it('adds error if query is not a valid Query or Batch object', function (done) {
       // arrange
-      var query = { cql: 'mySql', queryName: 'myQueryName' };
+      const query = { cql: 'mySql', queryName: 'myQueryName' };
 
       // act
       batch.add(query);
@@ -149,7 +143,7 @@ describe('lib/util/batch.js', function () {
 
     it('does not add error if query is null', function (done) {
       // arrange
-      var query = null;
+      const query = null;
 
       // act
       batch.add(query);
@@ -161,11 +155,8 @@ describe('lib/util/batch.js', function () {
     });
 
     it('adds error if query is undefined', function (done) {
-      // arrange
-      var query;
-
       // act
-      batch.add(query);
+      batch.add();
 
       // assert
       assert.strictEqual(batch.context.queries.length, 0, 'query is NOT added to list');
@@ -175,10 +166,10 @@ describe('lib/util/batch.js', function () {
 
     it('returns self', function (done) {
       // arrange
-      var query = new Query(db);
+      const query = new Query(db);
 
       // act
-      var result = batch.add(query);
+      const result = batch.add(query);
 
       // assert
       assert.equal(result, batch, 'returns self');
@@ -189,7 +180,7 @@ describe('lib/util/batch.js', function () {
   describe('#addQuery()', function () {
     it('adds the query to the query list', function (done) {
       // arrange
-      var query = new Query(db);
+      const query = new Query(db);
 
       // act
       batch.addQuery(query);
@@ -203,7 +194,7 @@ describe('lib/util/batch.js', function () {
 
     it('adds error if query is not a valid Query object', function (done) {
       // arrange
-      var query = { cql: 'mySql', queryName: 'myQueryName' };
+      const query = { cql: 'mySql', queryName: 'myQueryName' };
 
       // act
       batch.addQuery(query);
@@ -216,7 +207,7 @@ describe('lib/util/batch.js', function () {
 
     it('adds error if query is null', function (done) {
       // arrange
-      var query = null;
+      const query = null;
 
       // act
       batch.addQuery(query);
@@ -229,10 +220,10 @@ describe('lib/util/batch.js', function () {
 
     it('returns self', function (done) {
       // arrange
-      var query = new Query(db);
+      const query = new Query(db);
 
       // act
-      var result = batch.addQuery(query);
+      const result = batch.addQuery(query);
 
       // assert
       assert.equal(result, batch, 'returns self');
@@ -243,7 +234,7 @@ describe('lib/util/batch.js', function () {
   describe('#addBatch()', function () {
     it('adds the batch to the query list', function (done) {
       // arrange
-      var newBatch = new Batch(db);
+      const newBatch = new Batch(db);
 
       // act
       batch.addBatch(newBatch);
@@ -257,7 +248,7 @@ describe('lib/util/batch.js', function () {
 
     it('adds error if the added batch contains the batch it is being added to', function (done) {
       // arrange
-      var newBatch = new Batch(db);
+      const newBatch = new Batch(db);
       newBatch.addBatch(batch);
 
       // act
@@ -271,8 +262,8 @@ describe('lib/util/batch.js', function () {
 
     it('adds error if the added batch contains the batch it is being added to (nested)', function (done) {
       // arrange
-      var newBatch1 = new Batch(db);
-      var newBatch2 = new Batch(db);
+      const newBatch1 = new Batch(db);
+      const newBatch2 = new Batch(db);
       newBatch1.addBatch(newBatch2);
       newBatch2.addBatch(batch);
 
@@ -287,7 +278,7 @@ describe('lib/util/batch.js', function () {
 
     it('adds error if the added batch is already in the tree', function (done) {
       // arrange
-      var newBatch = new Batch(db);
+      const newBatch = new Batch(db);
       batch.addBatch(newBatch);
 
       // act
@@ -301,8 +292,8 @@ describe('lib/util/batch.js', function () {
 
     it('adds error if the added batch is already in the tree (nseted)', function (done) {
       // arrange
-      var newBatch1 = new Batch(db);
-      var newBatch2 = new Batch(db);
+      const newBatch1 = new Batch(db);
+      const newBatch2 = new Batch(db);
       newBatch1.addBatch(newBatch2);
       batch.addBatch(newBatch1);
 
@@ -317,7 +308,7 @@ describe('lib/util/batch.js', function () {
 
     it('adds error if batch is not a valid Batch object', function (done) {
       // arrange
-      var newBatch = { context: { queries: [] } };
+      const newBatch = { context: { queries: [] } };
 
       // act
       batch.addBatch(newBatch);
@@ -330,7 +321,7 @@ describe('lib/util/batch.js', function () {
 
     it('adds error if batch is null', function (done) {
       // arrange
-      var newBatch = null;
+      const newBatch = null;
 
       // act
       batch.addQuery(newBatch);
@@ -343,10 +334,10 @@ describe('lib/util/batch.js', function () {
 
     it('returns self', function (done) {
       // arrange
-      var newBatch = new Batch(db);
+      const newBatch = new Batch(db);
 
       // act
-      var result = batch.addBatch(newBatch);
+      const result = batch.addBatch(newBatch);
 
       // assert
       assert.equal(result, batch, 'returns self');
@@ -378,7 +369,7 @@ describe('lib/util/batch.js', function () {
     it('returns self', function (done) {
       // arrange
       // act
-      var result = batch.consistency('one');
+      const result = batch.consistency('one');
 
       // assert
       assert.equal(result, batch, 'returns self');
@@ -389,7 +380,7 @@ describe('lib/util/batch.js', function () {
   describe('#timestamp()', function () {
     it('adds timestamp to context if given', function (done) {
       // arrange
-      var timestamp = 1234567;
+      const timestamp = 1234567;
 
       // act
       batch.timestamp(timestamp);
@@ -412,7 +403,7 @@ describe('lib/util/batch.js', function () {
     it('returns self', function (done) {
       // arrange
       // act
-      var result = batch.timestamp();
+      const result = batch.timestamp();
 
       // assert
       assert.equal(result, batch, 'returns self');
@@ -435,7 +426,7 @@ describe('lib/util/batch.js', function () {
     it('returns self', function (done) {
       // arrange
       // act
-      var result = batch.options({ one: 'one' });
+      const result = batch.options({ one: 'one' });
 
       // assert
       assert.equal(result, batch, 'returns self');
@@ -475,7 +466,7 @@ describe('lib/util/batch.js', function () {
     it('returns self', function (done) {
       // arrange
       // act
-      var result = batch.type('counter');
+      const result = batch.type('counter');
 
       // assert
       assert.equal(result, batch, 'returns self');
@@ -493,14 +484,15 @@ describe('lib/util/batch.js', function () {
 
     it('returns void if callback supplied', function (done) {
       // arrange
-      var query1 = new Query(db),
+      const
+        query1 = new Query(db),
         query2 = new Query(db);
       query1.context.cql = 'myCqlQuery1';
       query2.context.cql = 'myCqlQuery2';
       batch.context.queries = [query1, query2];
 
       // act
-      var result = batch.execute(function () { });
+      const result = batch.execute(function () { });
 
       // assert
       assert.equal(result, void 0, 'returns void');
@@ -509,14 +501,15 @@ describe('lib/util/batch.js', function () {
 
     it('returns promise if callback not supplied', function (done) {
       // arrange
-      var query1 = new Query(db),
+      const
+        query1 = new Query(db),
         query2 = new Query(db);
       query1.context.cql = 'myCqlQuery1';
       query2.context.cql = 'myCqlQuery2';
       batch.context.queries = [query1, query2];
 
       // act
-      var result = batch.execute({ one: 'one' });
+      const result = batch.execute({ one: 'one' });
 
       // assert
       assert.ok(q.isPromise(result), 'returns promise');
@@ -532,7 +525,7 @@ describe('lib/util/batch.js', function () {
 
           // act
           if (isPromise) {
-            var e = null;
+            let e = null;
             batch
               .execute()
               .catch(function (error) {
@@ -555,7 +548,8 @@ describe('lib/util/batch.js', function () {
 
         it('yields error if db yields error', function (done) {
           // arrange
-          var query1 = new Query(db),
+          const
+            query1 = new Query(db),
             query2 = new Query(db);
           query1.context.cql = 'myCqlQuery1';
           query2.context.cql = 'myCqlQuery2';
@@ -564,7 +558,7 @@ describe('lib/util/batch.js', function () {
 
           // act
           if (isPromise) {
-            var e = null;
+            let e = null;
             batch
               .execute()
               .catch(function (error) {
@@ -591,7 +585,8 @@ describe('lib/util/batch.js', function () {
 
         it('yields multiple errors if triggered', function (done) {
           // arrange
-          var query1 = new Query(db),
+          const
+            query1 = new Query(db),
             query2 = { not: 'a query' };
           query1.context.cql = 'myCqlQuery1';
           db.cql = sinon.stub().yields(new Error('Cassandra error'));
@@ -600,7 +595,7 @@ describe('lib/util/batch.js', function () {
 
           // act
           if (isPromise) {
-            var e = null;
+            let e = null;
             batch
               .execute()
               .catch(function (error) {
@@ -629,10 +624,9 @@ describe('lib/util/batch.js', function () {
 
         it('yields empty result set if no query text is available', function (done) {
           // arrange
-          var data = [
-            {}
-          ];
-          var query1 = new Query(db),
+          const data = [{}];
+          const
+            query1 = new Query(db),
             query2 = new Query(db);
           query1.context.cql = '';
           query2.context.cql = '';
@@ -641,7 +635,7 @@ describe('lib/util/batch.js', function () {
 
           // act
           if (isPromise) {
-            var e = null;
+            let e = null;
             batch
               .execute()
               .catch(function (error) {
@@ -668,10 +662,9 @@ describe('lib/util/batch.js', function () {
 
         it('yields data if db yields data', function (done) {
           // arrange
-          var data = [
-            {}
-          ];
-          var query1 = new Query(db),
+          const data = [{}];
+          const
+            query1 = new Query(db),
             query2 = new Query(db);
           query1.context.cql = 'myCqlQuery1';
           query2.context.cql = 'myCqlQuery2';
@@ -680,7 +673,7 @@ describe('lib/util/batch.js', function () {
 
           // act
           if (isPromise) {
-            var e = null;
+            let e = null;
             batch
               .execute()
               .catch(function (error) {
@@ -707,10 +700,8 @@ describe('lib/util/batch.js', function () {
 
         it('joins queries correctly', function (done) {
           // arrange
-          var data = [
-            {}
-          ];
-          var query1 = new Query(db)
+          const data = [{}];
+          const query1 = new Query(db)
               .query('myCqlQuery1')
               .consistency('localQuorum')
               .param('param1', 'ascii')
@@ -734,7 +725,7 @@ describe('lib/util/batch.js', function () {
 
           // act
           if (isPromise) {
-            var e = null;
+            let e = null;
             batch
               .execute()
               .catch(function (error) {
@@ -754,16 +745,16 @@ describe('lib/util/batch.js', function () {
           // assert
           function asserts(err, result) {
             assert.strictEqual(db.cql.callCount, 1, 'cql is only called once');
-            var callArgs = db.cql.getCall(0).args;
+            const callArgs = db.cql.getCall(0).args;
             assert.strictEqual(callArgs[0], 'BEGIN BATCH\nUSING TIMESTAMP ?\nmyCqlQuery1;\nmyCqlQuery2;\nmyCqlQuery3;\nAPPLY BATCH;\n', 'Query text is joined');
-            var queryParams = callArgs[1];
+            const queryParams = callArgs[1];
             assert.strictEqual(queryParams.length, 7, 'Query params are joined with timestamp');
             assert.strictEqual(callArgs[2].consistency, db.consistencyLevel.eachQuorum, 'Strictest consistency is set');
             assert.strictEqual(callArgs[2].suppressDebugLog, true, 'Debug log is suppressed');
             assert.notOk(err, 'error is not populated');
             assert.equal(data, result, 'result is populated');
             assert.equal(queryParams[0].value, 1234567, 'timestamp param is populated');
-            for (var i = 1; i < queryParams.length; i++) {
+            for (let i = 1; i < queryParams.length; i++) {
               assert.equal(queryParams[i].value, `param${i}`, `query param ${i} is populated`);
             }
             done();
@@ -772,10 +763,8 @@ describe('lib/util/batch.js', function () {
 
         it('can join a query with an empty batch', function (done) {
           // arrange
-          var data = [
-            {}
-          ];
-          var query = new Query(db)
+          const data = [{}];
+          const query = new Query(db)
             .query('myCqlQuery1')
             .consistency('localQuorum')
             .param('param1', 'ascii')
@@ -789,7 +778,7 @@ describe('lib/util/batch.js', function () {
 
           // act
           if (isPromise) {
-            var e = null;
+            let e = null;
             batch
               .execute()
               .catch(function (error) {
@@ -809,14 +798,14 @@ describe('lib/util/batch.js', function () {
           // assert
           function asserts(err, result) {
             assert.strictEqual(db.cql.callCount, 1, 'cql is only called once');
-            var callArgs = db.cql.getCall(0).args;
+            const callArgs = db.cql.getCall(0).args;
             assert.strictEqual(callArgs[0], 'BEGIN BATCH\nmyCqlQuery1\nUSING TIMESTAMP ?;\nAPPLY BATCH;\n', 'Query text is joined');
-            var queryParams = callArgs[1];
+            const queryParams = callArgs[1];
             assert.strictEqual(queryParams.length, 3, 'Query params are joined with timestamp');
             assert.notOk(err, 'error is not populated');
             assert.equal(data, result, 'result is populated');
             assert.equal(queryParams[2].value, 1234567, 'timestamp param is populated');
-            for (var i = 0; i < queryParams.length - 1; i++) {
+            for (let i = 0; i < queryParams.length - 1; i++) {
               assert.equal(queryParams[i].value, `param${i + 1}`, `query param ${i + 1} is populated`);
             }
             done();
@@ -825,10 +814,8 @@ describe('lib/util/batch.js', function () {
 
         it('can join a query with an empty query', function (done) {
           // arrange
-          var data = [
-            {}
-          ];
-          var query = new Query(db)
+          const data = [{}];
+          const query = new Query(db)
             .query('myCqlQuery1')
             .consistency('localQuorum')
             .param('param1', 'ascii')
@@ -842,7 +829,7 @@ describe('lib/util/batch.js', function () {
 
           // act
           if (isPromise) {
-            var e = null;
+            let e = null;
             batch
               .execute()
               .catch(function (error) {
@@ -862,14 +849,14 @@ describe('lib/util/batch.js', function () {
           // assert
           function asserts(err, result) {
             assert.strictEqual(db.cql.callCount, 1, 'cql is only called once');
-            var callArgs = db.cql.getCall(0).args;
+            const callArgs = db.cql.getCall(0).args;
             assert.strictEqual(callArgs[0], 'BEGIN BATCH\nUSING TIMESTAMP ?\nmyCqlQuery1;\nAPPLY BATCH;\n', 'Query text is joined');
-            var queryParams = callArgs[1];
+            const queryParams = callArgs[1];
             assert.strictEqual(queryParams.length, 3, 'Query params are joined with timestamp');
             assert.notOk(err, 'error is not populated');
             assert.equal(data, result, 'result is populated');
             assert.equal(queryParams[0].value, 1234567, 'timestamp param is populated');
-            for (var i = 1; i < queryParams.length; i++) {
+            for (let i = 1; i < queryParams.length; i++) {
               assert.equal(queryParams[i].value, `param${i}`, `query param ${i} is populated`);
             }
             done();
@@ -878,10 +865,8 @@ describe('lib/util/batch.js', function () {
 
         it('can join a query with an empty string query', function (done) {
           // arrange
-          var data = [
-            {}
-          ];
-          var query = new Query(db)
+          const data = [{}];
+          const query = new Query(db)
             .query('myCqlQuery1')
             .consistency('localQuorum')
             .param('param1', 'ascii')
@@ -895,7 +880,7 @@ describe('lib/util/batch.js', function () {
 
           // act
           if (isPromise) {
-            var e = null;
+            let e = null;
             batch
               .execute()
               .catch(function (error) {
@@ -915,14 +900,14 @@ describe('lib/util/batch.js', function () {
           // assert
           function asserts(err, result) {
             assert.strictEqual(db.cql.callCount, 1, 'cql is only called once');
-            var callArgs = db.cql.getCall(0).args;
+            const callArgs = db.cql.getCall(0).args;
             assert.strictEqual(callArgs[0], 'BEGIN BATCH\nUSING TIMESTAMP ?\nmyCqlQuery1;\nAPPLY BATCH;\n', 'Query text is joined');
-            var queryParams = callArgs[1];
+            const queryParams = callArgs[1];
             assert.strictEqual(queryParams.length, 3, 'Query params are joined with timestamp');
             assert.notOk(err, 'error is not populated');
             assert.equal(data, result, 'result is populated');
             assert.equal(queryParams[0].value, 1234567, 'timestamp param is populated');
-            for (var i = 1; i < queryParams.length; i++) {
+            for (let i = 1; i < queryParams.length; i++) {
               assert.equal(queryParams[i].value, `param${i}`, `query param ${i} is populated`);
             }
             done();
@@ -931,10 +916,8 @@ describe('lib/util/batch.js', function () {
 
         it('sets batch type appropriately', function (done) {
           // arrange
-          var data = [
-            {}
-          ];
-          var query1 = new Query(db)
+          const data = [{}];
+          const query1 = new Query(db)
             .query('myCqlQuery1')
             .consistency('localQuorum')
             .param('param1', 'ascii')
@@ -947,7 +930,7 @@ describe('lib/util/batch.js', function () {
 
           // act
           if (isPromise) {
-            var e = null;
+            let e = null;
             batch
               .execute()
               .catch(function (error) {
@@ -967,7 +950,7 @@ describe('lib/util/batch.js', function () {
           // assert
           function asserts(err, result) {
             assert.strictEqual(db.cql.callCount, 1, 'cql is only called once');
-            var callArgs = db.cql.getCall(0).args;
+            const callArgs = db.cql.getCall(0).args;
             assert.strictEqual(callArgs[0], 'BEGIN COUNTER BATCH\nmyCqlQuery1;\nAPPLY BATCH;\n', 'Query text is joined');
             assert.notOk(err, 'error is not populated');
             assert.equal(result, data, 'result is populated');
@@ -977,10 +960,8 @@ describe('lib/util/batch.js', function () {
 
         it('ignores bad batch types', function (done) {
           // arrange
-          var data = [
-            {}
-          ];
-          var query1 = new Query(db)
+          const data = [{}];
+          const query1 = new Query(db)
             .query('myCqlQuery1')
             .consistency('localQuorum')
             .param('param1', 'ascii')
@@ -993,7 +974,7 @@ describe('lib/util/batch.js', function () {
 
           // act
           if (isPromise) {
-            var e = null;
+            let e = null;
             batch
               .execute()
               .catch(function (error) {
@@ -1013,7 +994,7 @@ describe('lib/util/batch.js', function () {
           // assert
           function asserts(err, result) {
             assert.strictEqual(db.cql.callCount, 1, 'cql is only called once');
-            var callArgs = db.cql.getCall(0).args;
+            const callArgs = db.cql.getCall(0).args;
             assert.strictEqual(callArgs[0], 'BEGIN BATCH\nmyCqlQuery1;\nAPPLY BATCH;\n', 'Query text is joined');
             assert.notOk(err, 'error is not populated');
             assert.equal(result, data, 'result is populated');
@@ -1023,10 +1004,8 @@ describe('lib/util/batch.js', function () {
 
         it('joins nested batches correctly', function (done) {
           // arrange
-          var data = [
-            {}
-          ];
-          var query1 = new Query(db)
+          const data = [{}];
+          const query1 = new Query(db)
               .query('myCqlQuery1')
               .consistency('localQuorum')
               .param('param1', 'ascii')
@@ -1053,7 +1032,7 @@ describe('lib/util/batch.js', function () {
 
           // act
           if (isPromise) {
-            var e = null;
+            let e = null;
             batch
               .execute()
               .catch(function (error) {
@@ -1073,16 +1052,16 @@ describe('lib/util/batch.js', function () {
           // assert
           function asserts(err, result) {
             assert.strictEqual(db.cql.callCount, 1, 'cql is only called once');
-            var callArgs = db.cql.getCall(0).args;
+            const callArgs = db.cql.getCall(0).args;
             assert.strictEqual(callArgs[0], 'BEGIN BATCH\nmyCqlQuery1;\nmyCqlQuery2;\nmyCqlQuery3;\nAPPLY BATCH;\n', 'Query text is joined');
-            var queryParams = callArgs[1];
+            const queryParams = callArgs[1];
             assert.strictEqual(queryParams.length, 6, 'Query params are joined');
             assert.strictEqual(callArgs[2].consistency, db.consistencyLevel.eachQuorum, 'Strictest consistency is set');
             assert.strictEqual(callArgs[2].suppressDebugLog, true, 'Debug log is suppressed');
             assert.notOk(err, 'error is not populated');
             assert.equal(result, data, 'result is populated');
-            for (var i = 0; i < queryParams.length; i++) {
-              var num = i + 1;
+            for (let i = 0; i < queryParams.length; i++) {
+              const num = i + 1;
               assert.equal(queryParams[i].value, `param${num}`, `query param ${num} is populated`);
             }
             done();
@@ -1091,10 +1070,8 @@ describe('lib/util/batch.js', function () {
 
         it('joins nested batches correctly through multiple levels', function (done) {
           // arrange
-          var data = [
-            {}
-          ];
-          var query1 = new Query(db)
+          const data = [{}];
+          const query1 = new Query(db)
               .query('myCqlQuery1')
               .consistency('localQuorum')
               .param('param1', 'ascii')
@@ -1123,7 +1100,7 @@ describe('lib/util/batch.js', function () {
 
           // act
           if (isPromise) {
-            var e = null;
+            let e = null;
             batch
               .execute()
               .catch(function (error) {
@@ -1143,16 +1120,16 @@ describe('lib/util/batch.js', function () {
           // assert
           function asserts(err, result) {
             assert.strictEqual(db.cql.callCount, 1, 'cql is only called once');
-            var callArgs = db.cql.getCall(0).args;
+            const callArgs = db.cql.getCall(0).args;
             assert.strictEqual(callArgs[0], 'BEGIN BATCH\nmyCqlQuery1;\nmyCqlQuery2;\nmyCqlQuery3;\nAPPLY BATCH;\n', 'Query text is joined');
-            var queryParams = callArgs[1];
+            const queryParams = callArgs[1];
             assert.strictEqual(queryParams.length, 6, 'Query params are joined');
             assert.strictEqual(callArgs[2].consistency, db.consistencyLevel.eachQuorum, 'Strictest consistency is set');
             assert.strictEqual(callArgs[2].suppressDebugLog, true, 'Debug log is suppressed');
             assert.notOk(err, 'error is not populated');
             assert.equal(result, data, 'result is populated');
-            for (var i = 0; i < queryParams.length; i++) {
-              var num = i + 1;
+            for (let i = 0; i < queryParams.length; i++) {
+              const num = i + 1;
               assert.equal(queryParams[i].value, `param${num}`, `query param ${num} is populated`);
             }
             done();
@@ -1161,10 +1138,8 @@ describe('lib/util/batch.js', function () {
 
         it('joins nested batches correctly with empty batches through multiple levels', function (done) {
           // arrange
-          var data = [
-            {}
-          ];
-          var query1 = new Query(db)
+          const data = [{}];
+          const query1 = new Query(db)
               .query('myCqlQuery1')
               .consistency('localQuorum')
               .param('param1', 'ascii')
@@ -1195,7 +1170,7 @@ describe('lib/util/batch.js', function () {
 
           // act
           if (isPromise) {
-            var e = null;
+            let e = null;
             batch
               .execute()
               .catch(function (error) {
@@ -1215,16 +1190,16 @@ describe('lib/util/batch.js', function () {
           // assert
           function asserts(err, result) {
             assert.strictEqual(db.cql.callCount, 1, 'cql is only called once');
-            var callArgs = db.cql.getCall(0).args;
+            const callArgs = db.cql.getCall(0).args;
             assert.strictEqual(callArgs[0], 'BEGIN BATCH\nmyCqlQuery1;\nmyCqlQuery2;\nmyCqlQuery3;\nAPPLY BATCH;\n', 'Query text is joined');
-            var queryParams = callArgs[1];
+            const queryParams = callArgs[1];
             assert.strictEqual(queryParams.length, 6, 'Query params are joined');
             assert.strictEqual(callArgs[2].consistency, db.consistencyLevel.eachQuorum, 'Strictest consistency is set');
             assert.strictEqual(callArgs[2].suppressDebugLog, true, 'Debug log is suppressed');
             assert.notOk(err, 'error is not populated');
             assert.equal(result, data, 'result is populated');
-            for (var i = 0; i < queryParams.length; i++) {
-              var num = i + 1;
+            for (let i = 0; i < queryParams.length; i++) {
+              const num = i + 1;
               assert.equal(queryParams[i].value, `param${num}`, `query param ${num} is populated`);
             }
             done();
@@ -1233,10 +1208,8 @@ describe('lib/util/batch.js', function () {
 
         it('joins empty nested batches correctly through multiple levels', function (done) {
           // arrange
-          var data = [
-            {}
-          ];
-          var query1 = new Query(db)
+          const data = [{}];
+          const query1 = new Query(db)
               .query('')
               .consistency('localQuorum')
               .param('param1', 'ascii')
@@ -1265,7 +1238,7 @@ describe('lib/util/batch.js', function () {
 
           // act
           if (isPromise) {
-            var e = null;
+            let e = null;
             batch
               .execute()
               .catch(function (error) {
@@ -1293,10 +1266,8 @@ describe('lib/util/batch.js', function () {
 
         it('joins nested batches correctly when the parent has a timestamp and child does not', function (done) {
           // arrange
-          var data = [
-            {}
-          ];
-          var query1 = new Query(db)
+          const data = [{}];
+          const query1 = new Query(db)
               .query('myCqlQuery1')
               .consistency('localQuorum')
               .param('param1', 'ascii')
@@ -1324,7 +1295,7 @@ describe('lib/util/batch.js', function () {
 
           // act
           if (isPromise) {
-            var e = null;
+            let e = null;
             batch
               .execute()
               .catch(function (error) {
@@ -1344,9 +1315,9 @@ describe('lib/util/batch.js', function () {
           // assert
           function asserts(err, data) {
             assert.strictEqual(db.cql.callCount, 1, 'cql is only called once');
-            var callArgs = db.cql.getCall(0).args;
+            const callArgs = db.cql.getCall(0).args;
             assert.strictEqual(callArgs[0], 'BEGIN BATCH\nmyCqlQuery1\nUSING TIMESTAMP ?;\nmyCqlQuery2\nUSING TIMESTAMP ?;\nmyCqlQuery3\nUSING TIMESTAMP ?;\nAPPLY BATCH;\n', 'Query text is joined');
-            var queryParams = callArgs[1];
+            const queryParams = callArgs[1];
             assert.strictEqual(queryParams.length, 9, 'Query params are joined with timestamps');
             assert.strictEqual(callArgs[2].consistency, db.consistencyLevel.eachQuorum, 'Strictest consistency is set');
             assert.strictEqual(callArgs[2].suppressDebugLog, true, 'Debug log is suppressed');
@@ -1367,10 +1338,8 @@ describe('lib/util/batch.js', function () {
 
         it('sets nested batch timestamps correctly', function (done) {
           // arrange
-          var data = [
-            {}
-          ];
-          var query1 = new Query(db)
+          const data = [{}];
+          const query1 = new Query(db)
               .query('myCqlQuery1')
               .consistency('localQuorum')
               .param('param1', 'ascii')
@@ -1399,7 +1368,7 @@ describe('lib/util/batch.js', function () {
 
           // act
           if (isPromise) {
-            var e = null;
+            let e = null;
             batch
               .execute()
               .catch(function (error) {
@@ -1419,9 +1388,9 @@ describe('lib/util/batch.js', function () {
           // assert
           function asserts(err, result) {
             assert.strictEqual(db.cql.callCount, 1, 'cql is only called once');
-            var callArgs = db.cql.getCall(0).args;
+            const callArgs = db.cql.getCall(0).args;
             assert.strictEqual(callArgs[0], 'BEGIN BATCH\nmyCqlQuery1\nUSING TIMESTAMP ?;\nmyCqlQuery2\nUSING TIMESTAMP ?;\nmyCqlQuery3\nUSING TIMESTAMP ?;\nAPPLY BATCH;\n', 'Query text is joined');
-            var queryParams = callArgs[1];
+            const queryParams = callArgs[1];
             assert.strictEqual(queryParams.length, 9, 'Query params are joined with timestamps');
             assert.strictEqual(callArgs[2].consistency, db.consistencyLevel.eachQuorum, 'Strictest consistency is set');
             assert.strictEqual(callArgs[2].suppressDebugLog, true, 'Debug log is suppressed');
@@ -1442,10 +1411,8 @@ describe('lib/util/batch.js', function () {
 
         it('sets nested batch timestamps correctly for CQL versions that don\'t support DML timestamps inside of a batch', function (done) {
           // arrange
-          var data = [
-            {}
-          ];
-          var query1 = new Query(db)
+          const data = [{}];
+          const query1 = new Query(db)
               .query('myCqlQuery1')
               .consistency('localQuorum')
               .param('param1', 'ascii')
@@ -1475,7 +1442,7 @@ describe('lib/util/batch.js', function () {
 
           // act
           if (isPromise) {
-            var e = null;
+            let e = null;
             batch
               .execute()
               .catch(function (error) {
@@ -1495,9 +1462,9 @@ describe('lib/util/batch.js', function () {
           // assert
           function asserts(err, result) {
             assert.strictEqual(db.cql.callCount, 1, 'cql is only called once');
-            var callArgs = db.cql.getCall(0).args;
+            const callArgs = db.cql.getCall(0).args;
             assert.strictEqual(callArgs[0], 'BEGIN BATCH\nUSING TIMESTAMP ?\nmyCqlQuery1;\nmyCqlQuery2;\nmyCqlQuery3;\nAPPLY BATCH;\n', 'Query text is joined');
-            var queryParams = callArgs[1];
+            const queryParams = callArgs[1];
             assert.strictEqual(queryParams.length, 7, 'Query params are joined with timestamps');
             assert.strictEqual(callArgs[2].consistency, db.consistencyLevel.eachQuorum, 'Strictest consistency is set');
             assert.strictEqual(callArgs[2].suppressDebugLog, true, 'Debug log is suppressed');
@@ -1516,10 +1483,8 @@ describe('lib/util/batch.js', function () {
 
         it('sets nested batch timestamps correctly for queries that don\'t support DML timestamps inside of a batch', function (done) {
           // arrange
-          var data = [
-            {}
-          ];
-          var query1 = new Query(db)
+          const data = [{}];
+          const query1 = new Query(db)
               .query('myCqlQuery1')
               .consistency('localQuorum')
               .param('param1', 'ascii')
@@ -1548,7 +1513,7 @@ describe('lib/util/batch.js', function () {
 
           // act
           if (isPromise) {
-            var e = null;
+            let e = null;
             batch
               .execute()
               .catch(function (error) {
@@ -1568,9 +1533,9 @@ describe('lib/util/batch.js', function () {
           // assert
           function asserts(err, result) {
             assert.strictEqual(db.cql.callCount, 1, 'cql is only called once');
-            var callArgs = db.cql.getCall(0).args;
+            const callArgs = db.cql.getCall(0).args;
             assert.strictEqual(callArgs[0], 'BEGIN BATCH\nUSING TIMESTAMP ?\nmyCqlQuery1;\nUPDATE something;\nmyCqlQuery3;\nAPPLY BATCH;\n', 'Query text is joined');
-            var queryParams = callArgs[1];
+            const queryParams = callArgs[1];
             assert.strictEqual(queryParams.length, 7, 'Query params are joined with timestamps');
             assert.strictEqual(callArgs[2].consistency, db.consistencyLevel.eachQuorum, 'Strictest consistency is set');
             assert.strictEqual(callArgs[2].suppressDebugLog, true, 'Debug log is suppressed');
@@ -1589,10 +1554,8 @@ describe('lib/util/batch.js', function () {
 
         it('sets nested batch timestamps correctly for child batches that don\'t support DML timestamps inside of a batch', function (done) {
           // arrange
-          var data = [
-            {}
-          ];
-          var query1 = new Query(db)
+          const data = [{}];
+          const query1 = new Query(db)
               .query('myCqlQuery1')
               .consistency('localQuorum')
               .param('param1', 'ascii')
@@ -1633,7 +1596,7 @@ describe('lib/util/batch.js', function () {
 
           // act
           if (isPromise) {
-            var e = null;
+            let e = null;
             batch
               .execute()
               .catch(function (error) {
@@ -1653,9 +1616,9 @@ describe('lib/util/batch.js', function () {
           // assert
           function asserts(err, result) {
             assert.strictEqual(db.cql.callCount, 1, 'cql is only called once');
-            var callArgs = db.cql.getCall(0).args;
+            const callArgs = db.cql.getCall(0).args;
             assert.strictEqual(callArgs[0], 'BEGIN BATCH\nUSING TIMESTAMP ?\nmyCqlQuery1;\nINSERT something;\nDELETE something;\nINSERT something;\nmyCqlQuery3;\nAPPLY BATCH;\n', 'Query text is joined');
-            var queryParams = callArgs[1];
+            const queryParams = callArgs[1];
             assert.strictEqual(queryParams.length, 11, 'Query params are joined with timestamps');
             assert.strictEqual(callArgs[2].consistency, db.consistencyLevel.eachQuorum, 'Strictest consistency is set');
             assert.strictEqual(callArgs[2].suppressDebugLog, true, 'Debug log is suppressed');
@@ -1682,7 +1645,7 @@ describe('lib/util/batch.js', function () {
     testCallbacks(true);
 
     describe('sets timestamp to current time', function () {
-      var clock;
+      let clock;
       beforeEach(function () {
         clock = this.clock = sinon.useFakeTimers();
       });
@@ -1695,12 +1658,10 @@ describe('lib/util/batch.js', function () {
 
       it('and propagates to child batches appropriately', function (done) {
         // arrange
-        var data = [
-          {}
-        ];
+        const data = [{}];
         clock.tick(123456789);
-        var nowTs = (Date.now() * 1000);
-        var query1 = new Query(db)
+        const nowTs = (Date.now() * 1000);
+        const query1 = new Query(db)
             .query('myCqlQuery1')
             .consistency('localQuorum')
             .param('param1', 'ascii')
@@ -1733,9 +1694,9 @@ describe('lib/util/batch.js', function () {
         // assert
         function asserts(err, data) {
           assert.strictEqual(db.cql.callCount, 1, 'cql is only called once');
-          var callArgs = db.cql.getCall(0).args;
+          const callArgs = db.cql.getCall(0).args;
           assert.strictEqual(callArgs[0], 'BEGIN BATCH\nmyCqlQuery1\nUSING TIMESTAMP ?;\nmyCqlQuery2\nUSING TIMESTAMP ?;\nmyCqlQuery3\nUSING TIMESTAMP ?;\nAPPLY BATCH;\n', 'Query text is joined');
-          var queryParams = callArgs[1];
+          const queryParams = callArgs[1];
           assert.strictEqual(queryParams.length, 9, 'Query params are joined with timestamps');
           assert.strictEqual(callArgs[2].consistency, db.consistencyLevel.eachQuorum, 'Strictest consistency is set');
           assert.strictEqual(callArgs[2].suppressDebugLog, true, 'Debug log is suppressed');

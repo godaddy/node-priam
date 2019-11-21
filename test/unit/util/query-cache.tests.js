@@ -1,11 +1,8 @@
-var
-  chai = require('chai'),
-  assert = chai.assert,
-  expect = chai.expect,
-  path = require('path');
+const { assert, expect } = require('chai');
+const path = require('path');
+const QueryCache = require('../../../lib/util/query-cache');
 
-var QueryCache = require('../../../lib/util/query-cache'),
-  queryDir = path.join(__dirname, '../../stubs/cql');
+const queryDir = path.join(__dirname, '../../stubs/cql');
 
 describe('lib/util/query-cache.js', function () {
 
@@ -32,7 +29,7 @@ describe('lib/util/query-cache.js', function () {
 
   describe('constructed instance', function () {
 
-    var queries;
+    let queries;
 
     beforeEach(function () {
       queries = new QueryCache({ queryDirectory: queryDir });
@@ -59,9 +56,10 @@ describe('lib/util/query-cache.js', function () {
 
     it('returns query text represented by query name', function () {
       // arrange
-      var queryName = 'myQueryName',
+      const
+        queryName = 'myQueryName',
         queryText = 'SELECT * FROM users LIMIT 10;';
-      var queries = new QueryCache({ queryDirectory: queryDir });
+      const queries = new QueryCache({ queryDirectory: queryDir });
       queries.fileCache[queryName] = queryText;
 
       // act
@@ -73,8 +71,8 @@ describe('lib/util/query-cache.js', function () {
 
     it('returns error if named query does not exist', function () {
       // arrange
-      var queryName = 'myQueryNameDoesntExist';
-      var queries = new QueryCache({ queryDirectory: queryDir });
+      const queryName = 'myQueryNameDoesntExist';
+      const queries = new QueryCache({ queryDirectory: queryDir });
 
       // act/assert
       expect(() => queries.readQuery(queryName)).to.throw(Error);
@@ -82,8 +80,8 @@ describe('lib/util/query-cache.js', function () {
 
     it('throws error if callback not provided', function (done) {
       // arrange
-      var queryName = 'myQueryNameDoesntExist';
-      var queries = new QueryCache({ queryDirectory: queryDir });
+      const queryName = 'myQueryNameDoesntExist';
+      const queries = new QueryCache({ queryDirectory: queryDir });
 
       // act
       expect(function () {
