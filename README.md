@@ -31,13 +31,25 @@ Example Usage
 Check the `example` folder for a more complete example. Start by running: `npm start` followed by `curl http://localhost:8080/` or `curl http://localhost:8080/stream=true`.
 
 ### Using Known Connection Information ###
+
 ```javascript
-var path = require('path');
-var db = require('priam')({
+const path = require('path');
+const db = require('priam')({
   config: {
+    /* See https://docs.datastax.com/en/developer/nodejs-driver/4.3/api/type.ClientOptions/
+ 
+       for full list of config options 
+    */
     cqlVersion: '3.0.0', /* optional, defaults to '3.1.0' */
-    timeout: 4000, /* optional, defaults to 4000 */
-    poolSize: 2, /* optional, defaults to 1 */
+    socketOptions: {  /* optional, defaults as below */
+      connectTimeout: 5000 /* optional, defaults to 4000 */
+    },
+    pooling: {  /* optional */
+      coreConnectionsPerHost: {
+        local: 2,
+        remote: 1
+      }
+    },
     consistencyLevel: 'one', /* optional, defaults to one. Will throw if not a valid Cassandra consistency level*/
     numRetries: 3, /* optional, defaults to 0. Retries occur on connection failures. Deprecated, use retryOptions instead. */
     retryDelay: 100, /* optional, defaults to 100ms. Used on consistency fallback retry */
@@ -45,10 +57,12 @@ var db = require('priam')({
     enableConsistencyFailover: true, /* optional, defaults to true */
     coerceDataStaxTypes: false, /* optional, defaults to true */
     queryDirectory: path.join(__dirname, 'path/to/your/cql/files'), /* optional, required to use #namedQuery() */
-    user: '<your_username>',
-    password: '<your_password>',
+    credentials: {
+      username: '<your_username>',
+      password: '<your_password>'
+    },
     keyspace: '<your_keyspace>', /* Default keyspace. Can be overwritten via options passed into #cql(), etc. */
-    hosts: [ /* Ports are optional */
+    contactPoints: [ /* Ports are optional */
       '123.456.789.010:9042',
       '123.456.789.011:9042',
       '123.456.789.012:9042',
@@ -67,50 +81,13 @@ It provides the following arguments:
 
  - `dataParams`: The parameters array. Should match the order of `?` characters in the `cql` parameter
 
- - `options`: Optional. Additional options for the CQL call. Supports `consistency`, `queryName`, `keyspace`,
-   and `executeAsPrepared`.
+ - `options`: Optional. Additional options for the CQL call. See [Query Options](#query-options) for the list of supported properties.
 
- - `callback(err, data)`: Optional. The callback for the CQL call. Provides `err` and `data` arguments. `data` will be
-   an `Array`.
-
- - `stream`: Optional. A [`Stream`](https://github.com/rvagg/through2) object to be written to when reading from
-   Cassandra. If this is provided, `callback` should not be provided. *Note: Only available when using the `datastax`
-   driver!*
+ - `callback(err, data)` or `stream`: Optional. See [Query Return Options](#query-return-options) below.
 
 `dataParams` will be normalized as necessary in order to be passed to Cassandra. In addition to primitives
 (`Number`/`String`), the driver supports JSON objects, Array and Buffer types. `Object` and `Array` types will be
 stringified prior to being sent to [Cassandra](http://cassandra.apache.org/), whereas `Buffer` types will be encoded.
-
-The `executeAsPrepared` option informs the [node-cassandra-cql](https://github.com/jorgebay/node-cassandra-cql) driver
-to execute the given CQL as a prepared statement, which will boost performance if the query is executed multiple times.
-
-The `queryName` option allows metrics to be captured for the given query, assuming a `metrics` object was passed into
-the constructor. See the [Monitoring / Instrumentation](#monitoring--instrumentation) section for more information.
-
-The `consistency` option allows you to override any default consistency level that was specified in the constructor.
-
-The `resultHint` option allows you to control how objects being returned by the underlying provider are treated. For
-example, a data type of `objectAscii` will result in `JSON.parse()` being called on the resulting value. Special data types
-of `objectAscii` and `objectText` are available for this purpose. If these data types are used in a parameter's `hint`
-field, they will be automatically mapped to the corresponding data type (e.g. `ascii` or `text) prior to executing the
-cql statement.
-
-The `deserializeJsonStrings` option informs [Priam](https://github.com/godaddy/node-priam) to inspect any string results
-coming back from the driver and call `JSON.parse()` before returning the value back to you. This works similar to providing
-`resultHint` options for specific columns, but instead it applies to the entire set of columns.
-*This was the default behavior prior to the 0.7.0 release.*
-
-The `coerceDataStaxTypes` option informs [Priam](https://github.com/godaddy/node-priam) to convert any of the custom
-[DataStax data types](http://docs.datastax.com/en/developer/nodejs-driver/2.1/nodejs-driver/reference/nodejs2Cql3Datatypes.html)
-to standard JavaScript types (`string`, `number`). This is recommended if you are upgrading from a previous version of
-[Priam](https://github.com/godaddy/node-priam) and need to keep backwards-compatibility in your codebase with the previous
-versin of the [DataStax cassandra-driver module](https://github.com/datastax/nodejs-driver).
-
-The `keyspace` option allows you to specify another keyspace to execute a query against. This will override the default
-keyspace set in the connection information.
-
-The `suppressDebugLog` option allows you to disable debug logging of CQL for an individual query. This is useful for
-queries that may contain sensitive data that you do not wish to show up in debug logs.
 
 [hinted parameters](http://www.datastax.com/drivers/nodejs/1.0/types.js.html#line28) are supported.
 Instead of the driver inferring the data type, it can be explicitly specified by using a
@@ -121,8 +98,8 @@ There is also a `param(value [object], type [string])` helper method for creatin
 
 #### Example ####
 ```javascript
-var db = require('priam')({
-    config: { /* ... options ... */ }
+const db = require('priam')({
+  config: { /* ... options ... */ }
 });
 db.cql(
   'SELECT "myCol1", "myCol2" FROM "myColumnFamily" WHERE "keyCol1" = ? AND "keyCol2" = ?',
@@ -130,20 +107,18 @@ db.cql(
   { consistency: db.consistencyLevel.one, queryName: 'myQuery', executeAsPrepared: true },
   function (err, data) {
     if (err) {
-      console.log('ERROR: ' + err);
+      console.log(`ERROR: ${err}`);
       return;
     }
-    console.log('Returned data: ' + data);
+    console.log('Returned data: ', data);
   }
 );
 ```
 
 ### Named Queries ###
-The driver supports using named queries. These queries should be `.cql` files residing in a single folder. The query
-name corresponds to the file name preceding the `.cql` extension. For example, file `myObjectSelect.cql` would have a
-query name of `myObjectSelect`.
+The driver supports using named queries by calling the `namedQuery` method. This method behaves just like the `cql` method, only instead of passing the CQL as the first argument, you pass the name of a query. The query name must correspond to a file name preceding the `.cql` extension. For example, file `myObjectSelect.cql` would have a query name of `myObjectSelect`.
 
-In order to use named queries, the optional `queryDirectory` option should be passed into the driver constructor.
+In order to use named queries, the `queryDirectory` option must be passed into the driver constructor.
 
 Queries are loaded *synchronously* and cached when the driver is constructed.
 
@@ -152,7 +127,7 @@ though the caller can override these options by providing them in the `options` 
 
 #### Example ####
 ```javascript
-var db = require('priam')({
+const db = require('priam')({
     config: { queryDirectory: path.join(__dirName, 'cql') }
 }); /* 'cql' folder will be scanned and all .cql files loaded into memory synchronously */
 db.namedQuery(
@@ -161,13 +136,22 @@ db.namedQuery(
   { consistency: db.consistencyLevel.ONE },
   function (err, data) {
     if (err) {
-      console.log('ERROR: ' + err);
+      console.log('ERROR: ', err);
       return;
     }
-    console.log('Returned data: ' + data);
+    console.log('Returned data: ', data);
   }
 );
 ```
+
+### Query Return Options ###
+
+For the `cql` and `namedQuery` methods, there are four ways to get back your data:
+
+* As a `Promise` - To get back a `Promise`, do not pass a callback argument. The `Promise` will resolve to an `Array` of rows.
+* Via a callback - If you supply a callback function as your last argument, it will be called with an `error` and `data` argument. If there was no error, `data` will be an `Array`.
+* Written to a `Stream` - If you pass a writable stream instead of a callback, the resulting rows will be written to this stream. Your stream will emit `error` events if an error occurs while executing the query.
+* As an async iterable - If you set the `iterable` option to `true`, then an async iterable is returned.
 
 ### Fluent Syntax ###
 The driver provides a fluent syntax that can be used to construct queries.
@@ -184,8 +168,7 @@ Calling `#beginQuery()` returns a `Query` object with the following chainable fu
 
  - `#params(parameters [Array])`: Adds the array of parameters to the query. Parameters should be created using `db.param()`
 
- - `#options(optionsDictionary [object])`: Extends the query options. See
-    [Executing CQL](https://github.com/godaddy/node-priam/blob/master/README.md#executing-cql) for valid options.
+ - `#options(optionsDictionary [object])`: Extends the query options. See [Query Options](#query-options) for the list of supported properties.
 
  - `#consistency(consistencyLevelName [string])`: Sets consistency level for the query. Alias for `#options({ consistency: db.consistencyLevel[consistencyLevelName] })`.
 
@@ -197,8 +180,9 @@ Calling `#beginQuery()` returns a `Query` object with the following chainable fu
 
  - `#execute(callback [optional, function])`: Executes the query. If a callback is not supplied, this will return a Promise.
 
- - `#stream()`: Executes the query and returns a read-only [`Stream`](https://github.com/rvagg/through2) object. *Note: Only available when using the `datastax` driver!*
+ - `#stream()`: Executes the query and returns a readable `Stream` object.
 
+ - `#iterate()`: Executes the query and returns an async iterable.
 
 
 #### Fluent Syntax Examples ####
@@ -214,10 +198,10 @@ db
   .options({ executeAsPrepared: true })
   .execute(function (err, data) {
     if (err) {
-      console.log('ERROR: ' + err);
+      console.log('ERROR: ', err);
       return;
     }
-    console.log('Returned data: ' + data);
+    console.log('Returned data: ', data);
   });
 ```
 
@@ -231,10 +215,10 @@ db
   .consistency('one')
   .execute(function (err, data) {
     if (err) {
-      console.log('ERROR: ' + err);
+      console.log('ERROR: ', err);
       return;
     }
-    console.log('Returned data: ' + data);
+    console.log('Returned data: ', data);
   });
 ```
 
@@ -248,16 +232,16 @@ db
   .consistency('one')
   .execute()
   .fail(function (err) {
-    console.error('ERROR: ' + err);
+    console.error('ERROR: ', err);
   })
   .done(function (data) {
-    console.log('Returned data: ' + JSON.stringify(data));
+    console.log('Returned data: ', JSON.stringify(data));
   });
 ```
 
 For expected large data sets in a web application, it is a good idea to stream the data back.
 ```javascript
-var through = require('through2');
+const { Transform } = require('stream');
 /* ... */
 function (req, res, next) {
   db
@@ -270,8 +254,12 @@ function (req, res, next) {
     .on('error', function (err) {
       res.statusCode(500).end(err.message);
     })
-    .pipe(through.obj(function(data, enc, next) {
-      next(null, JSON.stringify(data)+'\n');
+    .pipe(new Transform({
+      writableObjectMode: true,
+      readableObjectMode: false,
+      transform(data, enc, next) {
+        next(null, JSON.stringify(data)+'\n');
+      }
     }))
     .pipe(res);
 }
@@ -307,8 +295,7 @@ Calling `#beginBatch()` returns a `Query` object with the following chainable fu
  - `#add(batchOrQuery [Batch or Query])`: Allows `null`, `Query`, or `Batch` objects. See `#addQuery()` and `#addBatch()`
     above.
 
- - `#options(optionsDictionary [object])`: Extends the batch. See
-    [Executing CQL](https://github.com/godaddy/node-priam/blob/master/README.md#executing-cql) for valid options.
+ - `#options(optionsDictionary [object])`: Extends the batch. See [Query Options](#query-options) for the list of supported properties.
 
  - `#timestamp(clientTimestamp [optional, long])`: Specifies that `USING TIMESTAMP <value>` will be sent as part of the
     batch CQL. If `clientTimestamp` is not specified, the current time will be used.
@@ -345,12 +332,26 @@ db
   .timestamp()
   .execute()
   .fail(function (err) {
-    console.log('ERROR: ' + err);
+    console.log('ERROR: ', err);
   })
   .done(function (data) {
-    console.log('Returned data: ' + data);
+    console.log('Returned data: ', data);
   });
 ```
+
+### Query Options ###
+
+All techniques for a query share the following set of options:
+
+* `iterable` - causes an async iterable to be returned
+* `executeAsPrepared` - informs the [node-cassandra-cql](https://github.com/jorgebay/node-cassandra-cql) driver to execute the given CQL as a prepared statement, which will boost performance if the query is executed multiple times.
+* `queryName` - allows metrics to be captured for the given query, assuming a `metrics` object was passed into the constructor. See the [Monitoring / Instrumentation](#monitoring--instrumentation) section for more information.
+* `consistency` - allows you to override any default consistency level that was specified in the driver's constructor.
+* `resultHint` - allows you to control how objects being returned by the underlying provider are treated. For example, a data type of `objectAscii` will result in `JSON.parse()` being called on the resulting value. Special data types of `objectAscii` and `objectText` are available for this purpose. If these data types are used in a parameter's `hint` field, they will be automatically mapped to the corresponding data type (e.g. `ascii` or `text) prior to executing the cql statement.
+* `deserializeJsonStrings` - informs [Priam](https://github.com/godaddy/node-priam) to inspect any string results coming back from the driver and calls `JSON.parse()` before returning the value back to you. This works similar to providing `resultHint` options for specific columns, but instead it applies to the entire set of columns. *This was the default behavior prior to the 0.7.0 release.*
+* `coerceDataStaxTypes` - informs [Priam](https://github.com/godaddy/node-priam) to convert any of the custom [DataStax data types](http://docs.datastax.com/en/developer/nodejs-driver/2.1/nodejs-driver/reference/nodejs2Cql3Datatypes.html) to standard JavaScript types (`string`, `number`). This is recommended if you are upgrading from a previous version of [Priam](https://github.com/godaddy/node-priam) and need to keep backwards-compatibility in your codebase with the previous version of the [DataStax cassandra-driver module](https://github.com/datastax/nodejs-driver).
+* `keyspace` - allows you to specify another keyspace to execute a query against. This will override the default keyspace set in the connection information.
+* `suppressDebugLog` - allows you to disable debug logging of CQL for an individual query. This is useful for queries that may contain sensitive data that you do not wish to show up in debug logs.
 
 ### Helper Functions ###
 The driver also provides the following functions that wrap `#cql()`. They should be used in place of `#cql()` where
@@ -369,10 +370,9 @@ of queries, and easily find references in your application to each query type.
 Connection pools are automatically instantiated when the first query is run and kept alive for the lifetime of the driver.
 To manually initiate and/or close connections, you can use the following functions:
 
- - `#connect(keyspace [string, optional], callback [Function])`: Calls `callback` parameter after connection pool is initialized,
-   or existing pool is retrieved. Can be used at application startup to immediately start the connection pool.
+ - `#connect(keyspace [string, optional], callback [Function])`: Calls `callback` parameter after connection pool is initialized, or existing pool is retrieved. Can be used at application startup to immediately start the connection pool. You may also omit the callback parameter to receive a Promise instead.
 
- - `#close(callback [Function])`: Calls `callback` after all connection pools are closed. Useful for testing purposes.
+ - `#close(callback [Function])`: Calls `callback` after all connection pools are closed. Returns a Promise if callback is not supplied. Useful for testing purposes.
 
 ### Error Retries ###
 The driver will automatically retry on network-related errors. In addition, other errors will be retried in the following
@@ -414,8 +414,8 @@ Instrumentation is supported via an optional `metrics` object passed into the dr
 should have a method `#measurement(queryName [string], duration [number], unit [string])`.
 
 ```javascript
-var logger = new (require('winston')).Logger({ /* logger options */ })
-var metrics = new MetricsClient();
+const logger = new (require('winston')).Logger({ /* logger options */ })
+const metrics = new MetricsClient();
 require('priam')({
   config: { /* connection information */ },
   logger: logger,
@@ -516,8 +516,8 @@ connection resolver to follow whatever caching strategies are required for the e
 The `connectionResolver` option allows you to pass in a `connectionResolver` object that has already been constructed.
 
 ```javascript
-var resolver = new MyConnectionResolver();
-var db = require('priam')({
+const resolver = new MyConnectionResolver();
+const db = require('priam')({
   config: {
     /* ... connection options ... */
   },
@@ -530,7 +530,7 @@ it is recommended to supply a resolver this way via a node module, as paths to s
 internal path.*
 
 ```javascript
-var db = require('priam')({
+const db = require('priam')({
   config: {
     /* ... other connection options ... */
     connectionResolverPath: 'myResolverModule'
@@ -549,7 +549,9 @@ connection resolvers can access any custom configuration information specified w
 supplied, an error log message will be sent to the supplied logger. `connectionInformation` should always be supplied
 if known. If it is not supplied when an error is thrown, the error will be supplied to the `#cql()` callback.
 
-`connectionInformation` should contain the following properties: `user`, `password`, `hosts`.
+`connectionInformation` should contain the following properties: `username`, `password`, `contactPoints`.
+
+Your connection resolver may optionally be an `EventEmitter`. `priam` will listen to `fetch` and `lazyfetch` events and emit & log its own events in response to these. These events should emit two arguments, an `Error` for any fetch errors as the first and the resolved connection information as the second.
 
 See example application for a concrete example using a connection resolver.
 
@@ -559,7 +561,7 @@ wish to use, (e.g. You want to use binary port 9042, but resolver is returning T
 `connectionResolverPortMap` option to perform the mapping.
 
 ```javascript
-var db = require('priam')({
+const db = require('priam')({
   config: {
     /* ... other connection options, including Nimitz ... */
     connectionResolverPortMap = {
@@ -572,58 +574,4 @@ var db = require('priam')({
 
 Release Notes
 -------------
- - `2.0.0`: Updated `cassandra-driver` to latest version, handle new data type coercion. **Breaking Change:** Removed `helenus` dependency (deprecated in `1.2.0`).
- - `1.2.1`: Added retry module from PR #47.
- - `1.2.0`: Resolved #44 (issue with `USING TIMESTAMP` on individual statementes within batch queries).
-            Fixed an issue with subtypes being dropped from collection type hints.
-            Downgrade `helenus` library to an optional dependency.
- - `1.1.3`: Fix issue with BOM marks inside of named queries.
- - `1.1.2`: Update `cassandra-driver` connection error logging.
- - `1.1.1`: Add emulated streaming support for `helenus` driver.
- - `1.1.0`: Add streaming support with `Query.stream()` or `db.cql()` for `cassandra-driver`.
- - `1.0.0`: Fix `keyspace` option when using multiple instances. **This is a breaking change if you relied on the undocumented `instance.pools.default` property being available.**
- - `0.9.7`: Attach cql to error objects generated by query execution.
- - `0.9.6`: Add support for `routingIndexes` when using `TokenAwarePolicy`.
- - `0.9.5`: Add better error handling for `cassandra-driver`.
- - `0.9.4`: Strip schema metadata from result sets over binary protocol v1.
- - `0.9.3`: Adjust stringify for numeric bigint values.
- - `0.9.2`: Fix parameterized queries over binary protocol v1.
- - `0.9.1`: Dependency updates.
- - `0.9.0`: Removed `node-cassandra-cql` in favor of `cassandra-driver`.
- - `0.8.17`: Batch.execute no longer yields an error when the batch is empty.
- - `0.8.16`: Simplified result set transformation for `node-cassandra-cql` drivers.
- - `0.8.15`: Add isBatch and isQuery methods to base driver.
- - `0.8.14`: Fix `resultTransformer` bug when query generates an error.
- - `0.8.13`: Fix `Batch.add()` when given empty `Batch` or `Query` objects.
- - `0.8.12`: Remove github dependency via `priam-connection-cql` module. Added versioning logic around `cqlVersion` to use the appropriate driver.
- - `0.8.11`: Coerce `timestamp` hinted parameters for `node-cassandra-cql` to `Date` objects from `string` or `number`.
- - `0.8.10`: `Batch.add()` can now take an `Array` argument.
- - `0.8.9`: Fix usage of `Batch.addBatch()` in pre-2.0 Cassandra environments that do not support DML-level timestamps.
- - `0.8.8`: Fixed bug where `Query.single()` and `Query.first()` would return empty array instead of null on empty result sets.
- - `0.8.7`: Fixed bug which caused boolean values to not be returned when their value is false
- - `0.8.6`: Fixed bug which caused resultTransformers to not execute
- - `0.8.5`: Changed config to look up consistency level enum if given a string
-            Added resultTransformers to drivers and queries-- synchronous functions that are mapped over query results
-            Query consistency is set to driver's at instantiation, rather than being looked up at execution if not present
-            Added `query` method to base driver, alias for `cql`
- - `0.8.4`: Modified `Batch.execute()` to send timestamps as parameters instead of CQL strings.
- - `0.8.3`: Added `Query.single()`, `Query.first()`, and `Query.all()` enhancements.
- - `0.8.2`: Added generalized `Batch.add()` that can take a `Query` or `Batch` argument.
- - `0.8.1`: Added `Batch.addBatch()` enhancements.
- - `0.8.0`: Added `Batch.addBatch()`, `Query.params([Array])`, and `driver.connect([Function])`. Updated internal file naming conventions.
- - `0.7.6`: Updated to support `insert`/`update` statements on `map<,>` types.
- - `0.7.5`: Updated consistency failover strategy. Added `EventEmitter` inheritance.
- - `0.7.4`: Add support for `COUNTER` and `UNLOGGED` batch types.
- - `0.7.3`: Dependency bump.
- - `0.7.1`: Revert back to Promises v1.
- - `0.7.0`: Update to latest version of Promises (q.js). Potential breaking change - JSON is no longer auto-deserialized.
-            See the [Executing CQL](#executing-cql) section for more information. Use `object` data types if
-            auto-deserialization is required on specific fields, or use `deserializeJsonStrings` option to detect JSON
-            as 0.6.x and prior did.
- - `0.6.9`: Dependency bump.
- - `0.6.8`: Bugfixes.
- - `0.6.7`: Added batching support.
- - `0.6.6`: Added fluent syntax. Updated example to include setup script.
- - `0.6.4`: Added `#param()` helper method for hinted parameters.
- - `0.6.3`: Dependency updates, test Travis CI hooks.
- - `0.6.2`: Initial Public Release
+See the [change log](./CHANGELOG.md)

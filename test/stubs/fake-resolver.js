@@ -1,6 +1,4 @@
-
-
-var sinon = require('sinon');
+const sinon = require('sinon');
 
 function FakeResolver() {
   if (!(this instanceof FakeResolver)) {

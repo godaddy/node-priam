@@ -23,9 +23,8 @@ describe('lib/driver.js', function () {
 
   function getDefaultConfig() {
     return {
-      hosts: ['123.456.789.012:9160'],
-      keyspace: 'myKeySpace',
-      timeout: 12345
+      contactPoints: ['123.456.789.012:9160'],
+      keyspace: 'myKeySpace'
     };
   }
 
@@ -43,7 +42,7 @@ describe('lib/driver.js', function () {
 
   beforeEach(function () {
     sinon.stub(cql, 'Client').returns({
-      connect: sinon.stub().yieldsAsync(),
+      connect: sinon.stub().resolves(),
       on: sinon.stub(),
       execute: sinon.stub().yieldsAsync(null, [])
     });
@@ -62,7 +61,7 @@ describe('lib/driver.js', function () {
       // act
       // assert
       assert.strictEqual(typeof instance[name], 'function');
-      assert.strictEqual(instance[name].length, argCount, name + ' takes ' + argCount + ' arguments');
+      assert.strictEqual(instance[name].length, argCount, `${name} takes ${argCount} arguments`);
     }
 
     it('is a constructor function', function () {
@@ -72,9 +71,6 @@ describe('lib/driver.js', function () {
     describe('instance', function () {
       it('provides a cql function', function () {
         validateFunctionExists('cql', 4);
-      });
-      it('instance provides a streamCqlOnDriver function', function () {
-        validateFunctionExists('streamCqlOnDriver', 6);
       });
       it('provides a namedQuery function', function () {
         validateFunctionExists('namedQuery', 4);
@@ -138,7 +134,7 @@ describe('lib/driver.js', function () {
       // act
       const instance = new Driver(getDefaultContext());
       instance.consistencyLevel = { one: 1 };
-      instance.init({ config: { consistency: 'one' } });
+      instance._init({ config: { consistency: 'one' } });
 
       // assert
       assert.equal(instance.consistencyLevel.one, instance.poolConfig.consistencyLevel);
@@ -150,7 +146,7 @@ describe('lib/driver.js', function () {
       const instance = new Driver(getDefaultContext());
       instance.consistencyLevel = { one: 1 };
       const initWithInvalidConsistency = function () {
-        instance.init({ config: { consistency: 'invalid consistency level' } });
+        instance._init({ config: { consistency: 'invalid consistency level' } });
       };
 
       // assert
@@ -170,18 +166,18 @@ describe('lib/driver.js', function () {
 
     it('sets default pool configuration', function () {
       // arrange
-      const config = _.extend({}, getDefaultConfig());
-      const configCopy = _.extend({}, config);
+      const protocolOptions = { maxVersion: '3.1.0' };
+      const config = { ...getDefaultConfig(), protocolOptions };
+      const configCopy = { ...config };
       const consistencyLevel = cql.types.consistencies.one;
 
       // act
-      const instance = new Driver({ config: config });
+      const instance = new Driver({ config });
 
       // assert
-      assert.deepEqual(instance.poolConfig.contactPoints, configCopy.hosts, 'hosts should be passed through');
+      assert.deepEqual(instance.poolConfig.contactPoints, configCopy.contactPoints, 'contactPoints should be passed through');
       assert.strictEqual(instance.poolConfig.keyspace, configCopy.keyspace, 'keyspace should be passed through');
-      assert.strictEqual(instance.poolConfig.getAConnectionTimeout, configCopy.timeout, 'timeout should be passed through');
-      assert.strictEqual(instance.poolConfig.version, configCopy.cqlVersion, 'cqlVersion should be passed through');
+      assert.strictEqual(instance.poolConfig.protocolOptions, configCopy.protocolOptions, 'protocolOptions should be passed through');
       assert.strictEqual(instance.poolConfig.limit, configCopy.limit, 'limit should be passed through');
       assert.strictEqual(instance.poolConfig.consistencyLevel, consistencyLevel, 'consistencyLevel should default to ONE');
     });
@@ -193,18 +189,19 @@ describe('lib/driver.js', function () {
       const cqlVersion = '2.0.0';
       const consistencyLevel = cql.types.consistencies.any;
       const limit = 300;
-      config.cqlVersion = cqlVersion;
+      config.protocolOptions = { maxVersion: cqlVersion };
       config.consistencyLevel = consistencyLevel;
       config.limit = limit;
+      config.socketOptions = { connectTimeout: 1000 };
 
       // act
-      const instance = new Driver({ config: config });
+      const instance = new Driver({ config });
 
       // assert
-      assert.deepEqual(instance.poolConfig.contactPoints, configCopy.hosts, 'hosts should be passed through');
-      assert.strictEqual(instance.poolConfig.getAConnectionTimeout, configCopy.timeout, 'timeout should be passed through');
+      assert.deepEqual(instance.poolConfig.contactPoints, configCopy.contactPoints, 'contactPoints should be passed through');
+      assert.strictEqual(instance.poolConfig.socketOptions, config.socketOptions, 'socket options should be passed through');
       assert.strictEqual(instance.poolConfig.keyspace, configCopy.keyspace, 'keyspace should be passed through');
-      assert.strictEqual(instance.poolConfig.version, cqlVersion, 'cqlVersion should be overridden');
+      assert.strictEqual(instance.poolConfig.protocolOptions.maxVersion, cqlVersion, 'cqlVersion should be overridden');
       assert.strictEqual(instance.poolConfig.limit, limit, 'limit should be overridden');
       assert.strictEqual(instance.poolConfig.consistencyLevel, consistencyLevel, 'consistencyLevel should be overridden');
     });
@@ -259,7 +256,7 @@ describe('lib/driver.js', function () {
     let driver;
     beforeEach(function () {
       driver = getDefaultInstance();
-      driver.init({ config: {} });
+      driver._init({ config: {} });
     });
 
     it('creates a connection for the supplied keyspace', function (done) {
@@ -289,7 +286,7 @@ describe('lib/driver.js', function () {
     it('yields error if connection pool fails to initialize', function (done) {
       // arrange
       const error = new Error('connection failed');
-      driver.getConnectionPool = sinon.stub().yields(error);
+      driver._getConnectionPool = sinon.stub().rejects(error);
 
       // act
       driver.connect(function (err, pool) {
@@ -314,17 +311,15 @@ describe('lib/driver.js', function () {
       const options = { consistency: 'one' };
       const cb = sinon.stub();
       const driver = getDefaultInstance();
-      driver.execCql = sinon.stub();
+      driver._execCql = sinon.stub().resolves();
       driver.execCqlStream = sinon.stub();
 
       driver.cql(cql, params, options, cb);
 
-      expect(driver.execCql.calledOnce).to.be.true;
-      expect(driver.execCql.args[0][0]).to.equal(cql);
-      expect(driver.execCql.args[0][1]).to.deep.equal(params);
-      expect(driver.execCql.args[0][2]).to.deep.equal(options);
-      expect(driver.execCql.args[0][3]).to.be.a('string');
-      expect(driver.execCql.args[0][4]).to.be.a('function');
+      expect(driver._execCql.calledOnce).to.be.true;
+      expect(driver._execCql.args[0][0]).to.equal(cql);
+      expect(driver._execCql.args[0][1]).to.deep.equal(params);
+      expect(driver._execCql.args[0][2]).to.deep.equal(options);
       expect(driver.execCqlStream.called).to.be.false;
     });
 
@@ -335,55 +330,18 @@ describe('lib/driver.js', function () {
       const stream = new Stream();
       const driver = getDefaultInstance();
       driver.execCql = sinon.stub();
-      driver.execCqlStream = sinon.stub();
+      driver._execCqlStream = sinon.stub();
 
       driver.cql(cql, params, options, stream);
 
-      expect(driver.execCqlStream.calledOnce).to.be.true;
-      expect(driver.execCqlStream.args[0][0]).to.equal(cql);
-      expect(driver.execCqlStream.args[0][1]).to.deep.equal(params);
-      expect(driver.execCqlStream.args[0][2]).to.deep.equal(options);
-      expect(driver.execCqlStream.args[0][3]).to.equal(stream);
+      expect(driver._execCqlStream.calledOnce).to.be.true;
+      expect(driver._execCqlStream.args[0][0]).to.equal(cql);
+      expect(driver._execCqlStream.args[0][1]).to.deep.equal(params);
+      expect(driver._execCqlStream.args[0][2]).to.deep.equal(options);
+      expect(driver._execCqlStream.args[0][3]).to.equal(stream);
       expect(driver.execCql.called).to.be.false;
     });
 
-    describe('resultTransformers', function () {
-
-      function testTransformers(transformers, results, cb) {
-        const driver = getDefaultInstance();
-        driver.execCql = sinon.stub().yields(null, results);
-        driver.cql('test', [], {
-          resultTransformers: transformers
-        }, cb);
-      }
-
-      it('called if results', function (done) {
-        const transformer = sinon.stub(),
-          results = [{ test: true }];
-        testTransformers([transformer], results, function () {
-          assert.ok(transformer.calledOnce);
-          done();
-        });
-      });
-
-      it('does not call unless results', function (done) {
-        const transformer = sinon.stub(),
-          results = [];
-        testTransformers([transformer], results, function () {
-          assert.notOk(transformer.called);
-          done();
-        });
-      });
-
-      it('does not call unless results.length', function (done) {
-        const transformer = sinon.stub(),
-          results = [];
-        testTransformers([transformer], results, function () {
-          assert.notOk(transformer.called);
-          done();
-        });
-      });
-    });
   });
 
   describe('BaseDriver#executeCqlStream()', function () {
@@ -393,59 +351,72 @@ describe('lib/driver.js', function () {
       cql = 'myCqlStatement';
       dataParams = [];
       options = { consistency: 'one' };
-      stream = {
-        emit: sinon.stub()
-      };
+      stream = new Stream.Writable({
+        objectMode: true,
+        write: sinon.stub().yields()
+      });
       driver = getDefaultInstance();
       pool = { isReady: true, waiters: [] };
-      driver.streamCqlOnDriver = sinon.stub();
-      driver.getConnectionPool = sinon.stub().yields(null, pool);
+      driver._iterateCqlOnDriver = sinon.spy(async function *() { yield* []; });
+      driver._getConnectionPool = sinon.stub().resolves(pool);
     });
 
-    it('calls #streamCqlOnDriver() if pool is ready', function () {
-      driver.execCqlStream(cql, dataParams, options, stream);
-      expect(driver.streamCqlOnDriver.calledOnce).to.be.true;
-      expect(driver.streamCqlOnDriver.args[0][0]).to.equal(pool);
-      expect(driver.streamCqlOnDriver.args[0][1]).to.equal(cql);
-      expect(driver.streamCqlOnDriver.args[0][2]).to.deep.equal(dataParams);
-      expect(driver.streamCqlOnDriver.args[0][3]).to.deep.equal(options.consistency);
-      expect(driver.streamCqlOnDriver.args[0][4]).to.deep.equal(options);
-      expect(driver.streamCqlOnDriver.args[0][5]).to.equal(stream);
+    it('calls #_iterateCqlOnDriver() if pool is ready', async () => {
+      await driver._execCqlStream(cql, dataParams, options, stream);
+
+      expect(driver._iterateCqlOnDriver.calledOnce).to.be.true;
+      expect(driver._iterateCqlOnDriver.args[0][0]).to.equal(pool);
+      expect(driver._iterateCqlOnDriver.args[0][1]).to.equal(cql);
+      expect(driver._iterateCqlOnDriver.args[0][2]).to.deep.equal(dataParams);
+      expect(driver._iterateCqlOnDriver.args[0][3]).to.deep.equal(options.consistency);
+      expect(driver._iterateCqlOnDriver.args[0][4]).to.deep.equal(options);
       expect(pool.waiters.length).to.equal(0);
-      expect(stream.emit.called).to.be.false;
     });
 
-    it('calls #streamCqlOnDriver() after pool is ready if pool is not yet ready', function () {
+    it('calls #_iterateCqlOnDriver() after pool is ready if pool is not yet ready', async () => {
       pool.isReady = false;
-      driver.execCqlStream(cql, dataParams, options, stream);
-      expect(driver.streamCqlOnDriver.called).to.be.false;
+      const streamPromise = driver._execCqlStream(cql, dataParams, options, stream);
+      expect(driver._iterateCqlOnDriver.called).to.be.false;
+
+      while (!pool.waiters.length) {
+        await pool.waiters;
+      }
+
       expect(pool.waiters.length).to.equal(1);
       pool.isReady = true;
-      pool.waiters[0]();
-      expect(driver.streamCqlOnDriver.calledOnce).to.be.true;
-      expect(stream.emit.called).to.be.false;
+      await pool.waiters[0]();
+      await streamPromise;
+      expect(driver._iterateCqlOnDriver.calledOnce).to.be.true;
     });
 
-    it('emits error to stream if pool resolution fails', function () {
+    it('emits error to stream if pool resolution fails', async () => {
+      sinon.stub(stream, 'emit').returnsThis();
       const error = new Error('uh-oh');
-      driver.getConnectionPool = sinon.stub().yields(error);
-      driver.execCqlStream(cql, dataParams, options, stream);
-      expect(driver.streamCqlOnDriver.called).to.be.false;
-      expect(stream.emit.calledOnce).to.be.true;
-      expect(stream.emit.args[0][0]).to.equal(error);
+      driver._getConnectionPool = sinon.stub().rejects(error);
+      await driver._execCqlStream(cql, dataParams, options, stream);
+
+      expect(driver._iterateCqlOnDriver.called).to.be.false;
+      expect(stream.emit).to.be.calledWith('error', error);
     });
 
-    it('emits error to stream if pool connection fails', function () {
+    it('emits error to stream if pool connection fails', async () => {
       pool.isReady = false;
-      driver.execCqlStream(cql, dataParams, options, stream);
-      expect(driver.streamCqlOnDriver.called).to.be.false;
+
+      const streamPromise = driver._execCqlStream(cql, dataParams, options, stream);
+      expect(driver._iterateCqlOnDriver.called).to.be.false;
+
+      sinon.stub(stream, 'emit').returnsThis();
+      while (!pool.waiters.length) {
+        await pool.waiters;
+      }
       expect(pool.waiters.length).to.equal(1);
       pool.isReady = true;
       const error = new Error('uh-oh');
-      pool.waiters[0](error);
-      expect(driver.streamCqlOnDriver.called).to.be.false;
-      expect(stream.emit.calledOnce).to.be.true;
-      expect(stream.emit.args[0][0]).to.equal(error);
+
+      await pool.waiters[0](error);
+      await streamPromise;
+      expect(driver._iterateCqlOnDriver.called).to.be.false;
+      expect(stream.emit).to.be.calledWith('error', error);
     });
 
   });
@@ -455,7 +426,7 @@ describe('lib/driver.js', function () {
     const driver = getDefaultInstance();
 
     // act
-    const result = driver.canRetryError(null);
+    const result = driver._canRetryError(null);
 
     // assert
     assert.isFalse(result);
@@ -525,7 +496,7 @@ describe('lib/driver.js', function () {
       const value = '{ "some": "jsonObject" }';
       const param = driver.param(value, 'objectAscii');
 
-      const type = driver.getDriverDataType(param.hint);
+      const type = driver._getDriverDataType(param.hint);
 
       expect(type).to.equal(driver.dataType.ascii);
     });
@@ -534,7 +505,7 @@ describe('lib/driver.js', function () {
       const value = '{ "some": "jsonObject" }';
       const param = driver.param(value, 'text');
 
-      const type = driver.getDriverDataType(param.hint);
+      const type = driver._getDriverDataType(param.hint);
 
       expect(type).to.equal(driver.dataType.text);
     });

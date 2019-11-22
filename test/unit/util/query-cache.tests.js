@@ -1,11 +1,8 @@
-var
-  chai = require('chai'),
-  assert = chai.assert,
-  expect = chai.expect,
-  path = require('path');
+const { assert, expect } = require('chai');
+const path = require('path');
+const QueryCache = require('../../../lib/util/query-cache');
 
-var QueryCache = require('../../../lib/util/query-cache'),
-  queryDir = path.join(__dirname, '../../stubs/cql');
+const queryDir = path.join(__dirname, '../../stubs/cql');
 
 describe('lib/util/query-cache.js', function () {
 
@@ -32,7 +29,7 @@ describe('lib/util/query-cache.js', function () {
 
   describe('constructed instance', function () {
 
-    var queries;
+    let queries;
 
     beforeEach(function () {
       queries = new QueryCache({ queryDirectory: queryDir });
@@ -41,11 +38,11 @@ describe('lib/util/query-cache.js', function () {
     function validateFunctionExists(name, argCount) {
       // assert
       assert.strictEqual(typeof queries[name], 'function');
-      assert.strictEqual(queries[name].length, argCount, name + ' takes ' + argCount + ' arguments');
+      assert.strictEqual(queries[name].length, argCount, `${name} takes ${argCount} arguments`);
     }
 
     it('provides a readQuery function', function () {
-      validateFunctionExists('readQuery', 2);
+      validateFunctionExists('readQuery', 1);
     });
 
     it('pre-initializes the query cache', function () {
@@ -57,42 +54,34 @@ describe('lib/util/query-cache.js', function () {
 
   describe('#readQuery()', function () {
 
-    it('returns query text represented by query name', function (done) {
+    it('returns query text represented by query name', function () {
       // arrange
-      var queryName = 'myQueryName',
+      const
+        queryName = 'myQueryName',
         queryText = 'SELECT * FROM users LIMIT 10;';
-      var queries = new QueryCache({ queryDirectory: queryDir });
+      const queries = new QueryCache({ queryDirectory: queryDir });
       queries.fileCache[queryName] = queryText;
 
       // act
-      queries.readQuery(queryName, function (err, data) {
-        // assert
-        assert.strictEqual(data, queryText, 'returned contents of file');
-        assert.isNull(err, 'error should be null');
+      const data = queries.readQuery(queryName);
 
-        done();
-      });
+      // assert
+      assert.strictEqual(data, queryText, 'returned contents of file');
     });
 
-    it('returns error if named query does not exist', function (done) {
+    it('returns error if named query does not exist', function () {
       // arrange
-      var queryName = 'myQueryNameDoesntExist';
-      var queries = new QueryCache({ queryDirectory: queryDir });
+      const queryName = 'myQueryNameDoesntExist';
+      const queries = new QueryCache({ queryDirectory: queryDir });
 
-      // act
-      queries.readQuery(queryName, function (err, data) {
-        // assert
-        assert.isUndefined(data, 'file contents are undefined');
-        assert.instanceOf(err, Error, 'error should be populated');
-
-        done();
-      });
+      // act/assert
+      expect(() => queries.readQuery(queryName)).to.throw(Error);
     });
 
     it('throws error if callback not provided', function (done) {
       // arrange
-      var queryName = 'myQueryNameDoesntExist';
-      var queries = new QueryCache({ queryDirectory: queryDir });
+      const queryName = 'myQueryNameDoesntExist';
+      const queries = new QueryCache({ queryDirectory: queryDir });
 
       // act
       expect(function () {

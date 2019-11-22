@@ -1,26 +1,25 @@
+const path             = require('path');
+const { EventEmitter } = require('events');
+const sinon            = require('sinon');
+const chai             = require('chai');
+const _                = require('lodash');
+const cql              = require('cassandra-driver');
+const FakeResolver     = require('../stubs/fake-resolver');
+const Driver           = require('../../lib/driver');
 
-
-var sinon        = require('sinon'),
-  chai         = require('chai'),
-  assert       = chai.assert,
-  expect       = chai.expect,
-  through      = require('through2'),
-  FakeResolver = require('../stubs/fake-resolver'),
-  _            = require('lodash'),
-  path         = require('path');
 chai.use(require('sinon-chai'));
-
-var cql = require('cassandra-driver');
-var Driver = require('../../lib/driver');
+const assert = chai.assert;
+const expect = chai.expect;
 
 describe('lib/driver.js', function () {
 
   function getDefaultConfig() {
     return {
-      cqlVersion: '3.1.0',
-      hosts: ['123.456.789.012:9042'],
+      protocolOptions: {
+        maxVersion: '3.1.0'
+      },
+      contactPoints: ['123.456.789.012:9042'],
       keyspace: 'myKeySpace',
-      timeout: 12345,
       limit: 5000
     };
   }
@@ -43,29 +42,34 @@ describe('lib/driver.js', function () {
   }
 
   function getPoolStub(config, isReady, err, data) {
-    var storeConfig = _.extend({ consistencyLevel: 1, version: '3.1.0' }, config);
-    Driver.DatastaxDriver.prototype.remapConnectionOptions(storeConfig);
-    return {
-      storeConfig: storeConfig,
+    const rows = (data || {}).rows || [];
+    return Object.assign(new EventEmitter(), {
+      storeConfig: {
+        consistencyLevel: 1,
+        protocolOptions: { maxVersion: '3.1.0' },
+        ...config
+      },
       isReady: isReady,
-      execute: sinon.stub().yields(err, data),
-      batch: sinon.stub().yields(err, data),
-      shutdown: sinon.spy(function (callback) {
-        if (callback) {
-          setImmediate(function () {
-            callback(null, null);
-          });
+      execute: sinon.stub().returns(err ? Promise.reject(err) : Promise.resolve(data)),
+      stream: sinon.spy(function *() {
+        if (err) {
+          throw err;
+        } else {
+          yield* rows;
         }
       }),
+      batch: sinon.stub().yields(err, data),
+      connect: sinon.stub().resolves({}),
+      shutdown: sinon.stub().resolves(),
       controlConnection: {
         protocolVersion: 2
       }
-    };
+    });
   }
 
   describe('DatastaxDriver#connect()', function () {
 
-    var instance;
+    let instance;
 
     beforeEach(function () {
       instance = getDefaultInstance();
@@ -79,9 +83,9 @@ describe('lib/driver.js', function () {
 
     it('returns the connection pool on successful connection', function (done) {
       // arrange
-      var pool = getPoolStub(instance.config, true, null, {});
+      const pool = getPoolStub(instance.config, true, null, {});
       pool.on = sinon.stub();
-      pool.connect = sinon.stub().yieldsAsync(null, {});
+      pool.connect = sinon.stub().resolves({});
       sinon.stub(cql, 'Client').returns(pool);
 
       // act
@@ -97,11 +101,11 @@ describe('lib/driver.js', function () {
 
     it('returns error if pool fails to connect', function (done) {
       // arrange
-      var pool = getPoolStub(instance.config, true, null, {});
-      var error = new Error('connection failed');
-      pool.on = sinon.stub();
-      pool.connect = sinon.stub().yieldsAsync(error);
-      sinon.stub(cql, 'Client').returns(pool);
+      const poolStub = getPoolStub(instance.config, true, null, {});
+      const error = new Error('connection failed');
+      poolStub.on = sinon.stub();
+      poolStub.connect = sinon.stub().rejects(error);
+      sinon.stub(cql, 'Client').returns(poolStub);
 
       // act
       instance.connect(function (err, pool) {
@@ -113,11 +117,66 @@ describe('lib/driver.js', function () {
       });
     });
 
+    it('supports returning a pool via Promise', async () => {
+      // arrange
+      const pool = getPoolStub(instance.config, true, null, {});
+      pool.on = sinon.stub();
+      pool.connect = sinon.stub().resolves({});
+      sinon.stub(cql, 'Client').returns(pool);
+
+      // act
+      const newPool = await instance.connect();
+
+      // assert
+      assert.equal(newPool, pool, 'pool should be passed');
+      assert.strictEqual(pool.isReady, true, 'pool should be ready');
+    });
+
+    it('handles errors via Promises', async () => {
+      // arrange
+      const pool = getPoolStub(instance.config, true, null, {});
+      const error = new Error('connection failed');
+      pool.on = sinon.stub();
+      pool.connect = sinon.stub().rejects(error);
+      sinon.stub(cql, 'Client').returns(pool);
+
+      // act
+      let caughtError;
+      try {
+        await instance.connect();
+      } catch (err) {
+        caughtError = err;
+      }
+
+      // assert
+      assert.equal(caughtError, error, 'error should be populated');
+    });
+
+    it('allows the load balancing policy to be overridden', done => {
+      const mockPolicy = {
+        loadBalancing: Symbol()
+      };
+      const driver = new Driver({
+        config: {
+          localDataCenter: 'fakeDC',
+          policies: mockPolicy
+        }
+      });
+      sinon.stub(cql, 'Client')
+        .returns(getPoolStub(instance.config, true, null, {}));
+
+      driver.connect(err => {
+        expect(err).to.not.exist;
+        const poolOpts = cql.Client.lastCall.args[0];
+        expect(poolOpts.policies).to.deep.equal(mockPolicy);
+        done();
+      });
+    });
   });
 
   describe('DatastaxDriver#createConnectionPool()', function () {
 
-    var instance;
+    let instance;
 
     beforeEach(function () {
       instance = getDefaultInstance();
@@ -129,96 +188,84 @@ describe('lib/driver.js', function () {
       }
     });
 
-    it('returns the connection pool on successful connection if "waitForConnect" is true', function (done) {
+    it('returns the connection pool on successful connection if "waitForConnect" is true', async () => {
       // arrange
-      var pool = getPoolStub(instance.config, true, null, {});
+      const pool = getPoolStub(instance.config, true, null, {});
       pool.on = sinon.stub();
-      pool.connect = sinon.stub().yieldsAsync(null, {});
+      pool.connect = sinon.stub().resolves({});
       sinon.stub(cql, 'Client').returns(pool);
 
       // act
-      instance.createConnectionPool({}, true, function (err, newPool) {
-        // assert
-        assert.notOk(err, 'error should not be passed');
-        assert.equal(newPool, pool, 'pool should be passed');
-        assert.strictEqual(pool.isReady, true, 'pool should be ready');
+      const newPool = await instance._createConnectionPool({}, true);
 
-        done();
-      });
+      // assert
+      assert.equal(newPool, pool, 'pool should be passed');
+      assert.strictEqual(pool.isReady, true, 'pool should be ready');
     });
 
-    it('generates appropriate configuration structure for timeout', function (done) {
+    it('generates appropriate configuration structure for socket options', async () => {
       // arrange
-      instance.config.getAConnectionTimeout = 15000;
-      var pool = getPoolStub(instance.config, true, null, {});
+      instance.config.socketOptions = { connectTimeout: 15000 };
+      const pool = getPoolStub(instance.config, true, null, {});
       pool.on = sinon.stub();
-      pool.connect = sinon.stub().yieldsAsync(null, {});
+      pool.connect = sinon.stub().resolves({});
       sinon.stub(cql, 'Client').returns(pool);
 
       // act
-      instance.createConnectionPool(instance.config, true, function (err, newPool) {
-        // assert
-        assert.notOk(err, 'error should not be passed');
-        assert.equal(newPool, pool, 'pool should be passed');
-        assert.ok(cql.Client.calledWithMatch({
-          socketOptions: {
-            connectTimeout: 15000
-          }
-        }), 'socketOptions should be set');
+      const newPool = await instance._createConnectionPool(instance.config, true);
 
-        done();
-      });
+      // assert
+      assert.equal(newPool, pool, 'pool should be passed');
+      assert.ok(cql.Client.calledWithMatch({
+        socketOptions: {
+          connectTimeout: 15000
+        }
+      }), 'socketOptions should be set');
     });
 
-    it('generates appropriate configuration structure for pool size', function (done) {
+    it('uses configured pooling options', async () => {
       // arrange
-      instance.config.poolSize = 5;
-      var pool = getPoolStub(instance.config, true, null, {});
+      const pooling = {
+        coreConnectionsPerHost: {
+          0: 5,
+          1: 3
+        }
+      };
+      instance.config.pooling = pooling;
+      const pool = getPoolStub(instance.config, true, null, {});
       pool.on = sinon.stub();
-      pool.connect = sinon.stub().yieldsAsync(null, {});
+      pool.connect = sinon.stub().resolves({});
       sinon.stub(cql, 'Client').returns(pool);
 
       // act
-      instance.createConnectionPool(instance.config, true, function (err, newPool) {
-        // assert
-        assert.notOk(err, 'error should not be passed');
-        assert.equal(newPool, pool, 'pool should be passed');
-        assert.ok(cql.Client.calledWithMatch({
-          pooling: {
-            coreConnectionsPerHost: {
-              0: 5,
-              1: 3
-            }
-          }
-        }), 'pooling should be set');
+      const newPool = await instance._createConnectionPool(instance.config, true);
 
-        done();
-      });
+      // assert
+      assert.equal(newPool, pool, 'pool should be passed');
+      assert.ok(cql.Client.calledWithMatch({ pooling }), 'pooling should be set');
     });
 
-    it('returns the connection pool immediately if "waitForConnect" is false', function (done) {
+    it('returns the connection pool immediately if "waitForConnect" is false', async () => {
       // arrange
-      var pool = getPoolStub(instance.config, false, null, {});
+      const pool = getPoolStub(instance.config, false, null, {});
       pool.on = sinon.stub();
-      pool.connect = sinon.stub().yieldsAsync(null, {});
+      pool.connect = sinon.stub()
+        .resolves(new Promise(resolve => setTimeout(resolve, 10)));
       sinon.stub(cql, 'Client').returns(pool);
 
       // act
-      instance.createConnectionPool({}, false, function (err, newPool) {
-        // assert
-        assert.notOk(err, 'error should not be passed');
-        assert.equal(newPool, pool, 'pool should be passed');
-        assert.strictEqual(pool.isReady, false, 'pool should NOT be ready');
+      const newPool = await instance._createConnectionPool({}, false);
 
-        done();
-      });
+      // assert
+      assert.equal(newPool, pool, 'pool should be passed');
+      assert.strictEqual(pool.isReady, false, 'pool should NOT be ready');
     });
 
   });
 
   describe('DatastaxDriver#close()', function () {
 
-    var pool, instance;
+    let pool, instance;
     beforeEach(function () {
       instance = getDefaultInstance();
       pool = getPoolStub(instance.config, true, null, {});
@@ -264,12 +311,46 @@ describe('lib/driver.js', function () {
       instance.close(done);
     });
 
+    it('propagates pool closing errors', done => {
+      // arrange
+      const error = new Error('Please, just 5 more minutes?');
+      pool.isReady = true;
+      pool.isClosed = false;
+      pool.shutdown = sinon.stub().rejects(error);
+
+      // act
+      instance.close(function (err) {
+        // assert
+        expect(err).to.equal(error);
+        done();
+      });
+    });
+
+    it('supports Promises', async () => {
+      // arrange
+      const error = new Error('Please, just 5 more minutes?');
+      pool.isReady = true;
+      pool.isClosed = false;
+      pool.shutdown = sinon.stub().rejects(error);
+
+      // act
+      let caughtError;
+      try {
+        await instance.close();
+      } catch (err) {
+        caughtError = err;
+      }
+
+      // assert
+      expect(caughtError).to.equal(error);
+    });
+
   });
 
   describe('DatastaxDriver#cql()', function () {
 
-    var instance     = null,
-      fakeResolver = null;
+    let instance;
+    let fakeResolver;
 
     beforeEach(function () {
       fakeResolver = new FakeResolver();
@@ -283,7 +364,7 @@ describe('lib/driver.js', function () {
     });
 
     it('emits a connectionRequested event at the beginning of a query', function () {
-      var eventHandler = sinon.stub();
+      const eventHandler = sinon.stub();
       instance.on('connectionRequested', eventHandler);
       instance.cql('select foo from bar');
 
@@ -292,16 +373,17 @@ describe('lib/driver.js', function () {
 
     it('creates a new connection pool if one does not exist', function (done) {
       // arrange
-      var cqlQuery = 'MyCqlStatement';
-      var params = ['param1', 'param2', 'param3'];
-      var consistency = cql.types.consistencies.one;
-      var pool = getPoolStub(instance.config, true, null, {});
+      const cqlQuery = 'MyCqlStatement';
+      const params = ['param1', 'param2', 'param3'];
+      const consistency = cql.types.consistencies.one;
+      const pool = getPoolStub(instance.config, true, null, {});
       pool.on = sinon.stub();
-      pool.connect = sinon.stub().yieldsAsync(null, {});
+      pool.connect = sinon.stub().resolves({});
 
       sinon.stub(cql, 'Client').returns(pool);
       instance.pools = {};
-      var connectionOpeningHandler = sinon.stub(),
+      const
+        connectionOpeningHandler = sinon.stub(),
         connectionOpenedHandler  = sinon.stub(),
         queryStartedHandler      = sinon.stub();
       instance
@@ -310,40 +392,40 @@ describe('lib/driver.js', function () {
         .on('queryStarted', queryStartedHandler);
 
       // act
-      instance.cql(cqlQuery, params, { consistency: consistency }, function () {
+      instance.cql(cqlQuery, params, { consistency }, function () {
         // assert
         expect(connectionOpeningHandler).to.have.been.called;
         expect(connectionOpenedHandler).to.have.been.called;
         expect(queryStartedHandler).to.have.been.called;
         assert.equal(instance.pools.myKeySpace, pool, 'pool should be cached');
         assert.strictEqual(pool.waiters.length, 0, 'waiters should be executed after connection completes');
-        assert.strictEqual(pool.execute.called, true, 'cql statements should execute after connection completes');
+        assert.strictEqual(pool.stream.called, true, 'cql statements should execute after connection completes');
 
         done();
       });
 
       // before callback asserts
-      assert.strictEqual(pool.execute.called, false, 'cql statements should wait to execute until after connection completes');
+      assert.strictEqual(pool.stream.called, false, 'cql statements should wait to execute until after connection completes');
     });
 
     it('creates a new connection pool if pool is closed', function (done) {
       // arrange
-      var cqlQuery = 'MyCqlStatement';
-      var params = ['param1', 'param2', 'param3'];
-      var consistency = cql.types.consistencies.one;
-      var pool = getPoolStub(instance.config, true, null, {});
+      const cqlQuery = 'MyCqlStatement';
+      const params = ['param1', 'param2', 'param3'];
+      const consistency = cql.types.consistencies.one;
+      const pool = getPoolStub(instance.config, true, null, {});
       pool.on = sinon.stub();
-      pool.connect = sinon.stub().yieldsAsync(null, {});
+      pool.connect = sinon.stub().resolves({});
       sinon.stub(cql, 'Client').returns(pool);
-      var existingPool = getPoolStub(instance.config, true, null, {});
+      const existingPool = getPoolStub(instance.config, true, null, {});
       existingPool.isClosed = true;
       instance.pools = { myKeySpace: existingPool };
 
       // act
-      instance.cql(cqlQuery, params, { consistency: consistency }, function () {
+      instance.cql(cqlQuery, params, { consistency }, function () {
         // assert
         assert.notOk(existingPool.execute.called, 'existing pool should not be called');
-        assert.ok(pool.execute.called, 'new pool should be called');
+        assert.ok(pool.stream.called, 'new pool should be called');
 
         done();
       });
@@ -351,22 +433,22 @@ describe('lib/driver.js', function () {
 
     it('adds a new connection pool if keyspace is different', function (done) {
       // arrange
-      var cqlQuery = 'MyCqlStatement';
-      var params = ['param1', 'param2', 'param3'];
-      var consistency = cql.types.consistencies.one;
-      var pool = getPoolStub(_.extend(_.extend({}, instance.config), { keyspace: 'myNewKeyspace' }), true, null, {});
+      const cqlQuery = 'MyCqlStatement';
+      const params = ['param1', 'param2', 'param3'];
+      const consistency = cql.types.consistencies.one;
+      const pool = getPoolStub(_.extend(_.extend({}, instance.config), { keyspace: 'myNewKeyspace' }), true, null, {});
       pool.on = sinon.stub();
-      pool.connect = sinon.stub().yieldsAsync(null, {});
+      pool.connect = sinon.stub().resolves({});
       sinon.stub(cql, 'Client').returns(pool);
 
-      var existingPool = getPoolStub(_.extend({}, instance.config), true, null, {});
+      const existingPool = getPoolStub(_.extend({}, instance.config), true, null, {});
       instance.pools = { myKeySpace: existingPool };
 
       // act
-      instance.cql(cqlQuery, params, { consistency: consistency, keyspace: 'myNewKeyspace' }, function () {
+      instance.cql(cqlQuery, params, { consistency, keyspace: 'myNewKeyspace' }, function () {
         // assert
         assert.notOk(existingPool.execute.called, 'existing pool should not be called');
-        assert.ok(pool.execute.called, 'new pool should be called');
+        assert.ok(pool.stream.called, 'new pool should be called');
 
         done();
       });
@@ -374,29 +456,29 @@ describe('lib/driver.js', function () {
 
     it('uses default connection pool if supplied keyspace matches default', function (done) {
       // arrange
-      var cqlQuery = 'MyCqlStatement';
-      var params = ['param1', 'param2', 'param3'];
-      var consistency = cql.types.consistencies.one;
-      var pool = getPoolStub(_.extend(_.extend({}, instance.config), { keyspace: instance.config.keyspace }), true, null, {});
+      const cqlQuery = 'MyCqlStatement';
+      const params = ['param1', 'param2', 'param3'];
+      const consistency = cql.types.consistencies.one;
+      const pool = getPoolStub(_.extend(_.extend({}, instance.config), { keyspace: instance.config.keyspace }), true, null, {});
       pool.on = sinon.stub();
       pool.connect = sinon.stub().yieldsAsync(null, {});
       sinon.stub(cql, 'Client').returns(pool);
-      var existingPool = getPoolStub(_.extend({}, instance.config), true, null, {});
+      const existingPool = getPoolStub(_.extend({}, instance.config), true, null, {});
       instance.pools = { myKeySpace: existingPool };
-      var openingHandler = sinon.stub(), openedHandler = sinon.stub(), availableHandler = sinon.stub();
+      const openingHandler = sinon.stub(), openedHandler = sinon.stub(), availableHandler = sinon.stub();
       instance
         .on('connectionOpening', openingHandler)
         .on('connectionOpened', openedHandler)
         .on('connectionAvailable', availableHandler);
 
       // act
-      instance.cql(cqlQuery, params, { consistency: consistency, keyspace: instance.config.keyspace }, function () {
+      instance.cql(cqlQuery, params, { consistency, keyspace: instance.config.keyspace }, function () {
         // assert
         expect(openingHandler).to.have.not.been.called;
         expect(openedHandler).to.have.not.been.called;
         expect(availableHandler).to.have.been.called;
-        assert.notOk(pool.execute.called, 'new pool should not be called');
-        assert.ok(existingPool.execute.called, 'existing pool should be called');
+        assert.notOk(pool.stream.called, 'new pool should not be called');
+        assert.ok(existingPool.stream.called, 'existing pool should be called');
 
         done();
       });
@@ -404,49 +486,49 @@ describe('lib/driver.js', function () {
 
     it('creates a new connection pool if config no longer matches', function (done) {
       // arrange
-      var cqlQuery = 'MyCqlStatement';
-      var params = ['param1', 'param2', 'param3'];
-      var consistency = cql.types.consistencies.one;
-      var pool = getPoolStub({ different: 'config', keyspace: instance.config.keyspace }, true, null, {});
+      const cqlQuery = 'MyCqlStatement';
+      const params = ['param1', 'param2', 'param3'];
+      const consistency = cql.types.consistencies.one;
+      const pool = getPoolStub({ different: 'config', keyspace: instance.config.keyspace }, true, null, {});
       pool.on = sinon.stub();
-      pool.connect = sinon.stub().yieldsAsync(null, {});
+      pool.connect = sinon.stub().resolves({});
       sinon.stub(cql, 'Client').returns(pool);
-      var existingPool = getPoolStub({ keyspace: instance.config.keyspace }, true, null, {});
+      const existingPool = getPoolStub({ keyspace: instance.config.keyspace }, true, null, {});
       instance.pools = { myKeySpace: existingPool };
 
       // act
-      instance.cql(cqlQuery, params, { consistency: consistency }, function () {
+      instance.cql(cqlQuery, params, { consistency }, function () {
         // assert
         assert.notEqual(instance.pools.myKeySpace, existingPool, 'existing pool should be replaced');
         assert.equal(instance.pools.myKeySpace, pool, 'pool should be cached');
         assert.strictEqual(pool.waiters.length, 0, 'waiters should be executed after connection completes');
-        assert.strictEqual(pool.execute.called, true, 'cql statements should execute after connection completes');
+        assert.strictEqual(pool.stream.called, true, 'cql statements should execute after connection completes');
 
         done();
       });
 
       // before callback asserts
-      assert.strictEqual(pool.execute.called, false, 'cql statements should wait to execute until after connection completes');
+      assert.strictEqual(pool.stream.called, false, 'cql statements should wait to execute until after connection completes');
     });
 
     function testLogEvent(logLevel, expectedLevel, errorData, done) {
       // setup arrange
-      var consistency = cql.types.consistencies.one;
-      var pool = getPoolStub(instance.config, true, null, {});
+      const consistency = cql.types.consistencies.one;
+      const pool = getPoolStub(instance.config, true, null, {});
       pool.on = sinon.stub();
       pool.connect = sinon.stub().yieldsAsync(null, {});
       sinon.stub(cql, 'Client').returns(pool);
       instance.pools = {};
-      var logEventHandler = sinon.stub();
+      const logEventHandler = sinon.stub();
       instance.on('connectionLogged', logEventHandler);
 
       // setup act
-      instance.cql('cql', [], { consistency: consistency }, function () {
+      instance.cql('cql', [], { consistency }, function () {
         // setup assert
         assert.ok(pool.on.calledWith('log', sinon.match.func), 'log handler should be wired up');
 
         // handler arrange
-        var errorCb = pool.on.getCall(0).args[1];
+        const errorCb = pool.on.getCall(0).args[1];
         instance.logger = {
           debug: sinon.stub(),
           info: sinon.stub(),
@@ -456,23 +538,24 @@ describe('lib/driver.js', function () {
         };
 
         // handler act
-        var message  = 'Error',
+        const
+          message  = 'Error',
           metaData = errorData;
         errorCb(logLevel, message, metaData);
 
         // handler assert
-        var expectedMessage = message;
-        var expectedData = {
+        let expectedMessage = message;
+        const expectedData = {
           datastaxLogLevel: logLevel,
           data: errorData
         };
         if (typeof errorData === 'string') {
-          expectedMessage = message + ': ' + errorData;
+          expectedMessage = `${message}: ${errorData}`;
           delete expectedData.data;
         }
         expect(logEventHandler).to.have.been.calledWith(logLevel, message, metaData);
         if (expectedLevel) {
-          assert.strictEqual(instance.logger[expectedLevel].args[0][0], 'priam.Driver.' + expectedMessage);
+          assert.strictEqual(instance.logger[expectedLevel].args[0][0], `priam.Driver.${expectedMessage}`);
           assert.deepEqual(instance.logger[expectedLevel].args[0][1], expectedData);
         } else {
           assert.notOk(instance.logger.info.called);
@@ -506,21 +589,21 @@ describe('lib/driver.js', function () {
 
     it('sets up an error handler for pool.connect', function (done) {
       // arrange
-      var consistency = cql.types.consistencies.one;
-      var pool = getPoolStub(instance.config, true, null, {});
+      const consistency = cql.types.consistencies.one;
+      const pool = getPoolStub(instance.config, true, null, {});
       pool.on = sinon.stub();
-      pool.connect = sinon.stub().yieldsAsync(new Error('Connection pool failed to connect'));
+      pool.connect = sinon.stub().rejects(new Error('Connection pool failed to connect'));
       sinon.stub(cql, 'Client').returns(pool);
       instance.pools = {};
       instance.logger = {
         debug: sinon.stub(),
         error: sinon.stub()
       };
-      var connectionFailedHandler = sinon.stub();
+      const connectionFailedHandler = sinon.stub();
       instance.on('connectionFailed', connectionFailedHandler);
 
       // act
-      instance.cql('cql', [], { consistency: consistency }, function (err, result) {
+      instance.cql('cql', [], { consistency }, function (err, result) {
         // assert
         assert.instanceOf(err, Error);
         assert.isUndefined(result);
@@ -533,20 +616,20 @@ describe('lib/driver.js', function () {
 
     it('executes queued queries when connection completes', function (done) {
       // arrange
-      var cqlQuery = 'MyCqlStatement';
-      var params = ['param1', 'param2', 'param3'];
-      var consistency = cql.types.consistencies.one;
-      var pool = getPoolStub(instance.config, true, null, {});
+      const cqlQuery = 'MyCqlStatement';
+      const params = ['param1', 'param2', 'param3'];
+      const consistency = cql.types.consistencies.one;
+      const pool = getPoolStub(instance.config, true, null, {});
       pool.on = sinon.stub();
-      pool.connect = sinon.stub().yieldsAsync(null);
+      pool.connect = sinon.stub().resolves();
       sinon.stub(cql, 'Client').returns(pool);
       instance.pools = {};
 
       // act
-      instance.cql(cqlQuery, params, { consistency: consistency }, function () {
+      instance.cql(cqlQuery, params, { consistency }, function () {
         // assert
         assert.strictEqual(pool.isReady, true, 'pool should be set to true after connection completes');
-        assert.strictEqual(pool.execute.called, true, 'cql statements should execute after connection completes');
+        assert.strictEqual(pool.stream.called, true, 'cql statements should execute after connection completes');
 
         done();
       });
@@ -554,40 +637,39 @@ describe('lib/driver.js', function () {
 
     it('allows callback to be optional to support fire-and-forget scenarios', function (done) {
       // arrange
-      var cqlQuery = 'MyCqlStatement';
-      var params = ['param1', 'param2', 'param3'];
-      var pool = getPoolStub(instance.config, true, null, []);
+      const params = ['param1', 'param2', 'param3'];
+      const pool = getPoolStub(instance.config, true, null, []);
       instance.pools = { myKeySpace: pool };
 
-      pool.execute = sinon.spy(function (cql, data, consist, cb) {
-        var call = pool.execute.getCall(0);
+      pool.stream = sinon.spy(function *(cqlQuery) {
+        const call = pool.stream.getCall(0);
 
         // assert
-        assert.strictEqual(call.args[0], cql, 'cql should be passed through');
+        assert.strictEqual(call.args[0], cqlQuery, 'cql should be passed through');
         assert.deepEqual(call.args[1], params, 'params should be passed through');
 
-        cb(null, []);
+        yield* [];
         done();
       });
 
       // act
-      instance.cql(cqlQuery, params);
+      instance.cql('MyCqlStatement', params);
     });
 
     it('uses default consistency of ONE if no options are passed', function (done) {
       // arrange
-      var cqlQuery = 'MyCqlStatement';
-      var params = ['param1', 'param2', 'param3'];
-      var consistency = cql.types.consistencies.one;
-      var pool = getPoolStub(instance.config, true, null, []);
+      const cqlQuery = 'MyCqlStatement';
+      const params = ['param1', 'param2', 'param3'];
+      const consistency = cql.types.consistencies.one;
+      const pool = getPoolStub(instance.config, true, null, []);
       pool.on = sinon.stub();
-      pool.connect = sinon.stub().yieldsAsync(null);
+      pool.connect = sinon.stub().resolves();
       sinon.stub(cql, 'Client').returns(pool);
       instance.pools = {};
 
       // act
       instance.cql(cqlQuery, params, function () {
-        var ctorCall = cql.Client.getCall(0);
+        const ctorCall = cql.Client.getCall(0);
 
         // assert
         assert.strictEqual(ctorCall.args[0].consistencyLevel, consistency, 'consistency should be ONE');
@@ -598,11 +680,10 @@ describe('lib/driver.js', function () {
 
     it('executes CQL and returns the data', function (done) {
       // arrange
-      var cqlQuery = 'MyCqlStatement';
-      var params = ['param1', 'param2', 'param3', new Buffer('param4')];
-      var consistency = cql.types.consistencies.quorum;
-      var err = null;
-      var data = {
+      const cqlQuery = 'MyCqlStatement';
+      const params = ['param1', 'param2', 'param3', new Buffer('param4')];
+      const consistency = cql.types.consistencies.quorum;
+      const pool = getPoolStub(instance.config, true, null, {
         rows: [
           {
             field1: '12345'
@@ -612,15 +693,14 @@ describe('lib/driver.js', function () {
             field1: undefined
           }
         ]
-      };
-      var pool = getPoolStub(instance.config, true, err, data);
+      });
       instance.pools = { myKeySpace: pool };
-      var completedHandler = sinon.stub();
+      const completedHandler = sinon.stub();
       instance.on('queryCompleted', completedHandler);
 
       // act
       instance.cql(cqlQuery, params, { consistency: consistency }, function (error, returnData) {
-        var call = pool.execute.getCall(0);
+        const call = pool.stream.getCall(0);
 
         // assert
         assert.strictEqual(call.args[0], cqlQuery, 'cql should be passed through');
@@ -637,17 +717,83 @@ describe('lib/driver.js', function () {
       });
     });
 
+    it('returns a `Promise` if no callback or stream is supplied', async () => {
+      const rows = [
+        { field1: '12345' },
+        { field1: null },
+        { field1: undefined }
+      ];
+      instance.pools = {
+        myKeySpace: getPoolStub(instance.config, true, null, { rows })
+      };
+
+      const result = await instance.cql('SELECT * FROM foo', []);
+
+      expect(result).to.deep.equal(rows);
+    });
+
+    describe('when the "iterable" option is set to true', () => {
+      const rows = [
+        { field1: '12345' },
+        { field1: null },
+        { field1: undefined }
+      ];
+
+      beforeEach(() => {
+        instance = getDefaultInstance();
+        instance.pools = {
+          myKeySpace: getPoolStub(instance.config, true, null, { rows })
+        };
+      });
+
+      it('returns an async iterable', async () => {
+        const result = await iterateIntoArray(instance.cql('SELECT * FROM foo', [], { iterable: true }));
+        expect(result).to.deep.equal(rows);
+      });
+
+      it('performs retries within the async iterable', async () => {
+        instance._initDriverConfig({
+          ...getDefaultConfig(),
+          numRetries: 2,
+          retryDelay: 1
+        });
+
+        const pool = instance.pools.myKeySpace;
+        let callCount = 0;
+        pool.stream = sinon.spy(() => {
+          if (!callCount++) {
+            throw new cql.errors.ResponseError(0x1200, 'error message');
+          } else {
+            return rows;
+          }
+        });
+
+        const result = await iterateIntoArray(instance.cql('SELECT * FROM foo', [], { iterable: true }));
+
+        expect(callCount).to.equal(2);
+        expect(result).to.deep.equal(rows);
+      });
+
+      async function iterateIntoArray(iterable) {
+        const result = [];
+        for await (const row of iterable) {
+          result.push(row);
+        }
+        return result;
+      }
+    });
+
     it('handles null parameters', function (done) {
       // arrange
-      var cqlStatement = 'INSERT INTO foo (id, some_column) VALUES (?, ?)';
-      var params = [1, null];
-      var pool = getPoolStub(instance.config, true, null, null);
+      const cqlStatement = 'INSERT INTO foo (id, some_column) VALUES (?, ?)';
+      const params = [1, null];
+      const pool = getPoolStub(instance.config, true, null, null);
       instance.pools = { myKeySpace: pool };
 
       // act
       instance.cql(cqlStatement, params, { consistency: cql.types.consistencies.one }, function () {
         // assert
-        expect(pool.execute).to.have.been.calledWithMatch(cqlStatement, sinon.match([1, 'null']));
+        expect(pool.stream).to.have.been.calledWithMatch(cqlStatement, sinon.match([1, 'null']));
 
         done();
       });
@@ -655,11 +801,10 @@ describe('lib/driver.js', function () {
 
     it('executes CQL as prepared statement and returns the data if "executeAsPrepared" option specified', function (done) {
       // arrange
-      var cqlQuery = 'MyCqlStatement';
-      var params = [{ value: 'param1', hint: 'ascii' }, 'param2', 'param3', new Buffer('param4')];
-      var consistency = cql.types.consistencies.quorum;
-      var err = null;
-      var data = {
+      const cqlQuery = 'MyCqlStatement';
+      const params = [{ value: 'param1', hint: 'ascii' }, 'param2', 'param3', new Buffer('param4')];
+      const consistency = cql.types.consistencies.quorum;
+      const pool = getPoolStub(instance.config, true, null, {
         rows: [
           {
             columns: [
@@ -668,16 +813,15 @@ describe('lib/driver.js', function () {
             field1: 'value1'
           }
         ]
-      };
-      var pool = getPoolStub(instance.config, true, err, data);
+      });
       instance.pools = { myKeySpace: pool };
 
       // act
       instance.cql(cqlQuery, params, {
-        consistency: consistency,
+        consistency,
         executeAsPrepared: true
       }, function (error, returnData) {
-        var call = pool.execute.getCall(0);
+        const call = pool.stream.getCall(0);
 
         // assert
         assert.strictEqual(call.args[0], cqlQuery, 'cql should be passed through');
@@ -694,17 +838,17 @@ describe('lib/driver.js', function () {
 
     it('executes CQL with hint options if parameters provide type hints', function (done) {
       // arrange
-      var cqlQuery = 'MyCqlStatement';
-      var params = [
+      const cqlQuery = 'MyCqlStatement';
+      const params = [
         'param1',
         { value: 'param2', hint: null },
         { value: 'param3', hint: instance.dataType.ascii },
         { value: 'param4', hint: 'map<text,boolean>' },
         { value: 'param5', hint: 'int', isRoutingKey: true },
-        new Buffer('param6')];
-      var consistency = cql.types.consistencies.quorum;
-      var err = null;
-      var data = {
+        new Buffer('param6')
+      ];
+      const consistency = cql.types.consistencies.quorum;
+      const pool = getPoolStub(instance.config, true, null, {
         rows: [
           {
             columns: [
@@ -713,16 +857,15 @@ describe('lib/driver.js', function () {
             field1: 'value1'
           }
         ]
-      };
-      var pool = getPoolStub(instance.config, true, err, data);
+      });
       instance.pools = { myKeySpace: pool };
 
       // act
       instance.cql(cqlQuery, params, {
-        consistency: consistency,
+        consistency,
         executeAsPrepared: true
       }, function (error, returnData) {
-        var call = pool.execute.getCall(0);
+        const call = pool.stream.getCall(0);
 
         // assert
         assert.strictEqual(call.args[0], cqlQuery, 'cql should be passed through');
@@ -737,7 +880,7 @@ describe('lib/driver.js', function () {
         assert.strictEqual(call.args[2].prepare, true, 'prepare option should be true');
         assert.strictEqual(call.args[2].consistency, consistency, 'consistency should be passed through');
         assert.deepEqual(call.args[2].routingIndexes, [4], 'routingIndexes should be generated');
-        var expectedHints = [];
+        const expectedHints = [];
         expectedHints[2] = instance.dataType.ascii;
         expectedHints[3] = {
           code: 33,
@@ -763,11 +906,10 @@ describe('lib/driver.js', function () {
 
     function testDataTypeTransformation(configValue, optionValue, nullOptions, shouldCoerce, done) {
       // arrange
-      var cqlQuery = 'MyCqlStatement';
-      var params = ['param1', 'param2', 'param3'];
-      var consistency = cql.types.consistencies.one;
-      var err = null;
-      var data = {
+      const cqlQuery = 'MyCqlStatement';
+      const params = ['param1', 'param2', 'param3'];
+      const consistency = cql.types.consistencies.one;
+      const data = {
         rows: [
           {
             columns: [
@@ -785,6 +927,7 @@ describe('lib/driver.js', function () {
               { name: 'field9', types: [33, null] },
               { name: 'field10', types: [33, null] },
               { name: 'field11', types: [33, null] },
+              { name: 'field17', types: [33, null] },
               // Set types
               { name: 'field12', types: [34, null] },
               { name: 'field13', types: [34, null] },
@@ -807,12 +950,13 @@ describe('lib/driver.js', function () {
             field13: [null, cql.types.Uuid.random()],
             field14: [null, 'value'],
             field15: [],
-            field16: [null]
+            field16: [null],
+            field17: { nullKey: null, key1: true, key2: false }
           }
         ]
       };
 
-      var pool = getPoolStub(instance.config, true, err, data);
+      const pool = getPoolStub(instance.config, true, null, data);
       instance.pools = { myKeySpace: pool };
       instance.config.coerceDataStaxTypes = configValue;
 
@@ -836,15 +980,16 @@ describe('lib/driver.js', function () {
           field13: instance.dataType.set,
           field14: instance.dataType.set,
           field15: instance.dataType.set,
-          field16: instance.dataType.set
+          field16: instance.dataType.set,
+          field17: instance.dataType.set
         }
       }, function (error, returnData) {
         if (error) { return void done(error); }
 
-        var call = pool.execute.getCall(0);
+        const call = pool.stream.getCall(0);
         assert.strictEqual(call.args[0], cqlQuery, 'cql should be passed through');
         assert.deepEqual(call.args[1], params, 'params should be passed through');
-        var record = returnData[0];
+        const record = returnData[0];
         if (shouldCoerce) {
           // Standard types
           assert.strictEqual(typeof record.field1, 'number', 'first field should be a number');
@@ -873,6 +1018,9 @@ describe('lib/driver.js', function () {
           assert.isTrue(Object.keys(record.field10).length === 0, 'tenth field should be an empty object');
           assert.isTrue(Object.keys(record.field11).length === 1, 'eleventh field should contain only nullKey');
           assert.isNull(record.field11.nullKey, 'eleventh field nullkey should be null');
+          assert.isNull(record.field17.nullKey, '17th field nullkey should be null');
+          assert.strictEqual(record.field17.key1, true, '17th field1 should be true');
+          assert.strictEqual(record.field17.key2, false, '17th field1 should be false');
 
           // Sets
           assert.isNull(record.field12[0], 'twelfth field null index should be null');
@@ -944,11 +1092,10 @@ describe('lib/driver.js', function () {
 
     it('normalizes/deserializes the data in the resulting array', function (done) {
       // arrange
-      var cqlQuery = 'MyCqlStatement';
-      var params = ['param1', 'param2', 'param3'];
-      var consistency = cql.types.consistencies.one;
-      var err = null;
-      var data = {
+      const cqlQuery = 'MyCqlStatement';
+      const params = ['param1', 'param2', 'param3'];
+      const consistency = cql.types.consistencies.one;
+      const pool = getPoolStub(instance.config, true, null, {
         rows: [
           {
             columns: [
@@ -969,14 +1116,12 @@ describe('lib/driver.js', function () {
             field7: '{ "jsonThat": "iDontWantToParse" }'
           }
         ]
-      };
-
-      var pool = getPoolStub(instance.config, true, err, data);
+      });
       instance.pools = { myKeySpace: pool };
 
       // act
       instance.cql(cqlQuery, params, {
-        consistency: consistency,
+        consistency,
         resultHint: {
           field1: instance.dataType.ascii,
           field2: instance.dataType.number,
@@ -987,7 +1132,7 @@ describe('lib/driver.js', function () {
           // field7 intentionally omitted
         }
       }, function (error, returnData) {
-        var call = pool.execute.getCall(0);
+        const call = pool.stream.getCall(0);
 
         // assert
         assert.strictEqual(call.args[0], cqlQuery, 'cql should be passed through');
@@ -1007,11 +1152,10 @@ describe('lib/driver.js', function () {
 
     it('normalizes/deserializes the data in the resulting array by detecting JSON strings', function (done) {
       // arrange
-      var cqlQuery = 'MyCqlStatement';
-      var params = ['param1', 'param2', 'param3'];
-      var consistency = cql.types.consistencies.one;
-      var err = null;
-      var data = {
+      const cqlQuery = 'MyCqlStatement';
+      const params = ['param1', 'param2', 'param3'];
+      const consistency = cql.types.consistencies.one;
+      const pool = getPoolStub(instance.config, true, null, {
         rows: [
           {
             columns: [
@@ -1028,17 +1172,15 @@ describe('lib/driver.js', function () {
             field5: '{ some invalid json }'
           }
         ]
-      };
-
-      var pool = getPoolStub(instance.config, true, err, data);
+      });
       instance.pools = { myKeySpace: pool };
 
       // act
       instance.cql(cqlQuery, params, {
-        consistency: consistency,
+        consistency,
         deserializeJsonStrings: true
       }, function (error, returnData) {
-        var call = pool.execute.getCall(0);
+        const call = pool.stream.getCall(0);
 
         // assert
         assert.strictEqual(call.args[0], cqlQuery, 'cql should be passed through');
@@ -1055,39 +1197,37 @@ describe('lib/driver.js', function () {
     });
 
     function testErrorRetry(errorName, errorCode, numRetries, shouldRetry) {
-      it((shouldRetry ? 'adds' : 'does not add') + ' error retry if error is "' + errorName + '", code "' + errorCode + '", and retries ' + numRetries, function (done) {
+      it(`${shouldRetry ? 'adds' : 'does not add'} error retry if error is "${errorName}", code "${errorCode}", and retries ${numRetries}`, function (done) {
         // arrange
-        var cqlQuery = 'MyCqlStatement';
-        var params = ['param1', 'param2', 'param3'];
-        var consistency = cql.types.consistencies.one;
-        var pool = getPoolStub(instance.config, true, null, {});
-        var data = [];
-        var callCount = 0;
-        pool.execute = sinon.spy(function (c, d, con, cb) {
+        const cqlQuery = 'MyCqlStatement';
+        const params = ['param1', 'param2', 'param3'];
+        const consistency = cql.types.consistencies.one;
+        const pool = getPoolStub(instance.config, true, null, {});
+        const data = [];
+        let callCount = 0;
+        pool.stream = sinon.spy(async function *() {
           callCount++;
           if (callCount === 1) {
-            var err = new cql.errors[errorName](errorCode, 'error message');
-            cb(err);
+            throw new cql.errors[errorName](errorCode, 'error message');
           } else {
-            cb(null, data);
+            yield* data;
           }
         });
         instance.pools = { myKeySpace: pool };
-        instance.config.numRetries = numRetries;
-        instance.config.retryDelay = 1;
+        instance._initDriverConfig({ numRetries, retryDelay: 1 });
 
         // act
-        instance.cql(cqlQuery, params, { consistency: consistency }, function (error, returnData) {
+        instance.cql(cqlQuery, params, { consistency }, function (error, returnData) {
           // assert
           if (shouldRetry) {
-            var call1 = pool.execute.getCall(0);
-            var call2 = pool.execute.getCall(1);
-            assert.strictEqual(pool.execute.callCount, 2, 'execute should be called twice');
+            const call1 = pool.stream.getCall(0);
+            const call2 = pool.stream.getCall(1);
+            assert.strictEqual(pool.stream.callCount, 2, 'execute should be called twice');
             assert.notEqual(call1.args[1], call2.args[1], 'parameters should be cloned');
             assert.deepEqual(call1.args[1], call2.args[1], 'parameters should be cloned');
             assert.deepEqual(returnData, data, 'data should match cql output');
           } else {
-            assert.strictEqual(pool.execute.callCount, 1, 'execute should be called once');
+            assert.strictEqual(pool.stream.callCount, 1, 'execute should be called once');
             assert.instanceOf(error, Error, 'error is not populated');
             assert.isObject(error.query, 'query is not defined');
             assert.equal(error.query.cql, cqlQuery, 'query.cql does not match query');
@@ -1113,18 +1253,18 @@ describe('lib/driver.js', function () {
 
     it('does not add error retry at consistency QUORUM when original consistency is ALL and enableConsistencyFailover is false', function (done) {
       // arrange
-      var cqlQuery = 'MyCqlStatement';
-      var params = ['param1', 'param2', 'param3'];
-      var consistency = cql.types.consistencies.all;
-      var pool = getPoolStub(instance.config, true, null, {});
-      var data = [];
-      var callCount = 0;
-      pool.execute = sinon.spy(function (c, d, con, cb) {
+      const cqlQuery = 'MyCqlStatement';
+      const params = ['param1', 'param2', 'param3'];
+      const consistency = cql.types.consistencies.all;
+      const pool = getPoolStub(instance.config, true, null, {});
+      const data = [];
+      let callCount = 0;
+      pool.stream = sinon.spy(function *() {
         callCount++;
         if (callCount === 1) {
-          cb(new Error('throws error on ALL'));
+          throw new Error('throws error on ALL');
         } else {
-          cb(null, data);
+          yield* data;
         }
       });
       instance.pools = { myKeySpace: pool };
@@ -1132,11 +1272,11 @@ describe('lib/driver.js', function () {
       instance.config.enableConsistencyFailover = false;
 
       // act
-      instance.cql(cqlQuery, params, { consistency: consistency }, function (error, returnData) {
+      instance.cql(cqlQuery, params, { consistency }, function (error, returnData) {
         // assert
-        assert.strictEqual(pool.execute.callCount, 1, 'execute should be called once');
+        assert.strictEqual(pool.stream.callCount, 1, 'execute should be called once');
         assert.ok(error);
-        assert.equal(error.cql, cqlQuery);
+        assert.equal(error.query.cql, cqlQuery);
         assert.notOk(returnData);
 
         done();
@@ -1145,30 +1285,29 @@ describe('lib/driver.js', function () {
 
     it('adds error retry at consistency QUORUM when original consistency is ALL', function (done) {
       // arrange
-      var cqlQuery = 'MyCqlStatement';
-      var params = ['param1', 'param2', 'param3'];
-      var consistency = cql.types.consistencies.all;
-      var pool = getPoolStub(instance.config, true, null, {});
-      var data = [];
-      var callCount = 0;
-      pool.execute = sinon.spy(function (c, d, con, cb) {
+      const cqlQuery = 'MyCqlStatement';
+      const params = ['param1', 'param2', 'param3'];
+      const consistency = cql.types.consistencies.all;
+      const pool = getPoolStub(instance.config, true, null, {});
+      const data = [];
+      let callCount = 0;
+      pool.stream = sinon.spy(async function *() {
         callCount++;
         if (callCount === 1) {
-          var err = new cql.errors.ResponseError(0x1200, 'timeout on read');
-          cb(err);
+          throw new cql.errors.ResponseError(0x1200, 'timeout on read');
         } else {
-          cb(null, data);
+          yield* data;
         }
       });
       instance.pools = { myKeySpace: pool };
-      instance.config.retryDelay = 1;
+      instance._initDriverConfig({ retryDelay: 1 });
 
       // act
-      instance.cql(cqlQuery, params, { consistency: consistency }, function (error, returnData) {
-        var call1 = pool.execute.getCall(0);
-        var call2 = pool.execute.getCall(1);
+      instance.cql(cqlQuery, params, { consistency }, function (__, returnData) {
+        const call1 = pool.stream.getCall(0);
+        const call2 = pool.stream.getCall(1);
         // assert
-        assert.strictEqual(pool.execute.callCount, 2, 'cql should be called twice');
+        assert.strictEqual(pool.stream.callCount, 2, 'cql should be called twice');
         assert.notEqual(call1.args[1], call2.args[1], 'parameters should be cloned');
         assert.deepEqual(call1.args[1], call2.args[1], 'parameters should be cloned');
         assert.deepEqual(returnData, data, 'data should match cql output');
@@ -1179,30 +1318,29 @@ describe('lib/driver.js', function () {
 
     it('adds error retry at consistency LOCUM_QUORUM when original consistency is QUORUM', function (done) {
       // arrange
-      var cqlQuery = 'MyCqlStatement';
-      var params = ['param1', 'param2', 'param3'];
-      var consistency = cql.types.consistencies.quorum;
-      var pool = getPoolStub(instance.config, true, null, {});
-      var data = [];
-      var callCount = 0;
-      pool.execute = sinon.spy(function (c, d, con, cb) {
+      const cqlQuery = 'MyCqlStatement';
+      const params = ['param1', 'param2', 'param3'];
+      const consistency = cql.types.consistencies.quorum;
+      const pool = getPoolStub(instance.config, true, null, {});
+      const data = [];
+      let callCount = 0;
+      pool.stream = sinon.spy(async function *() {
         callCount++;
         if (callCount === 1) {
-          var err = new cql.errors.ResponseError(0x1200, 'timeout on read');
-          cb(err);
+          throw new cql.errors.ResponseError(0x1200, 'timeout on read');
         } else {
-          cb(null, data);
+          yield* data;
         }
       });
       instance.pools = { myKeySpace: pool };
       instance.config.retryDelay = 1;
 
       // act
-      instance.cql(cqlQuery, params, { consistency: consistency }, function (error, returnData) {
-        var call1 = pool.execute.getCall(0);
-        var call2 = pool.execute.getCall(1);
+      instance.cql(cqlQuery, params, { consistency }, function (error, returnData) {
+        const call1 = pool.stream.getCall(0);
+        const call2 = pool.stream.getCall(1);
         // assert
-        assert.strictEqual(pool.execute.callCount, 2, 'cql should be called twice');
+        assert.strictEqual(pool.stream.callCount, 2, 'cql should be called twice');
         assert.notEqual(call1.args[1], call2.args[1], 'parameters should be cloned');
         assert.deepEqual(call1.args[1], call2.args[1], 'parameters should be cloned');
         assert.deepEqual(returnData, data, 'data should match cql output');
@@ -1213,47 +1351,50 @@ describe('lib/driver.js', function () {
 
     it('does not error retry at consistency LOCUM_QUORUM when original consistency is QUORUM if error is not retryable', function (done) {
       // arrange
-      var cqlQuery = 'MyCqlStatement';
-      var params = ['param1', 'param2', 'param3'];
-      var consistency = cql.types.consistencies.quorum;
-      var pool = getPoolStub(instance.config, true, null, {});
-      var data = [];
-      var callCount = 0;
-      var err = new cql.errors.ResponseError(1234, 'something blew up');
-      pool.execute = sinon.spy(function (c, d, con, cb) {
+      const cqlQuery = 'MyCqlStatement';
+      const params = ['param1', 'param2', 'param3'];
+      const consistency = cql.types.consistencies.quorum;
+      const pool = getPoolStub(instance.config, true, null, {});
+      const data = [];
+      let callCount = 0;
+      const err = new cql.errors.ResponseError(1234, 'something blew up');
+      pool.stream = sinon.spy(async function *() {
         callCount++;
         if (callCount === 1) {
-          cb(err);
+          throw err;
         } else {
-          cb(null, data);
+          yield* data;
         }
       });
       instance.pools = { myKeySpace: pool };
       instance.config.retryDelay = 1;
 
       // act
-      instance.cql(cqlQuery, params, { consistency: consistency }, function (error) {
+      instance.cql(cqlQuery, params, { consistency }, function (error) {
         // assert
-        assert.strictEqual(pool.execute.callCount, 1, 'cql should be called once');
+        assert.strictEqual(pool.stream.callCount, 1, 'cql should be called once');
         assert.equal(error, err);
-        assert.equal(error.cql, cqlQuery);
+        assert.equal(error.query.cql, cqlQuery);
         done();
       });
     });
 
     it('emits a queryFailed event when a query fails', function (done) {
       // arrange
-      var cqlQuery = 'MyCqlStatement';
-      var params = ['param1', 'param2', 'param3'];
-      var consistency = cql.types.consistencies.quorum;
-      var pool = getPoolStub(instance.config, true, null, {});
-      pool.execute = sinon.stub().yields(new Error('throws error on QUORUM'));
+      const cqlQuery = 'MyCqlStatement';
+      const params = ['param1', 'param2', 'param3'];
+      const consistency = cql.types.consistencies.quorum;
+      const pool = getPoolStub(instance.config, true, null, {});
+      // eslint-disable-next-line require-yield
+      pool.stream = sinon.spy(function *() {
+        throw new Error('throws error on QUORUM');
+      });
       instance.pools = { myKeySpace: pool };
-      var failedHandler = sinon.stub();
+      const failedHandler = sinon.stub();
       instance.on('queryFailed', failedHandler);
 
       // act
-      instance.cql(cqlQuery, params, { consistency: consistency }, function () {
+      instance.cql(cqlQuery, params, { consistency }, function () {
         expect(failedHandler).to.have.been.called;
         done();
       });
@@ -1261,33 +1402,62 @@ describe('lib/driver.js', function () {
 
     it('captures metrics if metrics and queryName are provided', function (done) {
       // arrange
-      var cqlQuery = 'MyCqlStatement';
-      var queryName = 'MyQueryName';
-      var params = ['param1', 'param2', 'param3'];
-      var consistency = cql.types.consistencies.one;
-      var err = null;
-      var data = { field1: 'value1' };
-      var pool = getPoolStub(instance.config, true, err, data);
+      const cqlQuery = 'MyCqlStatement';
+      const queryName = 'MyQueryName';
+      const params = ['param1', 'param2', 'param3'];
+      const consistency = cql.types.consistencies.one;
+      const pool = getPoolStub(instance.config, true, null, { field1: 'value1' });
       instance.pools = { myKeySpace: pool };
       instance.metrics = {
         measurement: sinon.stub()
       };
 
       // act
-      instance.cql(cqlQuery, params, { consistency: consistency, queryName: queryName }, function () {
-        var call = instance.metrics.measurement.getCall(0);
+      instance.cql(cqlQuery, params, { consistency, queryName }, function () {
+        const call = instance.metrics.measurement.getCall(0);
 
         // assert
         assert.ok(instance.metrics.measurement.calledOnce, 'measurement called once');
-        assert.strictEqual(call.args[0], 'query.' + queryName, 'measurement called with appropriate query name');
+        assert.strictEqual(call.args[0], `query.${queryName}`, 'measurement called with appropriate query name');
 
         done();
       });
     });
 
+    it('can apply transformations to the results', async () => {
+      const rows = [
+        { foo: 1 },
+        { foo: 2 },
+        { foo: 3 }
+      ];
+      instance.pools = {
+        myKeySpace: getPoolStub(instance.config, true, null, { rows })
+      };
+
+      const result = await instance.cql('SELECT * FROM foo', [], {
+        resultTransformers: [
+          x => x.foo * 2,
+          x => '*'.repeat(x)
+        ]
+      });
+
+      expect(result).to.deep.equal([
+        '**',
+        '****',
+        '******'
+      ]);
+    });
+
     describe('with connection resolver', function () {
 
-      var logger, resolverOptions;
+      let logger;
+
+      const resolverOptions = {
+        config: {
+          connectionResolverPath: '../test/stubs/fake-resolver',
+          cqlVersion: '3.1.0'
+        }
+      };
 
       function getResolverInstance(context) {
         logger = {
@@ -1296,13 +1466,7 @@ describe('lib/driver.js', function () {
           warn: sinon.stub(),
           error: sinon.stub()
         };
-        resolverOptions = {
-          config: {
-            connectionResolverPath: '../test/stubs/fake-resolver',
-            cqlVersion: '3.1.0'
-          }
-        };
-        return new Driver(_.extend({ config: getDefaultConfig(), logger: logger }, context));
+        return new Driver({ config: getDefaultConfig(), logger: logger, ...context });
       }
 
       beforeEach(function () {
@@ -1310,30 +1474,29 @@ describe('lib/driver.js', function () {
         fakeResolver.resolveConnection = sinon.stub().yieldsAsync(null, {});
       });
 
-
       it('uses supplied connection resolver to override base config', function (done) {
         // arrange
-        var cqlQuery = 'MyCqlStatement';
-        var params = ['param1', 'param2', 'param3'];
-        var consistency = cql.types.consistencies.one;
+        const cqlQuery = 'MyCqlStatement';
+        const params = ['param1', 'param2', 'param3'];
+        const consistency = cql.types.consistencies.one;
         instance = getResolverInstance({ connectionResolver: fakeResolver });
-        var fakeConnectionInfo = {
+        const fakeConnectionInfo = {
           username: 'myResolvedUsername',
           password: 'myResolvedPassword',
-          hosts: []
+          contactPoints: []
         };
         fakeResolver.resolveConnection = sinon.stub().yieldsAsync(null, fakeConnectionInfo);
-        var pool = getPoolStub(instance.config, true, null, {});
+        const pool = getPoolStub(instance.config, true, null, {});
         pool.on = sinon.stub();
-        pool.connect = sinon.stub().yieldsAsync(null, {});
+        pool.connect = sinon.stub().resolves({});
         sinon.stub(cql, 'Client').returns(pool);
         instance.pools = {};
 
         // act
-        instance.cql(cqlQuery, params, { consistency: consistency }, function () {
+        instance.cql(cqlQuery, params, { consistency }, function () {
           // assert
-          assert.strictEqual(pool.storeConfig.username, fakeConnectionInfo.username);
-          assert.strictEqual(pool.storeConfig.password, fakeConnectionInfo.password);
+          assert.strictEqual(pool.storeConfig.credentials.username, fakeConnectionInfo.username);
+          assert.strictEqual(pool.storeConfig.credentials.password, fakeConnectionInfo.password);
 
           done();
         });
@@ -1341,29 +1504,29 @@ describe('lib/driver.js', function () {
 
       it('uses resolved connection resolver from path to override base config', function (done) {
         // arrange
-        var cqlQuery = 'MyCqlStatement';
-        var params = ['param1', 'param2', 'param3'];
-        var consistency = cql.types.consistencies.one;
+        const cqlQuery = 'MyCqlStatement';
+        const params = ['param1', 'param2', 'param3'];
+        const consistency = cql.types.consistencies.one;
         instance = getResolverInstance(resolverOptions);
-        var userName = 'myResolvedUsername';
-        var fakeConnectionInfo = {
-          user: userName,
+        const userName = 'myResolvedUsername';
+        const fakeConnectionInfo = {
+          username: userName,
           password: 'myResolvedPassword',
-          hosts: ['123.456.789.012:1234']
+          contactPoints: ['123.456.789.012:1234']
         };
         instance.connectionResolver.resolveConnection = sinon.stub().yieldsAsync(null, _.cloneDeep(fakeConnectionInfo));
-        var pool = getPoolStub(instance.config, true, null, {});
+        const pool = getPoolStub(instance.config, true, null, {});
         pool.on = sinon.stub();
-        pool.connect = sinon.stub().yieldsAsync(null, {});
+        pool.connect = sinon.stub().resolves({});
         sinon.stub(cql, 'Client').returns(pool);
         instance.pools = {};
 
         // act
-        instance.cql(cqlQuery, params, { consistency: consistency }, function () {
+        instance.cql(cqlQuery, params, { consistency }, function () {
           // assert
-          assert.strictEqual(pool.storeConfig.username, userName);
-          assert.strictEqual(pool.storeConfig.password, fakeConnectionInfo.password);
-          assert.deepEqual(pool.storeConfig.contactPoints, fakeConnectionInfo.hosts);
+          assert.strictEqual(pool.storeConfig.credentials.username, userName);
+          assert.strictEqual(pool.storeConfig.credentials.password, fakeConnectionInfo.password);
+          assert.deepEqual(pool.storeConfig.contactPoints, fakeConnectionInfo.contactPoints);
 
           done();
         });
@@ -1371,56 +1534,58 @@ describe('lib/driver.js', function () {
 
       it('applies port remapping to resolved connection information if specified', function (done) {
         // arrange
-        var cqlQuery = 'MyCqlStatement';
-        var params = ['param1', 'param2', 'param3'];
-        var consistency = cql.types.consistencies.one;
+        const cqlQuery = 'MyCqlStatement';
+        const params = ['param1', 'param2', 'param3'];
+        const consistency = cql.types.consistencies.one;
         instance = getResolverInstance(resolverOptions);
         instance.config.connectionResolverPortMap = {
           from: '1234',
           to: '2345'
         };
         instance.poolConfig.connectionResolverPortMap = instance.config.connectionResolverPortMap;
-        var userName = 'myResolvedUsername';
-        var fakeConnectionInfo = {
+        const userName = 'myResolvedUsername';
+        const fakeConnectionInfo = {
           user: userName,
           password: 'myResolvedPassword',
-          hosts: ['123.456.789.012:1234', '234.567.890.123']
+          contactPoints: ['123.456.789.012:1234', '234.567.890.123', '235.235.4.3:8888']
         };
         instance.connectionResolver.resolveConnection = sinon.stub().yieldsAsync(null, _.cloneDeep(fakeConnectionInfo));
-        var pool = getPoolStub(instance.config, true, null, {});
+        const pool = getPoolStub(instance.config, true, null, {});
         pool.on = sinon.stub();
-        pool.connect = sinon.stub().yieldsAsync(null, {});
+        pool.connect = sinon.stub().resolves({});
         sinon.stub(cql, 'Client').returns(pool);
         instance.pools = {};
 
         // act
-        instance.cql(cqlQuery, params, { consistency: consistency }, function () {
+        instance.cql(cqlQuery, params, { consistency }, function () {
           // assert
-          assert.strictEqual(pool.storeConfig.username, userName);
-          assert.strictEqual(pool.storeConfig.password, fakeConnectionInfo.password);
-          assert.deepEqual(pool.storeConfig.contactPoints, ['123.456.789.012:2345', '234.567.890.123'], 'hosts were applied with remapped ports');
-
+          assert.strictEqual(pool.storeConfig.credentials.username, userName);
+          assert.strictEqual(pool.storeConfig.credentials.password, fakeConnectionInfo.password);
+          assert.deepEqual(
+            pool.storeConfig.contactPoints,
+            ['123.456.789.012:2345', '234.567.890.123', '235.235.4.3:8888'],
+            'contactPoints were applied with remapped ports');
           done();
         });
       });
 
       it('logs and returns error if connection resolver throws error', function (done) {
         // arrange
-        var cqlQuery = 'MyCqlStatement';
-        var params = ['param1', 'param2', 'param3'];
-        var consistency = cql.types.consistencies.one;
+        const cqlQuery = 'MyCqlStatement';
+        const params = ['param1', 'param2', 'param3'];
+        const consistency = cql.types.consistencies.one;
         instance = getResolverInstance({ connectionResolver: fakeResolver });
         fakeResolver.resolveConnection = sinon.stub().yieldsAsync(new Error('connection resolution failed'));
-        var pool = getPoolStub(instance.config, true, null, {});
+        const pool = getPoolStub(instance.config, true, null, {});
         pool.on = sinon.stub();
         pool.connect = sinon.stub().yieldsAsync(null, {});
         sinon.stub(cql, 'Client').returns(pool);
         instance.pools = {};
-        var connectionResolvedErrorHandler = sinon.stub();
+        const connectionResolvedErrorHandler = sinon.stub();
         instance.on('connectionResolvedError', connectionResolvedErrorHandler);
 
         // act
-        instance.cql(cqlQuery, params, { consistency: consistency }, function (err, result) {
+        instance.cql(cqlQuery, params, { consistency }, function (err, result) {
           // assert
           assert.instanceOf(err, Error);
           assert.isUndefined(result);
@@ -1436,68 +1601,35 @@ describe('lib/driver.js', function () {
         });
       });
 
-      it('logs error and updates connection if connection resolver returns error AND data', function (done) {
-        // arrange
-        var cqlQuery = 'MyCqlStatement';
-        var params = ['param1', 'param2', 'param3'];
-        var consistency = cql.types.consistencies.one;
-        instance = getResolverInstance({ connectionResolver: fakeResolver });
-        var fakeConnectionInfo = {
-          username: 'myResolvedUsername',
-          password: 'myResolvedPassword',
-          hosts: []
-        };
-        var resolutionError = new Error('connection resolution failed');
-        fakeResolver.resolveConnection = sinon.stub().yieldsAsync(resolutionError, fakeConnectionInfo);
-        var pool = getPoolStub(instance.config, true, null, {});
-        pool.on = sinon.stub();
-        pool.connect = sinon.stub().yieldsAsync(null, {});
-        sinon.stub(cql, 'Client').returns(pool);
-        instance.pools = {};
-        var resolutionErrorHandler = sinon.stub();
-        instance.on('connectionResolvedError', resolutionErrorHandler);
-
-        // act
-        instance.cql(cqlQuery, params, { consistency: consistency }, function (err) {
-          // assert
-          assert.isNull(err);
-          assert.strictEqual(pool.storeConfig.username, fakeConnectionInfo.username, 'username successfully updated');
-          assert.strictEqual(pool.storeConfig.password, fakeConnectionInfo.password, 'password successfully updated');
-          assert.ok(logger.error.called, 'error log is called');
-          expect(resolutionErrorHandler).to.have.been.calledWithMatch(sinon.match.string, resolutionError);
-          done();
-        });
-      });
-
       it('returns data and logs error if connection resolver throws error on lazy fetch', function (done) {
         // arrange
-        var cqlQuery = 'MyCqlStatement';
-        var params = ['param1', 'param2', 'param3'];
-        var consistency = cql.types.consistencies.one;
+        const cqlQuery = 'MyCqlStatement';
+        const params = ['param1', 'param2', 'param3'];
+        const consistency = cql.types.consistencies.one;
         instance = getResolverInstance({ connectionResolver: fakeResolver });
-        var fakeConnectionInfo = {
+        const fakeConnectionInfo = {
           username: 'myResolvedUsername',
           password: 'myResolvedPassword',
-          hosts: []
+          contactPoints: []
         };
-        var fetchError = new Error('lazy fetch error');
+        const fetchError = new Error('lazy fetch error');
         fakeResolver.resolveConnection = function (data, cb) {
           fakeResolver.on.getCall(1).args[1](fetchError);
           cb(null, fakeConnectionInfo);
         };
-        var pool = getPoolStub(instance.config, true, null, {});
+        const pool = getPoolStub(instance.config, true, null, {});
         pool.on = sinon.stub();
-        pool.connect = sinon.stub().yieldsAsync(null, {});
+        pool.connect = sinon.stub().resolves({});
         sinon.stub(cql, 'Client').returns(pool);
         instance.pools = {};
-        var connectionOptionsErrorHandler = sinon.stub();
+        const connectionOptionsErrorHandler = sinon.stub();
         instance.on('connectionOptionsError', connectionOptionsErrorHandler);
 
         // act
         instance.cql(cqlQuery, params, { consistency: consistency }, function () {
           // assert
-          assert.strictEqual(pool.storeConfig.username, fakeConnectionInfo.username, 'username successfully updated');
-          assert.strictEqual(pool.storeConfig.password, fakeConnectionInfo.password, 'password successfully updated');
+          assert.strictEqual(pool.storeConfig.credentials.username, fakeConnectionInfo.username, 'username successfully updated');
+          assert.strictEqual(pool.storeConfig.credentials.password, fakeConnectionInfo.password, 'password successfully updated');
           expect(connectionOptionsErrorHandler).to.have.been.calledWith(fetchError);
           done();
         });
@@ -1505,182 +1637,85 @@ describe('lib/driver.js', function () {
 
       it('returns data if connection resolver successfully performs a lazy fetch', function (done) {
         // arrange
-        var cqlQuery = 'MyCqlStatement';
-        var params = ['param1', 'param2', 'param3'];
-        var consistency = cql.types.consistencies.one;
+        const cqlQuery = 'MyCqlStatement';
+        const params = ['param1', 'param2', 'param3'];
+        const consistency = cql.types.consistencies.one;
         instance = getResolverInstance({ connectionResolver: fakeResolver });
-        var fakeConnectionInfo = {
+        const fakeConnectionInfo = {
           username: 'myResolvedUsername',
           password: 'myResolvedPassword',
-          hosts: []
+          contactPoints: []
         };
         fakeResolver.resolveConnection = function (data, cb) {
           cb(null, fakeConnectionInfo);
           fakeResolver.on.getCall(1).args[1](null, { user: 'someOtherInfo', password: 'someOtherPassword' });
         };
-        var pool = getPoolStub(instance.config, true, null, {});
+        const pool = getPoolStub(instance.config, true, null, {});
         pool.on = sinon.stub();
-        pool.connect = sinon.stub().yieldsAsync(null, {});
+        pool.connect = sinon.stub().resolves({});
         sinon.stub(cql, 'Client').returns(pool);
         instance.pools = {};
-        var connectionOptionsFetchedHandler = sinon.stub();
-        var connectionResolvedHandler = sinon.stub();
-        instance.on('connectionOptionsFetched', connectionOptionsFetchedHandler);
-        instance.on('connectionResolved', connectionResolvedHandler);
+        const connOptionsFetchedHandler = sinon.stub();
+        const connResolvedHandler = sinon.stub();
+        instance.on('connectionOptionsFetched', connOptionsFetchedHandler);
+        instance.on('connectionResolved', connResolvedHandler);
 
         // act
         instance.cql(cqlQuery, params, { consistency: consistency }, function () {
           // assert
-          assert.strictEqual(pool.storeConfig.username, fakeConnectionInfo.username, 'username successfully updated');
-          assert.strictEqual(pool.storeConfig.password, fakeConnectionInfo.password, 'password successfully updated');
+          assert.strictEqual(pool.storeConfig.credentials.username, fakeConnectionInfo.username, 'username successfully updated');
+          assert.strictEqual(pool.storeConfig.credentials.password, fakeConnectionInfo.password, 'password successfully updated');
           assert.notOk(logger.warn.called, 'warn logger should not be called');
-          expect(connectionOptionsFetchedHandler).to.have.been.called;
-          expect(connectionResolvedHandler).to.have.been.called;
+          expect(connOptionsFetchedHandler).to.have.been.called;
+          expect(connResolvedHandler).to.have.been.called;
           done();
+        });
+      });
+
+      it('allows the connection resolver to not be an event emitter', () => {
+        getResolverInstance({
+          connectionResolver: {
+            resolveConnection(cb) {
+              cb(null, {
+                username: 'bob',
+                password: 'blah',
+                contactPoints: ['1.2.3.4']
+              });
+            }
+          }
         });
       });
     });
   });
 
-  describe('DatastaxDriver#streamCqlOnDriver()', function () {
-    var pool, cqlStatement, params, consistency, options, stream,
-      resultStream, fakeThroughObj, instance;
-    beforeEach(function () {
-      instance = getDefaultInstance();
-      cqlStatement = 'myCqlStatement';
-      params = [1, 2, 3];
-      consistency = 'one';
-      options = { foo: 'bar' };
-      stream = {
-        emit: sinon.stub()
-      };
-      resultStream = {
-        on: sinon.stub().returnsThis(),
-        pipe: sinon.stub().returnsThis()
-      };
-      pool = {
-        stream: sinon.stub().returns(resultStream),
-        controlConnection: {
-          protocolVersion: 2
-        }
-      };
-      fakeThroughObj = {
-        foo: 'bar'
-      };
-      sinon.stub(through, 'obj').returns(fakeThroughObj);
-    });
-
-    afterEach(function () {
-      through.obj.restore();
-    });
-
-    it('calls pool.stream() with the correct arguments', function () {
-      instance.streamCqlOnDriver(pool, cqlStatement, params, consistency, options, stream);
-      assert.ok(pool.stream.calledOnce);
-      assert.strictEqual(pool.stream.args[0][0], cqlStatement, 'cql is passed');
-      assert.deepEqual(pool.stream.args[0][1], params, 'params are passed');
-      assert.deepEqual(pool.stream.args[0][2], {
-        consistency: 'one',
-        foo: 'bar',
-        prepare: false
-      }, 'options are passed');
-    });
-
-    it('wires up appropriate streaming pipeline', function () {
-      instance.streamCqlOnDriver(pool, cqlStatement, params, consistency, options, stream);
-      assert.ok(resultStream.on.calledTwice);
-      assert.strictEqual(resultStream.on.args[0][0], 'error', 'wires up error handler for transform');
-      assert.strictEqual(resultStream.on.args[1][0], 'error', 'wires up error handler for stream');
-      assert.ok(resultStream.pipe.calledTwice);
-      assert.equal(resultStream.pipe.args[0][0], fakeThroughObj, 'pipes to transform stream');
-      assert.equal(resultStream.pipe.args[1][0], stream, 'pipes to output stream');
-      assert.ok(through.obj.calledOnce);
-      assert.strictEqual(typeof through.obj.args[0][0], 'function', 'transform stream contains transform function');
-    });
-
-    it('transformation stream returns null if row is null', function () {
-      instance.getNormalizedResults = sinon.stub();
-      instance.streamCqlOnDriver(pool, cqlStatement, params, consistency, options, stream);
-      var cb = sinon.stub();
-      var transformer = through.obj.args[0][0];
-
-      transformer(null, null, cb);
-
-      assert.ok(cb.calledOnce);
-      assert.notOk(cb.args[0][0]);
-      assert.notOk(cb.args[0][1]);
-      assert.notOk(instance.getNormalizedResults.called);
-    });
-
-    it('transformation stream returns normalized object if row is present and there are no transforms', function () {
-      var row = { foo: 'bar' };
-      var normalized = { something: 'else' };
-      instance.getNormalizedResults = sinon.stub().returns([normalized]);
-      instance.streamCqlOnDriver(pool, cqlStatement, params, consistency, options, stream);
-      var cb = sinon.stub();
-      var transformer = through.obj.args[0][0];
-
-      transformer(row, null, cb);
-
-      assert.ok(instance.getNormalizedResults.calledOnce);
-      assert.deepEqual(instance.getNormalizedResults.args[0][0], [row], 'row is normalized');
-      assert.ok(cb.calledOnce);
-      assert.notOk(cb.args[0][0]);
-      assert.deepEqual(cb.args[0][1], normalized);
-    });
-
-    it('transformation stream returns transformed object if row is present and there are transforms', function () {
-      var row = { foo: 'bar' };
-      var normalized = { something: 'else' };
-      var transformed = { something: 'completely different' };
-      var transform = sinon.stub().returns(transformed);
-      options.resultTransformers = [transform];
-      instance.getNormalizedResults = sinon.stub().returns([normalized]);
-      instance.streamCqlOnDriver(pool, cqlStatement, params, consistency, options, stream);
-      var cb = sinon.stub();
-      var transformer = through.obj.args[0][0];
-
-      transformer(row, null, cb);
-
-      assert.ok(instance.getNormalizedResults.calledOnce);
-      assert.deepEqual(instance.getNormalizedResults.args[0][0], [row], 'row is normalized');
-      assert.ok(transform.calledOnce);
-      assert.deepEqual(transform.args[0][0], normalized, 'normalized row is transformed');
-      assert.ok(cb.calledOnce);
-      assert.notOk(cb.args[0][0]);
-      assert.deepEqual(cb.args[0][1], transformed);
-    });
-
-  });
-
   describe('crud wrappers', function () {
 
-    var instance;
+    let instance;
     beforeEach(function () {
       instance = getDefaultInstance();
-      sinon.stub(instance, 'execCql').yields(null, {});
+      sinon.stub(instance, '_execCql').resolves({});
       sinon.stub(cql, 'Client').returns({});
     });
 
     afterEach(function () {
-      instance.execCql.restore();
+      instance._execCql.restore();
       cql.Client.restore();
     });
 
     function validateWrapperCall(method, consistencyLevel) {
-      describe('DatastaxDriver#' + method + '()', function () {
+      describe(`DatastaxDriver#${method}()`, function () {
         it('normalizes the parameter list if it is an array', function (done) {
           // arrange
-          var dt = new Date();
-          var buffer = new Buffer(4096);
-          var hinted = { value: 'bar', hint: 1 /* ascii*/ };
+          const dt = new Date();
+          const buffer = new Buffer(4096);
+          const hinted = { value: 'bar', hint: 1 /* ascii*/ };
           buffer.write('This is a string buffer', 'utf-8');
-          var params = [1, 'myString', dt, [1, 2, 3, 4], { myObjectKey: 'value' }, buffer, hinted];
+          const params = [1, 'myString', dt, [1, 2, 3, 4], { myObjectKey: 'value' }, buffer, hinted];
 
           // act
           instance[method]('cql', params, {}, function () {
-            var call = instance.execCql.getCall(0);
-            var normalized = call.args[1];
+            const call = instance._execCql.getCall(0);
+            const normalized = call.args[1];
 
             // assert
             assert.strictEqual(normalized[0], params[0], '1st parameter should be a number');
@@ -1697,13 +1732,13 @@ describe('lib/driver.js', function () {
 
         it('normalizes the timestamp parameters appropriately', function (done) {
           // arrange
-          var timeStampType = 11;
-          var hintedDateTimestamp = { value: new Date(8675309), hint: timeStampType };
-          var hintedNumberTimestamp = { value: 8675309, hint: timeStampType };
-          var hintedNumberStringTimestamp = { value: '8675309', hint: timeStampType };
-          var hintedIsoStringTimestamp = { value: '1970-01-01T02:24:35.309Z', hint: timeStampType };
-          var hintedNullTimestamp = { value: null, hint: timeStampType };
-          var params = [
+          const timeStampType = 11;
+          const hintedDateTimestamp = { value: new Date(8675309), hint: timeStampType };
+          const hintedNumberTimestamp = { value: 8675309, hint: timeStampType };
+          const hintedNumberStringTimestamp = { value: '8675309', hint: timeStampType };
+          const hintedIsoStringTimestamp = { value: '1970-01-01T02:24:35.309Z', hint: timeStampType };
+          const hintedNullTimestamp = { value: null, hint: timeStampType };
+          const params = [
             hintedDateTimestamp,
             hintedNumberTimestamp,
             hintedNumberStringTimestamp,
@@ -1713,8 +1748,8 @@ describe('lib/driver.js', function () {
 
           // act
           instance[method]('cql', params, {}, function () {
-            var call = instance.execCql.getCall(0);
-            var normalized = call.args[1];
+            const call = instance._execCql.getCall(0);
+            const normalized = call.args[1];
 
             // assert
             assert.deepEqual(normalized[0], hintedDateTimestamp, 'Date parameter should remain hinted Date parameter');
@@ -1729,12 +1764,12 @@ describe('lib/driver.js', function () {
 
         it('leaves object parameter untouched', function (done) {
           // arrange
-          var params = { foo: 'bar' };
+          const params = { foo: 'bar' };
 
           // act
           instance[method]('cql', params, {}, function () {
-            var call = instance.execCql.getCall(0);
-            var normalized = call.args[1];
+            const call = instance._execCql.getCall(0);
+            const normalized = call.args[1];
 
             // assert
             assert.strictEqual(normalized, params, 'normalized params should match original');
@@ -1745,12 +1780,12 @@ describe('lib/driver.js', function () {
 
         it('turns empty parameter into empty array', function (done) {
           // arrange
-          var params = null;
+          const params = null;
 
           // act
           instance[method]('cql', params, {}, function () {
-            var call = instance.execCql.getCall(0);
-            var normalized = call.args[1];
+            const call = instance._execCql.getCall(0);
+            const normalized = call.args[1];
 
             // assert
             assert.deepEqual(normalized, [], 'normalized params should be empty array');
@@ -1761,9 +1796,9 @@ describe('lib/driver.js', function () {
 
         it('skips debug log if "suppressDebugLog" set to true', function (done) {
           // arrange
-          var cqlQuery = 'SELECT * FROM users;';
-          var params = [];
-          var options = { suppressDebugLog: true };
+          const cqlQuery = 'SELECT * FROM users;';
+          const params = [];
+          const options = { suppressDebugLog: true };
 
           // act
           instance[method](cqlQuery, params, options, function () {
@@ -1774,61 +1809,61 @@ describe('lib/driver.js', function () {
           });
         });
 
-        it('executes cql with default ConsistencyLevel.' + consistencyLevel + ' if consistency not provided.', function (done) {
+        it(`executes cql with default ConsistencyLevel.${consistencyLevel} if consistency not provided.`, function (done) {
           // arrange
-          var cqlQuery = 'SELECT * FROM users;';
-          var params = [];
-          var options = {};
+          const cqlQuery = 'SELECT * FROM users;';
+          const params = [];
+          const options = {};
 
           // act
           instance[method](cqlQuery, params, options, function () {
-            var call = instance.execCql.getCall(0);
+            const call = instance._execCql.getCall(0);
 
             // assert
             assert.ok(instance.logger.debug.calledOnce, 'cql is logged');
             assert.equal(call.args[0], cqlQuery, 'cql should be passed through');
-            assert.equal(call.args[1], params, 'params should be passed through');
+            assert.deepEqual(call.args[1], params, 'params should be passed through');
             assert.isObject(call.args[2], 'options should be populated');
-            assert.strictEqual(call.args[2].consistency, cql.types.consistencies[consistencyLevel], 'options.consistency should be ' + consistencyLevel);
+            assert.strictEqual(call.args[2].consistency, cql.types.consistencies[consistencyLevel], `options.consistency should be ${consistencyLevel}`);
 
             done();
           });
         });
 
-        it('executes cql with default ConsistencyLevel.' + consistencyLevel + ' if options is null.', function (done) {
+        it(`executes cql with default ConsistencyLevel.${consistencyLevel} if options is null.`, function (done) {
           // arrange
-          var cqlQuery = 'SELECT * FROM users;';
-          var params = [];
-          var options = null;
+          const cqlQuery = 'SELECT * FROM users;';
+          const params = [];
+          const options = null;
 
           // act
           instance[method](cqlQuery, params, options, function () {
-            var call = instance.execCql.getCall(0);
+            const call = instance._execCql.getCall(0);
 
             // assert
             assert.equal(call.args[0], cqlQuery, 'cql should be passed through');
-            assert.equal(call.args[1], params, 'params should be passed through');
+            assert.deepEqual(call.args[1], params, 'params should be passed through');
             assert.isObject(call.args[2], 'options should be populated');
-            assert.strictEqual(call.args[2].consistency, cql.types.consistencies[consistencyLevel], 'options.consistency should be ' + consistencyLevel);
+            assert.strictEqual(call.args[2].consistency, cql.types.consistencies[consistencyLevel], `options.consistency should be ${consistencyLevel}`);
 
             done();
           });
         });
 
-        it('executes cql with default ConsistencyLevel.' + consistencyLevel + ' if options not provided.', function (done) {
+        it(`executes cql with default ConsistencyLevel.${consistencyLevel} if options not provided.`, function (done) {
           // arrange
-          var cqlQuery = 'SELECT * FROM users;';
-          var params = [];
+          const cqlQuery = 'SELECT * FROM users;';
+          const params = [];
 
           // act
           instance[method](cqlQuery, params, function () {
-            var call = instance.execCql.getCall(0);
+            const call = instance._execCql.getCall(0);
 
             // assert
             assert.equal(call.args[0], cqlQuery, 'cql should be passed through');
-            assert.equal(call.args[1], params, 'params should be passed through');
+            assert.deepEqual(call.args[1], params, 'params should be passed through');
             assert.isObject(call.args[2], 'options should be populated');
-            assert.strictEqual(call.args[2].consistency, cql.types.consistencies[consistencyLevel], 'options.consistency should be ' + consistencyLevel);
+            assert.strictEqual(call.args[2].consistency, cql.types.consistencies[consistencyLevel], `options.consistency should be ${consistencyLevel}`);
 
             done();
           });
@@ -1836,18 +1871,18 @@ describe('lib/driver.js', function () {
 
         it('executes cql with provided consistency.', function (done) {
           // arrange
-          var cqlQuery = 'SELECT * FROM users;';
-          var params = [];
-          var consistency = cql.types.consistencies.quorum;
-          var options = { consistency: consistency };
+          const cqlQuery = 'SELECT * FROM users;';
+          const params = [];
+          const consistency = cql.types.consistencies.quorum;
+          const options = { consistency: consistency };
 
           // act
           instance[method](cqlQuery, params, options, function () {
-            var call = instance.execCql.getCall(0);
+            const call = instance._execCql.getCall(0);
 
             // assert
             assert.equal(call.args[0], cqlQuery, 'cql should be passed through');
-            assert.equal(call.args[1], params, 'params should be passed through');
+            assert.deepEqual(call.args[1], params, 'params should be passed through');
             assert.isObject(call.args[2], 'options should be populated');
             assert.strictEqual(call.args[2].consistency, consistency, 'options.consistency should be passed through');
 
@@ -1866,24 +1901,22 @@ describe('lib/driver.js', function () {
 
   describe('DatastaxDriver#beginQuery()', function () {
 
-    var pool, instance;
+    let pool, instance;
     beforeEach(function () {
       instance = getDefaultInstance();
       pool = getPoolStub(instance.config, true, null, {});
       instance.pools = { myKeySpace: pool };
-      instance.execCql = sinon.stub().yields(null, {});
+      instance._execCql = sinon.stub().resolves({});
       instance.getConnectionPool = sinon.stub().yields(null, pool);
     });
 
     function validateQueryCalls(asPromise) {
-      it('#execute() executes cql ' +
-        (asPromise ? 'with promise syntax' : 'with callback syntax'),
-      function (done) {
+      it(`#execute() executes cql ${asPromise ? 'with promise syntax' : 'with callback syntax'}`, function (done) {
         // arrange
-        var cqlQuery = 'SELECT * FROM users WHERE name = ?;';
+        const cqlQuery = 'SELECT * FROM users WHERE name = ?;';
 
         // act
-        var query = instance
+        const query = instance
           .beginQuery()
           .query(cqlQuery)
           .param('name', 'text');
@@ -1891,21 +1924,17 @@ describe('lib/driver.js', function () {
         if (asPromise) {
           query
             .execute()
-            .then(function () {
-              asserts(done);
-            });
+            .then(asserts);
         } else {
-          query.execute(function () {
-            asserts(done);
-          });
+          query.execute(asserts);
         }
 
-        function asserts(done) {
-          var call = instance.execCql.getCall(0);
+        function asserts() {
+          const call = instance._execCql.getCall(0);
 
           // assert
           assert.equal(call.args[0], cqlQuery, 'cql should be passed through');
-          assert.equal(call.args[1], query.context.params, 'params should be passed through');
+          assert.deepEqual(call.args[1], query.context.params, 'params should be passed through');
           assert.equal(call.args[2], query.context.options, 'options should be passed through');
 
           done();
@@ -1920,30 +1949,31 @@ describe('lib/driver.js', function () {
   });
 
   describe('DatastaxDriver#namedQuery()', function () {
-    var pool, instance;
+    let pool, instance;
     beforeEach(function () {
       instance = getNamedQueryInstance();
       pool = getPoolStub(instance.config, true, null, {});
       instance.pools = { myKeySpace: pool };
-      instance.execCql = sinon.stub().yields(null, {});
-      instance.getConnectionPool = sinon.stub().yields(null, pool);
+      instance._execCql = sinon.stub().resolves({});
+      instance._getConnectionPool = sinon.stub().resolves(pool);
     });
 
     function getNamedQueryInstance() {
-      var config = getDefaultConfig();
+      const config = getDefaultConfig();
       config.queryDirectory = path.join(__dirname, '../stubs/cql');
-      return new Driver({ config: config });
+      return new Driver({ config });
     }
 
     it('executes the CQL specified by the named query', function (done) {
       // arrange
-      var queryName = 'myFakeCql';
-      var params = [];
-      var consistency = cql.types.consistencies.one;
+      const queryName = 'myFakeCql';
+      const params = [];
+      const consistency = cql.types.consistencies.one;
 
       // act
-      instance.namedQuery(queryName, params, { consistency: consistency }, function () {
-        var call = instance.execCql.getCall(0),
+      instance.namedQuery(queryName, params, { consistency }, function () {
+        const
+          call = instance._execCql.getCall(0),
           opts = call.args[2];
 
         // assert
@@ -1956,28 +1986,44 @@ describe('lib/driver.js', function () {
       });
     });
 
-    it('handles CQL files containing a BOM', function (done) {
+    it('returns a Promise if no callback or stream is supplied', async () => {
       // arrange
-      var queryName = 'cqlFileWithBOM';
-      var params = [];
-      var consistency = cql.types.consistencies.one;
+      const rows = [
+        { foo: 1, bar: 2 },
+        { foo: 3, bar: 4 }
+      ];
+      instance._execCql.resolves(rows);
 
       // act
-      instance.namedQuery(queryName, params, { consistency: consistency }, function () {
-        expect(instance.execCql.firstCall.args[0]).to.equal('SELECT * FROM "myColumnFamily"');
+      const result = await instance.namedQuery('myFakeCql', [], { consistency: cql.types.consistencies.one });
+
+      // assert
+      expect(result).to.deep.equal(rows);
+    });
+
+    it('handles CQL files containing a BOM', function (done) {
+      // arrange
+      const queryName = 'cqlFileWithBOM';
+      const params = [];
+      const consistency = cql.types.consistencies.one;
+
+      // act
+      instance.namedQuery(queryName, params, { consistency }, function () {
+        expect(instance._execCql.firstCall.args[0]).to.equal('SELECT * FROM "myColumnFamily"');
         done();
       });
     });
 
     it('allows caller to disable prepared statement', function (done) {
       // arrange
-      var queryName = 'myFakeCql';
-      var params = [];
-      var consistency = cql.types.consistencies.one;
+      const queryName = 'myFakeCql';
+      const params = [];
+      const consistency = cql.types.consistencies.one;
 
       // act
-      instance.namedQuery(queryName, params, { consistency: consistency, executeAsPrepared: false }, function () {
-        var call = instance.execCql.getCall(0),
+      instance.namedQuery(queryName, params, { consistency, executeAsPrepared: false }, function () {
+        const
+          call = instance._execCql.getCall(0),
           opts = call.args[2];
 
         // assert
@@ -1989,45 +2035,49 @@ describe('lib/driver.js', function () {
 
     it('allows callback to be optional to support fire-and-forget scenarios', function (done) {
       // arrange
-      var queryName = 'myFakeCql';
-      var params = [];
-      var consistency = cql.types.consistencies.one;
+      const queryName = 'myFakeCql';
+      const params = [];
+      const consistency = cql.types.consistencies.one;
 
       // act/assert
       expect(function () {
-        instance.namedQuery(queryName, params, { consistency: consistency });
+        instance.namedQuery(queryName, params, { consistency });
       }).not.to.throw(Error);
 
       done();
     });
 
-    it('yields error if named query does not exist', function (done) {
+    it('throws an error if named query does not exist', async () => {
       // arrange
-      var queryName = 'idontexist';
+      const queryName = 'idontexist';
 
       // act
-      instance.namedQuery(queryName, [], function (error, returnData) {
-        // assert
-        assert.instanceOf(error, Error, 'error is populated');
-        assert.isObject(error.query, 'query is not defined');
-        assert.equal(error.query.queryName, 'idontexist', 'query.queryName does not match named query');
-        assert.isUndefined(returnData, 'returnData not defined');
+      let error;
+      try {
+        await instance.namedQuery(queryName, []);
+      } catch (err) {
+        error = err;
+      }
 
-        done();
-      });
+      // assert
+      assert.instanceOf(error, Error, 'error is populated');
     });
 
-    it('throws error if queryDirectory not provided in constructor', function (done) {
+    it('throws error if queryDirectory not provided in constructor', async () => {
       // arrange
-      var defInstance = getDefaultInstance();
-      var queryName = 'myFakeCql';
+      const defInstance = getDefaultInstance();
+      const queryName = 'myFakeCql';
 
       // act
-      expect(function () {
-        defInstance.namedQuery(queryName, [], {}, sinon.stub());
-      }).to.throw(Error);
+      let error;
+      try {
+        await defInstance.namedQuery(queryName, [], {});
+      } catch (err) {
+        error = err;
+      }
 
-      done();
+      // assert
+      expect(error).to.be.instanceOf(Error);
     });
 
   });

@@ -1,8 +1,7 @@
-var
-  logger = require('../../../lib/util/fake-logger'),
-  sinon = require('sinon'),
-  chai = require('chai'),
-  assert = chai.assert;
+/* eslint-disable no-console */
+const logger = require('../../../lib/util/fake-logger');
+const sinon = require('sinon');
+const { assert } = require('chai');
 
 describe('lib/util/fake-logger.js', function () {
 
@@ -44,7 +43,7 @@ describe('lib/util/fake-logger.js', function () {
   });
 
   function testLogLevel(level) {
-    describe('FakeLogger#' + level + '()', function () {
+    describe(`FakeLogger#${level}()`, function () {
 
       it('does nothing if callback not provided', function (done) {
         logger[level]('Test');
