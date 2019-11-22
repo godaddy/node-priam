@@ -5,7 +5,7 @@
 This major release is geared toward internal performance improvements and removing some legacy code cruft relating to the now-defunct dual driver support.
 
 **BREAKING**:
-* Priam now requires node 10 or node 12 or greater so it can take advantage of async iterator support. For some reason, node 11 is incompatible.
+* Priam now requires node 10.17 or node 12 or greater so it can take advantage of async iterator support. For some reason, node 11 is incompatible.
 * In olden days, `priam` supported two underlying Cassandra drivers. This is no-longer the case, so some effort has been done to remove the cruft in the code for this dual support. One of these changes removes the translation of the old `helenus` driver config options to those compatible with `cassandra-driver`. Config options in `priam` are now aligned directly with the config options of `cassandra-driver`.
 * Errors are now emitted correctly when writing to a stream. This means you may now need to attach `error` handlers to your streams to avoid unhandled error exceptions.
 * Undocumented private methods have now been prefixed with underscores; if your code was calling these undocumented methods directly, those methods may now have been renamed or removed.
