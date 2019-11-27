@@ -4,7 +4,7 @@
 
 ### Node Requirements
 
-This version of `priam` requires node 10.17 or above (but not version 11 which has a strange compatibility break).
+This version of `priam` requires node 10.17 or 12.3 and above (not version 11 which has a strange compatibility break).
 
 ### Config Setting Updates
 
