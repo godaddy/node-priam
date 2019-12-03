@@ -21,6 +21,7 @@ describe('lib/util/parse-version.js', function () {
 
   testParse(null, 0, 0, 0);
   testParse('not a number', 0, 0, 0);
+  testParse(4, 4, 0, 0);
   testParse('3', 3, 0, 0);
   testParse('3.2', 3, 2, 0);
   testParse('3.2.1', 3, 2, 1);
