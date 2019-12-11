@@ -1385,17 +1385,17 @@ describe('lib/driver.js', function () {
       const params = ['param1', 'param2', 'param3'];
       const consistency = cql.types.consistencies.quorum;
       const pool = getPoolStub(instance.config, true, null, {});
+      const mockError = new Error('throws error on QUORUM');
       // eslint-disable-next-line require-yield
-      pool.stream = sinon.spy(function *() {
-        throw new Error('throws error on QUORUM');
-      });
+      pool.stream = sinon.spy(function *() { throw mockError; });
       instance.pools = { myKeySpace: pool };
       const failedHandler = sinon.stub();
       instance.on('queryFailed', failedHandler);
 
       // act
       instance.cql(cqlQuery, params, { consistency }, function () {
-        expect(failedHandler).to.have.been.called;
+        expect(failedHandler)
+          .to.have.been.calledWithMatch(sinon.match.string, mockError);
         done();
       });
     });
