@@ -27,7 +27,7 @@
   "dependencies": {
     "cassandra-driver": "^4.1.0",
     "isstream": "^0.1.2",
-    "lodash": "^4.17.15",
+    "lodash": "^4.17.20",
     "q": "^1.4.1",
     "retry": "^0.6.1",
     "uuid": "^2.0.1"
