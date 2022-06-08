@@ -1,5 +1,11 @@
 # Changelog
 
+## 4.1.0
+
+Features:
+
+* Expose more details in the emitted events, like the Cassandra clients (a.k.a. "pools") themselves
+
 ## 4.0.0
 
 This major release is geared toward internal performance improvements and removing some legacy code cruft relating to the now-defunct dual driver support.

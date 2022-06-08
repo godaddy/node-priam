@@ -426,84 +426,22 @@ require('priam')({
 ### Events ###
 Each `priam` instance is an `EventEmitter`. The following events are emitted:
 
-<table>
-<thead>
-<tr><th>Event</th><th>Params</th><th>Description</th></tr>
-</thead>
-<tbody>
-<tr>
-<td>connectionRequested</td>
-<td>connectionRequestId</td>
-<td>A pooled connection has been requested. Expect a `connectionAvailable` event when this request has been fulfilled.</td>
-</tr>
-<tr>
-<td>connectionResolving</td>
-<td>connectionResolutionId</td>
-<td>If a connection resolver is being used, emitted when the connection resolver is about to be invoked</td>
-</tr>
-<tr>
-<td>connectionResolved</td>
-<td>connectionResolutionId</td>
-<td>If a connection resolver is being used, emitted when the connection resolver succeeds.</td>
-</tr>
-<tr>
-<td>connectionResolvedError</td>
-<td>connectionResolutionId, err</td>
-<td>If a connection resolver is being used, emitted when the connection resolver fails.</td>
-</tr>
-<tr>
-<td>connectionOpening</td>
-<td>connectionOpenRequestId</td>
-<td>Emitted when opening a new connection.</td>
-</tr>
-<tr>
-<td>connectionOpened</td>
-<td>connectionOpenRequestId</td>
-<td>Emitted when the opening of a new connection has succeeded.</td>
-</tr>
-<tr>
-<td>connectionFailed</td>
-<td>connectionOpenRequestId, err</td>
-<td>Emitted when the opening of a new connection has failed.</td>
-</tr>
-<tr>
-<td>connectionAvailable</td>
-<td>connectionRequestId</td>
-<td>Emitted if a new or existing connection is ready to be used to execute a query.</td>
-</tr>
-<tr>
-<td>connectionLogged</td>
-<td>logLevel, message, details</td>
-<td>Emitted when the underlying driver outputs log events.</td>
-</tr>
-<tr>
-<td>connectionClosed</td>
-<td></td>
-<td>Emitted when a connection closes.</td>
-</tr>
-<tr>
-<td>queryStarted</td>
-<td>requestId</td>
-<td>Emitted when a query is about to be executed.</td>
-</tr>
-<tr>
-<td>queryRetried</td>
-<td>requestId</td>
-<td>Emitted when a query is about to be retried.</td>
-</tr>
-<tr>
-<td>queryCompleted</td>
-<td>requestId</td>
-<td>Emitted when a query has succeeded.</td>
-</tr>
-<tr>
-<td>queryFailed</td>
-<td>requestId, err</td>
-<td>Emitted when a query has failed after exhausting any retries.</td>
-</tr>
-</tbody>
-</table>
-
+| Event | Params | Description |
+|-------|--------|-------------|
+| connectionRequested | connectionRequestId | A pooled connection has been requested.Expect a `connectionAvailable` event when this request has been fulfilled. |
+| connectionResolving | connectionResolutionId | If a connection resolver is being used, emitted when the connection resolver is about to be invoked |
+| connectionResolved | connectionResolutionId | If a connection resolver is being used, emitted when the connection resolver succeeds. |
+| connectionResolvedError | connectionResolutionId, err | If a connection resolver is being used, emitted when the connection resolver fails.|
+| connectionOpening | connectionOpenRequestId | Emitted when opening a new connection. |
+| connectionOpened | connectionOpenRequestId, client | Emitted when the opening of a new connection has succeeded. The `client` object is a [`cassandra-driver`][cassandra-driver] client instance. |
+| connectionFailed | connectionOpenRequestId, err | Emitted when the opening of a new connection has failed. |
+| connectionAvailable | connectionRequestId | Emitted if a new or existing connection is ready to be used to execute a query. |
+| connectionLogged | logLevel, message, details | Emitted when the underlying driver outputs log events. | 
+| connectionClosed | client | Emitted when a connection closes. The `client` object is a [`cassandra-driver`][cassandra-driver] client instance. |
+| queryStarted | requestId | Emitted when a query is about to be executed. |
+| queryRetried | requestId | Emitted when a query is about to be retried. |
+| queryCompleted | requestId | Emitted when a query has succeeded. |
+| queryFailed| requestId, err | Emitted when a query has failed after exhausting any retries. |
 
 ### Using a Connection Resolver ###
 
@@ -575,3 +513,6 @@ const db = require('priam')({
 Release Notes
 -------------
 See the [change log](./CHANGELOG.md)
+
+
+[cassandra-driver]: https://docs.datastax.com/en/developer/nodejs-driver/4.6/

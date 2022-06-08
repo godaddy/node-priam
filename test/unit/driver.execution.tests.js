@@ -1,11 +1,11 @@
-const path             = require('path');
-const { EventEmitter } = require('events');
-const sinon            = require('sinon');
-const chai             = require('chai');
-const _                = require('lodash');
-const cql              = require('cassandra-driver');
-const FakeResolver     = require('../stubs/fake-resolver');
-const Driver           = require('../../lib/driver');
+const path                    = require('path');
+const { EventEmitter, once }  = require('events');
+const sinon                   = require('sinon');
+const chai                    = require('chai');
+const _                       = require('lodash');
+const cql                     = require('cassandra-driver');
+const FakeResolver            = require('../stubs/fake-resolver');
+const Driver                  = require('../../lib/driver');
 
 chai.use(require('sinon-chai'));
 const assert = chai.assert;
@@ -16,7 +16,7 @@ describe('lib/driver.js', function () {
   function getDefaultConfig() {
     return {
       protocolOptions: {
-        maxVersion: '3.1.0'
+        maxVersion: 3.1
       },
       contactPoints: ['123.456.789.012:9042'],
       keyspace: 'myKeySpace',
@@ -73,12 +73,7 @@ describe('lib/driver.js', function () {
 
     beforeEach(function () {
       instance = getDefaultInstance();
-    });
-
-    afterEach(function () {
-      if (cql.Client.restore) {
-        cql.Client.restore();
-      }
+      cql.Client = sinon.stub().returns(getPoolStub(instance.config, true, null, {}));
     });
 
     it('returns the connection pool on successful connection', function (done) {
@@ -86,7 +81,7 @@ describe('lib/driver.js', function () {
       const pool = getPoolStub(instance.config, true, null, {});
       pool.on = sinon.stub();
       pool.connect = sinon.stub().resolves({});
-      sinon.stub(cql, 'Client').returns(pool);
+      cql.Client.returns(pool);
 
       // act
       instance.connect(function (err, newPool) {
@@ -105,7 +100,7 @@ describe('lib/driver.js', function () {
       const error = new Error('connection failed');
       poolStub.on = sinon.stub();
       poolStub.connect = sinon.stub().rejects(error);
-      sinon.stub(cql, 'Client').returns(poolStub);
+      cql.Client.returns(poolStub);
 
       // act
       instance.connect(function (err, pool) {
@@ -122,7 +117,7 @@ describe('lib/driver.js', function () {
       const pool = getPoolStub(instance.config, true, null, {});
       pool.on = sinon.stub();
       pool.connect = sinon.stub().resolves({});
-      sinon.stub(cql, 'Client').returns(pool);
+      cql.Client.returns(pool);
 
       // act
       const newPool = await instance.connect();
@@ -138,7 +133,7 @@ describe('lib/driver.js', function () {
       const error = new Error('connection failed');
       pool.on = sinon.stub();
       pool.connect = sinon.stub().rejects(error);
-      sinon.stub(cql, 'Client').returns(pool);
+      cql.Client.returns(pool);
 
       // act
       let caughtError;
@@ -162,8 +157,7 @@ describe('lib/driver.js', function () {
           policies: mockPolicy
         }
       });
-      sinon.stub(cql, 'Client')
-        .returns(getPoolStub(instance.config, true, null, {}));
+      cql.Client.returns(getPoolStub(instance.config, true, null, {}));
 
       driver.connect(err => {
         expect(err).to.not.exist;
@@ -193,7 +187,7 @@ describe('lib/driver.js', function () {
       const pool = getPoolStub(instance.config, true, null, {});
       pool.on = sinon.stub();
       pool.connect = sinon.stub().resolves({});
-      sinon.stub(cql, 'Client').returns(pool);
+      cql.Client.returns(pool);
 
       // act
       const newPool = await instance._createConnectionPool({}, true);
@@ -209,7 +203,7 @@ describe('lib/driver.js', function () {
       const pool = getPoolStub(instance.config, true, null, {});
       pool.on = sinon.stub();
       pool.connect = sinon.stub().resolves({});
-      sinon.stub(cql, 'Client').returns(pool);
+      cql.Client.returns(pool);
 
       // act
       const newPool = await instance._createConnectionPool(instance.config, true);
@@ -235,7 +229,7 @@ describe('lib/driver.js', function () {
       const pool = getPoolStub(instance.config, true, null, {});
       pool.on = sinon.stub();
       pool.connect = sinon.stub().resolves({});
-      sinon.stub(cql, 'Client').returns(pool);
+      cql.Client.returns(pool);
 
       // act
       const newPool = await instance._createConnectionPool(instance.config, true);
@@ -251,7 +245,7 @@ describe('lib/driver.js', function () {
       pool.on = sinon.stub();
       pool.connect = sinon.stub()
         .resolves(new Promise(resolve => setTimeout(resolve, 10)));
-      sinon.stub(cql, 'Client').returns(pool);
+      cql.Client.returns(pool);
 
       // act
       const newPool = await instance._createConnectionPool({}, false);
@@ -273,9 +267,8 @@ describe('lib/driver.js', function () {
       instance.getConnectionPool = sinon.stub().yields(null, {});
     });
 
-    it('closes the connection pool if it exists', function (done) {
+    it('closes the connection pool if it exists', async function () {
       // arrange
-      instance.on('connectionClosed', setTimeout.bind(null, done, 4));
       pool.isReady = true;
       pool.isClosed = false;
 
@@ -286,11 +279,13 @@ describe('lib/driver.js', function () {
         assert.strictEqual(pool.isReady, false, 'pool should not be marked ready');
         assert.ok(pool.shutdown.called, 'pool shutdown should be called');
       });
+
+      const [closedPool] = await once(instance, 'connectionClosed');
+      expect(closedPool).to.equal(pool);
     });
 
-    it('skips closing the pool if it is already closed', function (done) {
+    it('skips closing the pool if it is already closed', async function () {
       // arrange
-      instance.on('connectionClosed', setTimeout.bind(null, done, 4));
       pool.isReady = true;
       pool.isClosed = true;
 
@@ -380,7 +375,7 @@ describe('lib/driver.js', function () {
       pool.on = sinon.stub();
       pool.connect = sinon.stub().resolves({});
 
-      sinon.stub(cql, 'Client').returns(pool);
+      cql.Client.returns(pool);
       instance.pools = {};
       const
         connectionOpeningHandler = sinon.stub(),
@@ -395,7 +390,7 @@ describe('lib/driver.js', function () {
       instance.cql(cqlQuery, params, { consistency }, function () {
         // assert
         expect(connectionOpeningHandler).to.have.been.called;
-        expect(connectionOpenedHandler).to.have.been.called;
+        expect(connectionOpenedHandler).to.have.been.calledWith(sinon.match.any, pool);
         expect(queryStartedHandler).to.have.been.called;
         assert.equal(instance.pools.myKeySpace, pool, 'pool should be cached');
         assert.strictEqual(pool.waiters.length, 0, 'waiters should be executed after connection completes');
@@ -416,7 +411,7 @@ describe('lib/driver.js', function () {
       const pool = getPoolStub(instance.config, true, null, {});
       pool.on = sinon.stub();
       pool.connect = sinon.stub().resolves({});
-      sinon.stub(cql, 'Client').returns(pool);
+      cql.Client.returns(pool);
       const existingPool = getPoolStub(instance.config, true, null, {});
       existingPool.isClosed = true;
       instance.pools = { myKeySpace: existingPool };
@@ -439,7 +434,7 @@ describe('lib/driver.js', function () {
       const pool = getPoolStub(_.extend(_.extend({}, instance.config), { keyspace: 'myNewKeyspace' }), true, null, {});
       pool.on = sinon.stub();
       pool.connect = sinon.stub().resolves({});
-      sinon.stub(cql, 'Client').returns(pool);
+      cql.Client.returns(pool);
 
       const existingPool = getPoolStub(_.extend({}, instance.config), true, null, {});
       instance.pools = { myKeySpace: existingPool };
@@ -462,7 +457,7 @@ describe('lib/driver.js', function () {
       const pool = getPoolStub(_.extend(_.extend({}, instance.config), { keyspace: instance.config.keyspace }), true, null, {});
       pool.on = sinon.stub();
       pool.connect = sinon.stub().yieldsAsync(null, {});
-      sinon.stub(cql, 'Client').returns(pool);
+      cql.Client.returns(pool);
       const existingPool = getPoolStub(_.extend({}, instance.config), true, null, {});
       instance.pools = { myKeySpace: existingPool };
       const openingHandler = sinon.stub(), openedHandler = sinon.stub(), availableHandler = sinon.stub();
@@ -492,7 +487,7 @@ describe('lib/driver.js', function () {
       const pool = getPoolStub({ different: 'config', keyspace: instance.config.keyspace }, true, null, {});
       pool.on = sinon.stub();
       pool.connect = sinon.stub().resolves({});
-      sinon.stub(cql, 'Client').returns(pool);
+      cql.Client.returns(pool);
       const existingPool = getPoolStub({ keyspace: instance.config.keyspace }, true, null, {});
       instance.pools = { myKeySpace: existingPool };
 
@@ -517,7 +512,7 @@ describe('lib/driver.js', function () {
       const pool = getPoolStub(instance.config, true, null, {});
       pool.on = sinon.stub();
       pool.connect = sinon.stub().yieldsAsync(null, {});
-      sinon.stub(cql, 'Client').returns(pool);
+      cql.Client.returns(pool);
       instance.pools = {};
       const logEventHandler = sinon.stub();
       instance.on('connectionLogged', logEventHandler);
@@ -593,7 +588,7 @@ describe('lib/driver.js', function () {
       const pool = getPoolStub(instance.config, true, null, {});
       pool.on = sinon.stub();
       pool.connect = sinon.stub().rejects(new Error('Connection pool failed to connect'));
-      sinon.stub(cql, 'Client').returns(pool);
+      cql.Client.returns(pool);
       instance.pools = {};
       instance.logger = {
         debug: sinon.stub(),
@@ -622,7 +617,7 @@ describe('lib/driver.js', function () {
       const pool = getPoolStub(instance.config, true, null, {});
       pool.on = sinon.stub();
       pool.connect = sinon.stub().resolves();
-      sinon.stub(cql, 'Client').returns(pool);
+      cql.Client.returns(pool);
       instance.pools = {};
 
       // act
@@ -664,7 +659,7 @@ describe('lib/driver.js', function () {
       const pool = getPoolStub(instance.config, true, null, []);
       pool.on = sinon.stub();
       pool.connect = sinon.stub().resolves();
-      sinon.stub(cql, 'Client').returns(pool);
+      cql.Client.returns(pool);
       instance.pools = {};
 
       // act
@@ -815,6 +810,7 @@ describe('lib/driver.js', function () {
         ]
       });
       instance.pools = { myKeySpace: pool };
+      cql.Client.returns(pool);
 
       // act
       instance.cql(cqlQuery, params, {
@@ -1118,6 +1114,7 @@ describe('lib/driver.js', function () {
         ]
       });
       instance.pools = { myKeySpace: pool };
+      cql.Client.returns(pool);
 
       // act
       instance.cql(cqlQuery, params, {
@@ -1215,6 +1212,7 @@ describe('lib/driver.js', function () {
         });
         instance.pools = { myKeySpace: pool };
         instance._initDriverConfig({ numRetries, retryDelay: 1 });
+        cql.Client.returns(pool);
 
         // act
         instance.cql(cqlQuery, params, { consistency }, function (error, returnData) {
@@ -1270,6 +1268,7 @@ describe('lib/driver.js', function () {
       instance.pools = { myKeySpace: pool };
       instance.config.retryDelay = 1;
       instance.config.enableConsistencyFailover = false;
+      cql.Client.returns(pool);
 
       // act
       instance.cql(cqlQuery, params, { consistency }, function (error, returnData) {
@@ -1411,6 +1410,7 @@ describe('lib/driver.js', function () {
       instance.metrics = {
         measurement: sinon.stub()
       };
+      cql.Client.returns(pool);
 
       // act
       instance.cql(cqlQuery, params, { consistency, queryName }, function () {
@@ -1489,7 +1489,7 @@ describe('lib/driver.js', function () {
         const pool = getPoolStub(instance.config, true, null, {});
         pool.on = sinon.stub();
         pool.connect = sinon.stub().resolves({});
-        sinon.stub(cql, 'Client').returns(pool);
+        cql.Client.returns(pool);
         instance.pools = {};
 
         // act
@@ -1518,7 +1518,7 @@ describe('lib/driver.js', function () {
         const pool = getPoolStub(instance.config, true, null, {});
         pool.on = sinon.stub();
         pool.connect = sinon.stub().resolves({});
-        sinon.stub(cql, 'Client').returns(pool);
+        cql.Client.returns(pool);
         instance.pools = {};
 
         // act
@@ -1553,7 +1553,7 @@ describe('lib/driver.js', function () {
         const pool = getPoolStub(instance.config, true, null, {});
         pool.on = sinon.stub();
         pool.connect = sinon.stub().resolves({});
-        sinon.stub(cql, 'Client').returns(pool);
+        cql.Client.returns(pool);
         instance.pools = {};
 
         // act
@@ -1579,7 +1579,7 @@ describe('lib/driver.js', function () {
         const pool = getPoolStub(instance.config, true, null, {});
         pool.on = sinon.stub();
         pool.connect = sinon.stub().yieldsAsync(null, {});
-        sinon.stub(cql, 'Client').returns(pool);
+        cql.Client.returns(pool);
         instance.pools = {};
         const connectionResolvedErrorHandler = sinon.stub();
         instance.on('connectionResolvedError', connectionResolvedErrorHandler);
@@ -1620,7 +1620,7 @@ describe('lib/driver.js', function () {
         const pool = getPoolStub(instance.config, true, null, {});
         pool.on = sinon.stub();
         pool.connect = sinon.stub().resolves({});
-        sinon.stub(cql, 'Client').returns(pool);
+        cql.Client.returns(pool);
         instance.pools = {};
         const connectionOptionsErrorHandler = sinon.stub();
         instance.on('connectionOptionsError', connectionOptionsErrorHandler);
@@ -1653,7 +1653,7 @@ describe('lib/driver.js', function () {
         const pool = getPoolStub(instance.config, true, null, {});
         pool.on = sinon.stub();
         pool.connect = sinon.stub().resolves({});
-        sinon.stub(cql, 'Client').returns(pool);
+        cql.Client.returns(pool);
         instance.pools = {};
         const connOptionsFetchedHandler = sinon.stub();
         const connResolvedHandler = sinon.stub();
@@ -1694,12 +1694,12 @@ describe('lib/driver.js', function () {
     beforeEach(function () {
       instance = getDefaultInstance();
       sinon.stub(instance, '_execCql').resolves({});
-      sinon.stub(cql, 'Client').returns({});
+      cql.Client.returns({});
     });
 
     afterEach(function () {
       instance._execCql.restore();
-      cql.Client.restore();
+      cql.Client.restore && cql.Client.restore();
     });
 
     function validateWrapperCall(method, consistencyLevel) {
