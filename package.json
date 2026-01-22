@@ -14,7 +14,7 @@
     "email": "scommisso@godaddy.com"
   },
   "engines": {
-    "node": "^10.17.0 || >=12.3.0"
+    "node": ">=18.0.0"
   },
   "repository": {
     "type": "git",
@@ -25,7 +25,7 @@
     "lib"
   ],
   "dependencies": {
-    "cassandra-driver": "^4.1.0",
+    "cassandra-driver": "^4.8.0",
     "isstream": "^0.1.2",
     "lodash": "^4.17.21",
     "q": "^1.4.1",
